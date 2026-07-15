@@ -58,7 +58,7 @@ export async function perfil() {
 </main>`;
 
   document.getElementById("logout").addEventListener("click", logout);
-  //initNsfwToggle();
+  initNsfwToggle();
 
   const card = document.getElementById("mal-card");
 

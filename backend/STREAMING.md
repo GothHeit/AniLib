@@ -1,4 +1,4 @@
-# 🎬 Streaming de episódios (sob demanda)
+# Streaming de episódios (sob demanda)
 
 Resolve o link de vídeo de **um** episódio só quando o usuário clica pra assistir.
 Os metadados (título, nº de episódios) vêm do **MAL**; o link de vídeo vem do
@@ -8,7 +8,7 @@ on-demand, com retry e cache.
 ## Arquitetura
 
 ```
-Front (web/)                         Backend (fastapi-users-auth/)
+Front (frontend/)                    Backend (backend/)
 ─────────────                        ─────────────────────────────
 paginaAnime.js                       anime_router.py
   /episodes ──► grade                GET /anime/{id}/episodes/{ep}/stream  -> metadados
@@ -40,9 +40,7 @@ backend (ok pra projeto pequeno).
    e avisa, por garantia, mas até agora esse provedor serve mp4 pra tudo. Se um dia
    aparecer HLS, suportar exige **hls.js** no front + reescrever segmentos no proxy.
 
-2. **Match de título (MAL → AllAnime).** Matcher próprio (`_match`/`_resolve_anime`),
-   que pega as boas ideias do `MyAnimeListAdapter` do `anipy` sem os pontos fracos
-   dele (que casava Specials/Recaps por usar Levenshtein puro num `set`). Recebe o
+2. **Match de título (MAL → AllAnime).** Matcher próprio (`_match`/`_resolve_anime`). Recebe o
    **detalhe completo do MAL** (não só o título) e:
    - **busca** o provedor com título principal **+ en/ja/sinônimos**;
    - **pontua** cada candidato por `token_sort_ratio` contra o nome dele; se o nome

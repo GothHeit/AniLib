@@ -1,98 +1,34 @@
-<div align="center">
-
-# 🎌 AniLib API
+# AniLib API
 
 Backend de streaming e gerenciamento de animes construído com FastAPI, MongoDB e integração nativa com MyAnimeList.
 
-[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)]()
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)]()
-[![MongoDB](https://img.shields.io/badge/MongoDB-Database-brightgreen.svg)]()
-[![JWT](https://img.shields.io/badge/Auth-JWT-orange.svg)]()
+Instalação e execução: ver [`COMO_SUBIR.md`](../COMO_SUBIR.md) na raiz do repo.
+Detalhes de como o streaming de episódios funciona: ver [`STREAMING.md`](STREAMING.md).
 
+## Funcionalidades
 
-</div>
+### Autenticação
 
----
-
-## 📖 Sobre o Projeto
-
-AniLib API é uma plataforma backend desenvolvida para fornecer uma experiência completa de descoberta, gerenciamento e streaming de animes.
-
-O projeto integra múltiplas fontes de dados, autenticação moderna baseada em JWT, sincronização com MyAnimeList e serviços de streaming de episódios através de uma API REST escalável.
-
-### Principais objetivos
-
-- Centralizar informações de animes
-- Fornecer streaming através de API
-- Sincronizar listas com MyAnimeList
-- Oferecer autenticação segura
-- Servir como backend para aplicações web e mobile
-
----
-
-## ✨ Funcionalidades
-
-### 🔐 Autenticação
-
-- Cadastro de usuários
-- Login com JWT
-- Rotas protegidas
+- Cadastro de usuários, login com JWT, rotas protegidas
 - Hash de senha com Argon2
-- Controle de sessão seguro
 
-### 🎌 Catálogo de Animes
+### Catálogo de Animes
 
-- Busca por nome
-- Animes recentes
-- Top animes
-- Informações detalhadas
-- Episódios disponíveis
+- Busca por nome, animes recentes, top animes, detalhes, episódios disponíveis
 
-### 🎥 Streaming
+### Streaming
 
-- Resolução automática de fontes
-- Proxy para vídeos
-- Streaming otimizado
-- Suporte a Range Requests
-- Compatível com players HTML5
+- Resolução automática de fontes, proxy de vídeo, Range Requests (seek), compatível com players HTML5
 
-### 📚 MyAnimeList
+### MyAnimeList
 
-- OAuth2 PKCE
-- Vinculação de conta
-- Consulta da lista pessoal
-- Atualização de status
-- Atualização de nota
-- Remoção de animes
+- OAuth2 PKCE, vinculação de conta, consulta/atualização/remoção da lista pessoal
 
-### 🚀 API REST
-
-- Arquitetura modular
-- Respostas JSON
-- Documentação Swagger automática
-- Fácil integração com frontend
-
----
-
-## 🏗 Arquitetura
+## Arquitetura
 
 ```text
-Client
-   │
-   ▼
-FastAPI Router
-   │
-   ▼
-Services
-   │
-   ▼
-Repositories
-   │
-   ▼
-MongoDB
+Client → FastAPI Router → Services → Repositories → MongoDB
 ```
-
-O projeto segue uma arquitetura em camadas para facilitar manutenção, testes e escalabilidade.
 
 | Camada | Responsabilidade |
 |----------|------------------|
@@ -102,203 +38,20 @@ O projeto segue uma arquitetura em camadas para facilitar manutenção, testes e
 | Database | Conexão com MongoDB |
 | Auth | Segurança e autenticação |
 
----
+## Tecnologias
 
-## 🛠 Tecnologias
+FastAPI, Pydantic, Uvicorn · MongoDB + Motor (driver async) · JWT, Argon2, OAuth2 PKCE · MyAnimeList API, AniPy · Docker
 
-### Backend
+## Principais Endpoints
 
-- FastAPI
-- Python
-- Pydantic
-- Uvicorn
-
-### Banco de Dados
-
-- MongoDB
-- Motor (Async Mongo Driver)
-
-### Segurança
-
-- JWT
-- Argon2
-- OAuth2 PKCE
-
-### Integrações
-
-- MyAnimeList API
-- AniPy
-
-### Infraestrutura
-
-- Docker
-- Docker Compose
-
----
-
-## 📂 Estrutura
-
-```text
-.
-├── auth/
-├── database/
-├── dto/
-├── exceptions/
-├── middleware/
-├── model/
-├── repositories/
-├── routers/
-├── services/
-├── main.py
-├── requirements.txt
-└── docker-compose.yml
-```
-
----
-
-## ⚙️ Instalação
-
-### Clonar repositório
-
-```bash
-git clone https://github.com/seuusuario/anilib-api.git
-cd anilib-api
-```
-
-### Criar ambiente virtual
-
-```bash
-python -m venv .venv
-```
-
-Windows
-
-```bash
-.venv\Scripts\activate
-```
-
-Linux/macOS
-
-```bash
-source .venv/bin/activate
-```
-
-### Instalar dependências
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## 🔧 Configuração
-
-Crie um arquivo `.env`
-
-```env
-MONGO_URL=mongodb://localhost:27017
-JWT_SECRET=xxxxxxxxxxxxxxxxxxxx
-API_MAL=https://api.myanimelist.net/v2
-MAL_CLIENT_ID=xxxxxxxxxxxxxxxxxxx
-MAL_REDIRECT_URI=http://localhost:8000/auth/mal/callback
-FRONTEND_URL=http://localhost:5500
-MAL_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
-```
-
----
-
-## 🐳 Docker
-
-Subir MongoDB
-
-```bash
-docker compose up -d
-```
-
-Verificar containers
-
-```bash
-docker ps
-```
-
----
-
-## ▶️ Executando
-
-```bash
-uvicorn main:app --reload
-```
-
-Servidor:
-
-```text
-http://localhost:8000
-```
-
-Swagger UI:
-
-```text
-http://localhost:8000/docs
-```
-
-ReDoc:
-
-```text
-http://localhost:8000/redoc
-```
-
----
-
-## 📡 Principais Endpoints
-
-### Usuários
+Lista completa e testável em `/docs` (Swagger) com o servidor rodando. Resumo:
 
 | Método | Endpoint |
 |----------|----------|
 | POST | /users |
 | POST | /users/login |
-| GET | /users |
-
-### Animes
-
-| Método | Endpoint |
-|----------|----------|
-| GET | /anime |
-| GET | /anime/search |
-| GET | /anime/topanimes |
-| GET | /anime/{id} |
-| GET | /anime/{id}/episodes |
-
-### Streaming
-
-| Método | Endpoint |
-|----------|----------|
-| GET | /anime/{id}/episodes/{ep}/stream |
-| GET | /anime/{id}/episodes/{ep}/video |
-
-### MyAnimeList
-
-| Método | Endpoint |
-|----------|----------|
-| GET | /auth/mal/start |
-| GET | /auth/mal/callback |
-| GET | /me/mal |
-| DELETE | /me/mal |
-| GET | /me/animelist |
-| PATCH | /me/animelist/{id} |
-| DELETE | /me/animelist/{id} |
-
----
-
-## 🔒 Segurança
-
-O projeto implementa:
-
-- JWT Authentication
-- Password Hashing com Argon2
-- OAuth2 PKCE
-- Validação de entrada com Pydantic
-- Middleware de autenticação
-- Separação de responsabilidades
-
----
+| GET | /anime, /anime/search, /anime/topanimes, /anime/{id}, /anime/{id}/episodes |
+| GET | /anime/{id}/episodes/{ep}/stream, /anime/{id}/episodes/{ep}/video |
+| GET | /auth/mal/start, /auth/mal/callback |
+| GET/DELETE | /me/mal |
+| GET/PATCH/DELETE | /me/animelist(/{id}) |

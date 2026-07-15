@@ -193,7 +193,7 @@ export async function paginaAnime(animeId) {
   </div>
 </header>`;
 
- // initNsfwToggle();
+  initNsfwToggle();
 
   const loginBtn = document.getElementById("login");
   if (loginBtn) {

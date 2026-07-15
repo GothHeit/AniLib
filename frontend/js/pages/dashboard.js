@@ -81,7 +81,7 @@ export async function paginaPrincipal(page = 1) {
   </div>
 </main>`;
 
-  //initNsfwToggle();
+  initNsfwToggle();
 
   const loginBtn = document.getElementById("login");
   if (loginBtn) {
