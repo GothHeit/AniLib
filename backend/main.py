@@ -1,0 +1,39 @@
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.exceptions import HTTPException
+from routers.anime_router import router as anime_router
+from routers.user_router import router as user_router
+from routers.mal_router import router as mal_router
+from fastapi.middleware.cors import CORSMiddleware
+from database.mongodb import create_indexes
+from exceptions.handler import (
+    http_exception_handler
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await create_indexes()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.add_exception_handler(
+    HTTPException,
+    http_exception_handler
+)
+
+
+app.include_router(user_router)
+app.include_router(anime_router)
+app.include_router(mal_router)
+
