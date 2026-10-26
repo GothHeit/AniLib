@@ -59,3 +59,11 @@ async def test_progress_validates_input(client, session):
     assert (await put(client, headers, position_seconds=-1)).status_code == 422
     assert (await put(client, headers, position_seconds=1, duration_seconds=0)).status_code == 422
     assert (await put(client, headers, anime=0, position_seconds=1)).status_code == 422
+
+
+async def test_rewatching_an_early_episode_keeps_the_furthest_one(client, session):
+    _, headers = await make_user(session, "kafka")
+    await put(client, headers, anime=1, episode=12, position_seconds=1390, duration_seconds=1400)
+    await put(client, headers, anime=1, episode=1, position_seconds=10, duration_seconds=1400)
+    entries = (await client.get("/me/progress", headers=headers)).json()
+    assert [(e["anime_id"], e["episode"]) for e in entries] == [(1, 12)]

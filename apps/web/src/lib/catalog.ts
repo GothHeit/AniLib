@@ -8,13 +8,12 @@ export type ProgressOut = components["schemas"]["ProgressOut"];
 export const LIST_STATUSES = ["watching", "plan_to_watch", "completed", "on_hold", "dropped"] as const;
 export type ListStatus = (typeof LIST_STATUSES)[number];
 
-/** One entry of GET /me/animelist, which the API passes through from MyAnimeList untyped. */
-export type ListEntry = {
-  node: AnimeCard;
-  list_status: { status: ListStatus; score?: number; num_episodes_watched?: number };
-};
+export type ListEntry = components["schemas"]["ListItemOut"];
 
 export const animeHref = (id: number) => `/anime/${id}`;
+
+/** Opens an episode without naming a source: the page picks one that has the title. */
+export const watchHref = (id: number, episode: number) => `/continue/${id}/${episode}`;
 
 export const posterOf = (card: AnimeCard) => card.main_picture?.large ?? card.main_picture?.medium ?? null;
 

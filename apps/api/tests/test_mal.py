@@ -119,3 +119,31 @@ async def test_mal_callback_returns_to_the_users_language(client, session):
     await session.commit()
     r = await client.get("/mal/callback", params={"error": "access_denied", "state": "abc"})
     assert r.headers["location"].endswith("/en/settings?mal=denied")
+
+
+@respx.mock
+async def test_animelist_is_cached_until_the_list_changes(client, session):
+    user, headers = await make_user(session, "kafka")
+    session.add(
+        MalLink(
+            user_id=user.id,
+            access_token="a",
+            refresh_token="r",
+            expires_at=utcnow() + timedelta(hours=1),
+        )
+    )
+    await session.commit()
+    listing = respx.get(f"{API_BASE}/users/@me/animelist").mock(
+        return_value=httpx.Response(200, json={"data": []})
+    )
+    respx.patch(f"{API_BASE}/anime/5/my_list_status").mock(
+        return_value=httpx.Response(200, json={"status": "completed"})
+    )
+
+    await client.get("/me/animelist", headers=headers)
+    await client.get("/me/animelist", headers=headers)
+    assert listing.call_count == 1
+
+    await client.patch("/me/animelist/5", json={"status": "completed"}, headers=headers)
+    await client.get("/me/animelist", headers=headers)
+    assert listing.call_count == 2

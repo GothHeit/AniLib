@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 
 import { useRouter } from "@/i18n/navigation";
+import { genreName } from "@/lib/genres";
 import { SEASONS, type BrowseFilters } from "@/lib/browse";
 
 type Genre = { id: number; name: string };
@@ -21,6 +22,7 @@ export function FilterBar({
   years: number[];
 }) {
   const t = useTranslations("browse");
+  const tGenres = useTranslations("genres");
   const router = useRouter();
 
   function change(next: Partial<BrowseFilters>) {
@@ -53,7 +55,7 @@ export function FilterBar({
           {any}
           {genres.map((g) => (
             <option key={g.id} value={g.id}>
-              {g.name}
+              {genreName(tGenres, g)}
             </option>
           ))}
         </select>

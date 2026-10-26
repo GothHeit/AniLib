@@ -1,11 +1,13 @@
 """Linking a user's MyAnimeList account (OAuth2 with PKCE) and editing their list."""
 
 import secrets
+import uuid
 from datetime import timedelta
 from typing import Any
 from urllib.parse import urlencode
 
 import httpx
+from cachetools import TTLCache
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +19,7 @@ from app.models import MalLink, MalOAuthState, User
 
 OAUTH_BASE = "https://myanimelist.net/v1/oauth2"
 STATE_LIFETIME = timedelta(minutes=10)
+LIST_CACHE_TTL = 60  # seconds: the home page and the list page both read the list
 
 
 def _bearer(token: str) -> dict:
@@ -27,6 +30,12 @@ class MalAccounts:
     def __init__(self, settings: Settings, http: httpx.AsyncClient):
         self._settings = settings
         self._http = http
+        # (user id, status, nsfw) -> the user's list. Dropped whenever the site changes it.
+        self._lists: TTLCache[tuple, dict] = TTLCache(maxsize=256, ttl=LIST_CACHE_TTL)
+
+    def _forget_lists(self, user_id: uuid.UUID) -> None:
+        for key in [k for k in self._lists if k[0] == user_id]:
+            del self._lists[key]
 
     async def authorize_url(self, session: AsyncSession, user: User) -> str:
         # MAL only supports the "plain" PKCE method.
@@ -78,6 +87,7 @@ class MalAccounts:
             link.mal_username = profile.get("name")
             link.mal_picture = profile.get("picture")
         await session.commit()
+        self._forget_lists(link.user_id)  # a different MAL account may now be behind it
 
     async def status(self, session: AsyncSession, user: User) -> dict:
         link = await session.get(MalLink, user.id)
@@ -101,8 +111,18 @@ class MalAccounts:
     async def disconnect(self, session: AsyncSession, user: User) -> None:
         await session.execute(delete(MalLink).where(MalLink.user_id == user.id))
         await session.commit()
+        self._forget_lists(user.id)
 
     async def animelist(self, session: AsyncSession, user: User, status: str | None) -> dict:
+        key = (user.id, status, user.show_nsfw)
+        cached = self._lists.get(key)
+        if cached is not None:
+            return cached
+        result = await self._fetch_animelist(session, user, status)
+        self._lists[key] = result
+        return result
+
+    async def _fetch_animelist(self, session: AsyncSession, user: User, status: str | None) -> dict:
         token = await self._valid_token(session, user)
         first_params: dict[str, Any] = {
             "fields": "list_status,num_episodes,main_picture,mean,rating,genres",
@@ -149,18 +169,25 @@ class MalAccounts:
         self, session: AsyncSession, user: User, anime_id: int, changes: dict
     ) -> dict:
         token = await self._valid_token(session, user)
-        response = await self._http.patch(
-            f"{API_BASE}/anime/{anime_id}/my_list_status", headers=_bearer(token), data=changes
-        )
+        try:
+            response = await self._http.patch(
+                f"{API_BASE}/anime/{anime_id}/my_list_status", headers=_bearer(token), data=changes
+            )
+        finally:
+            # After the call, so a list read meanwhile can't re-cache the old one.
+            self._forget_lists(user.id)
         if response.status_code != 200:
             raise ApiError(502, "mal_update_failed", f"MyAnimeList answered {response.status_code}")
         return response.json()
 
     async def remove_entry(self, session: AsyncSession, user: User, anime_id: int) -> None:
         token = await self._valid_token(session, user)
-        response = await self._http.delete(
-            f"{API_BASE}/anime/{anime_id}/my_list_status", headers=_bearer(token)
-        )
+        try:
+            response = await self._http.delete(
+                f"{API_BASE}/anime/{anime_id}/my_list_status", headers=_bearer(token)
+            )
+        finally:
+            self._forget_lists(user.id)
         if response.status_code not in (200, 404):
             raise ApiError(502, "mal_update_failed", f"MyAnimeList answered {response.status_code}")
 

@@ -106,6 +106,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/anime/{anime_id}/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sources
+         * @description Which sources can play this title. Separate from the details so a slow scraper never
+         *     holds the title page back.
+         */
+        get: operations["sources_anime__anime_id__sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -549,8 +570,6 @@ export interface components {
         /** AnimeDetailsOut */
         AnimeDetailsOut: {
             alternative_titles?: components["schemas"]["AlternativeTitles"] | null;
-            /** Available Sources */
-            available_sources?: string[];
             /** Average Episode Duration */
             average_episode_duration?: number | null;
             /** Background */
@@ -598,11 +617,6 @@ export interface components {
             synopsis?: string | null;
             /** Title */
             title: string;
-        };
-        /** AnimeListOut */
-        AnimeListOut: {
-            /** Data */
-            data: components["schemas"]["AnimeCard"][];
         };
         /** Broadcast */
         Broadcast: {
@@ -706,6 +720,11 @@ export interface components {
             /** Used */
             used: boolean;
         };
+        /** LinkOut */
+        LinkOut: {
+            /** Auth Url */
+            auth_url: string;
+        };
         /** ListEntryOut */
         ListEntryOut: {
             /** Linked */
@@ -723,6 +742,29 @@ export interface components {
             /** Status */
             status?: ("watching" | "completed" | "on_hold" | "dropped" | "plan_to_watch") | null;
         };
+        /** ListItemOut */
+        ListItemOut: {
+            list_status: components["schemas"]["ListStatusOut"];
+            node: components["schemas"]["AnimeCard"];
+        };
+        /** ListStatusOut */
+        ListStatusOut: {
+            /**
+             * Num Episodes Watched
+             * @default 0
+             */
+            num_episodes_watched: number;
+            /**
+             * Score
+             * @default 0
+             */
+            score: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "watching" | "completed" | "on_hold" | "dropped" | "plan_to_watch";
+        };
         /** ListUpdate */
         ListUpdate: {
             /** Num Watched Episodes */
@@ -732,12 +774,50 @@ export interface components {
             /** Status */
             status?: ("watching" | "completed" | "on_hold" | "dropped" | "plan_to_watch") | null;
         };
+        /** ListUpdated */
+        ListUpdated: {
+            /**
+             * Num Episodes Watched
+             * @default 0
+             */
+            num_episodes_watched: number;
+            /**
+             * Score
+             * @default 0
+             */
+            score: number;
+            /** Status */
+            status?: ("watching" | "completed" | "on_hold" | "dropped" | "plan_to_watch") | null;
+        };
         /** LoginIn */
         LoginIn: {
             /** Password */
             password: string;
             /** Username */
             username: string;
+        };
+        /** MalStatistics */
+        MalStatistics: {
+            /** Num Items Completed */
+            num_items_completed?: number | null;
+            /** Num Items Dropped */
+            num_items_dropped?: number | null;
+            /** Num Items On Hold */
+            num_items_on_hold?: number | null;
+            /** Num Items Plan To Watch */
+            num_items_plan_to_watch?: number | null;
+            /** Num Items Watching */
+            num_items_watching?: number | null;
+        };
+        /** MalStatusOut */
+        MalStatusOut: {
+            /** Connected */
+            connected: boolean;
+            /** Mal Picture */
+            mal_picture?: string | null;
+            /** Mal Username */
+            mal_username?: string | null;
+            statistics?: components["schemas"]["MalStatistics"] | null;
         };
         /** MeOut */
         MeOut: {
@@ -890,6 +970,11 @@ export interface components {
             /** User Agent */
             user_agent: string | null;
         };
+        /** SourcesOut */
+        SourcesOut: {
+            /** Sources */
+            sources: string[];
+        };
         /** StartSeason */
         StartSeason: {
             /** Season */
@@ -940,6 +1025,16 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** AnimeListOut */
+        app__routers__mal__AnimeListOut: {
+            /** Data */
+            data: components["schemas"]["ListItemOut"][];
+        };
+        /** AnimeListOut */
+        app__schemas__AnimeListOut: {
+            /** Data */
+            data: components["schemas"]["AnimeCard"][];
         };
     };
     responses: never;
@@ -1022,7 +1117,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AnimeListOut"];
+                    "application/json": components["schemas"]["app__schemas__AnimeListOut"];
                 };
             };
             /** @description Validation Error */
@@ -1082,7 +1177,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AnimeListOut"];
+                    "application/json": components["schemas"]["app__schemas__AnimeListOut"];
                 };
             };
         };
@@ -1105,6 +1200,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnimeDetailsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sources_anime__anime_id__sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                anime_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourcesOut"];
                 };
             };
             /** @description Validation Error */
@@ -1356,7 +1482,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["LinkOut"];
                 };
             };
         };
@@ -1431,7 +1557,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["app__routers__mal__AnimeListOut"];
                 };
             };
             /** @description Validation Error */
@@ -1526,7 +1652,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ListUpdated"];
                 };
             };
             /** @description Validation Error */
@@ -1555,7 +1681,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["MalStatusOut"];
                 };
             };
         };

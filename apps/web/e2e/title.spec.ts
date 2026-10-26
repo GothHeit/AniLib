@@ -44,6 +44,21 @@ test("shows the status already on the list", async ({ page }) => {
   await expect(page.getByLabel("My list")).toHaveValue("completed");
 });
 
+test("disables the status picker when the list entry can't be loaded", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/en/anime/5");
+  const picker = page.getByLabel("My list");
+  await expect(picker).toBeDisabled();
+  await expect(picker.locator("option:checked")).toHaveText("Status unavailable");
+});
+
+test("shows the title right away and streams the watch button in", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/en/anime/1");
+  await expect(page.getByRole("heading", { level: 1, name: "Moon Test 1" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue episode 2" })).toBeVisible();
+});
+
 test("speaks Portuguese", async ({ page }) => {
   await signIn(page, "pt");
   await page.goto("/pt/anime/1");

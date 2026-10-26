@@ -1,23 +1,26 @@
 import type { components } from "@app/api-client";
 import { getTranslations } from "next-intl/server";
+import type { ReactNode } from "react";
 
-import { ButtonLink } from "@/components/ui/Button";
 import { gradientFor } from "@/components/ui/PosterCard";
+import { genreName } from "@/lib/genres";
 
-import { AddToList, type Status } from "./AddToList";
-import type { NextUp } from "./resume";
+import { AddToList, type ListState } from "./AddToList";
 
 type Details = components["schemas"]["AnimeDetailsOut"];
 
 type Props = {
   anime: Details;
-  /** Where the primary button goes, or null when the title can't be watched here. */
-  watch: { href: string; next: NextUp } | null;
-  listStatus: Status | null;
+  /** Streamed in once the sources are known: the "watch here" badge, the play button and the hint. */
+  badge: ReactNode;
+  play: ReactNode;
+  hint: ReactNode;
+  list: ListState;
 };
 
-export async function TitleHeader({ anime, watch, listStatus }: Props) {
+export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
   const t = await getTranslations("titlePage");
+  const tGenres = await getTranslations("genres");
   const label = (group: string, key: string | null | undefined, values?: Record<string, string | number>) =>
     key && t.has(`${group}.${key}`) ? t(`${group}.${key}`, values) : key;
 
@@ -48,11 +51,7 @@ export async function TitleHeader({ anime, watch, listStatus }: Props) {
           )}
         </div>
         <div className="max-w-3xl">
-          <p
-            className={`inline-block rounded-ui border px-2 py-0.5 text-xs font-bold ${watch ? "border-accent text-accent" : "border-line text-muted"}`}
-          >
-            {watch ? t("watchHere") : t("trackingOnly")}
-          </p>
+          {badge}
           <h1 className="mt-3 text-3xl font-bold sm:text-4xl">{anime.title}</h1>
           {english && english !== anime.title && <p className="mt-1 text-muted">{english}</p>}
           {facts.length > 0 && (
@@ -63,17 +62,10 @@ export async function TitleHeader({ anime, watch, listStatus }: Props) {
             </ul>
           )}
           <div className="mt-6 flex flex-wrap gap-3">
-            {watch && (
-              <ButtonLink href={watch.href}>
-                <span aria-hidden="true">▶</span>
-                {watch.next.resume
-                  ? t("continue", { episode: watch.next.episode })
-                  : t("play", { episode: watch.next.episode })}
-              </ButtonLink>
-            )}
-            <AddToList animeId={anime.id} initial={listStatus} />
+            {play}
+            <AddToList animeId={anime.id} state={list} />
           </div>
-          {!watch && <p className="mt-3 text-sm text-muted">{t("trackingOnlyHint")}</p>}
+          {hint}
 
           <h2 className="sr-only">{t("synopsis")}</h2>
           <p className="mt-6 whitespace-pre-line text-muted">{anime.synopsis || t("noSynopsis")}</p>
@@ -90,7 +82,7 @@ export async function TitleHeader({ anime, watch, listStatus }: Props) {
                 <dd className="flex flex-wrap gap-2">
                   {anime.genres?.map((g) => (
                     <span key={g.id} className="rounded-ui border border-line px-2 py-0.5 text-xs">
-                      {g.name}
+                      {genreName(tGenres, g)}
                     </span>
                   ))}
                 </dd>

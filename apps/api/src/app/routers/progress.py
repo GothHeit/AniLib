@@ -32,16 +32,30 @@ def to_out(row: WatchProgress) -> ProgressOut:
 async def latest_per_anime(
     session: AsyncSession, user_id: uuid.UUID, limit: int
 ) -> list[WatchProgress]:
-    """The most recently watched episode of each anime, newest first."""
-    newest = (
+    """The furthest episode of each anime, most recently watched anime first.
+
+    Furthest rather than latest, so rewatching episode 1 of a finished show doesn't move its
+    resume point back to the start."""
+    furthest = (
         select(WatchProgress)
         .where(WatchProgress.user_id == user_id)
         .ext(distinct_on(WatchProgress.anime_id))
-        .order_by(WatchProgress.anime_id, WatchProgress.updated_at.desc())
+        .order_by(WatchProgress.anime_id, WatchProgress.episode.desc())
         .subquery()
     )
-    row = aliased(WatchProgress, newest)
-    result = await session.scalars(select(row).order_by(row.updated_at.desc()).limit(limit))
+    seen = (
+        select(WatchProgress.anime_id, func.max(WatchProgress.updated_at).label("seen"))
+        .where(WatchProgress.user_id == user_id)
+        .group_by(WatchProgress.anime_id)
+        .subquery()
+    )
+    row = aliased(WatchProgress, furthest)
+    result = await session.scalars(
+        select(row)
+        .join(seen, seen.c.anime_id == row.anime_id)
+        .order_by(seen.c.seen.desc())
+        .limit(limit)
+    )
     return list(result)
 
 

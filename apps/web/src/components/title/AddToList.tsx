@@ -12,18 +12,20 @@ export type Status = (typeof LIST_STATUSES)[number];
 
 const LIST_ERRORS = ["mal_not_linked", "mal_session_expired", "mal_update_failed"];
 
+/** The title's status on the user's list (null when it isn't there), or "unavailable" when it couldn't be loaded. */
+export type ListState = Status | null | "unavailable";
+
 type Props = {
   animeId: number;
-  /** The title's status on the user's MyAnimeList list, if it's there. */
-  initial?: Status | null;
+  state: ListState;
 };
 
 /** Status picker that saves the title to the user's MyAnimeList list. */
-export function AddToList({ animeId, initial }: Props) {
+export function AddToList({ animeId, state }: Props) {
   const t = useTranslations("titlePage.list");
   const tErrors = useTranslations("errors");
   const toast = useToast();
-  const [status, setStatus] = useState<Status | "">(initial ?? "");
+  const [status, setStatus] = useState<Status | "">(state === "unavailable" ? "" : (state ?? ""));
   const [saving, setSaving] = useState(false);
 
   async function save(next: Status) {
@@ -50,12 +52,15 @@ export function AddToList({ animeId, initial }: Props) {
     }
   }
 
+  // Without the real status, picking one could overwrite it (Watching -> Plan to watch).
+  const unavailable = state === "unavailable";
+
   return (
     <label className="inline-flex items-center rounded-ui border border-line bg-surface text-sm font-bold hover:border-accent focus-within:border-accent">
       <span className="sr-only">{t("label")}</span>
       <select
         value={status}
-        disabled={saving}
+        disabled={saving || unavailable}
         onChange={(e) => e.target.value && save(e.target.value as Status)}
         className="cursor-pointer appearance-none bg-transparent px-4 py-2 pr-8 text-fg outline-none disabled:opacity-50"
         style={{
@@ -67,7 +72,7 @@ export function AddToList({ animeId, initial }: Props) {
         }}
       >
         <option value="" disabled>
-          {t("add")}
+          {unavailable ? t("unavailable") : t("add")}
         </option>
         {LIST_STATUSES.map((s) => (
           <option key={s} value={s} className="bg-surface">

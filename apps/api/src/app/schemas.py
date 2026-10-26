@@ -109,8 +109,11 @@ class AnimeDetailsOut(AnimeCard):
     studios: list[Studio] = Field(default_factory=list)
     related_anime: list[RelatedAnime] = Field(default_factory=list)
     recommendations: list[Recommendation] = Field(default_factory=list)
+
+
+class SourcesOut(BaseModel):
     # Names of the enabled VideoSources that have this title. A hint: it can be stale.
-    available_sources: list[str] = Field(default_factory=list)
+    sources: list[str]
 
 
 class ProgressIn(BaseModel):

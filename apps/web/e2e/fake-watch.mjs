@@ -24,7 +24,6 @@ function details(id) {
     status: "currently_airing",
     num_episodes: 3,
     pictures: [],
-    available_sources: watchable ? [SOURCE] : [],
     related_anime: [
       { relation_type: "sequel", relation_type_formatted: "Sequel", anime: { id: 10, title: "Moon Test Sequel" } },
     ],

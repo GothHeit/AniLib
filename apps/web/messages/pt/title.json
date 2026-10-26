@@ -66,7 +66,8 @@
         "mal_not_linked": "Vincule sua conta do MyAnimeList para ter uma lista.",
         "mal_session_expired": "O vínculo com o MyAnimeList expirou. Vincule de novo na sua conta.",
         "mal_update_failed": "O MyAnimeList não salvou a alteração. Tente de novo."
-      }
+      },
+      "unavailable": "Status indisponível"
     }
   }
 }

@@ -23,7 +23,7 @@ import { ListEntryCard } from "./ListEntryCard";
 
 const entry: ListEntry = {
   node: { id: 7, title: "Frieren", genres: [], num_episodes: 28 },
-  list_status: { status: "watching", num_episodes_watched: 5 },
+  list_status: { status: "watching", score: 0, num_episodes_watched: 5 },
 };
 
 function Wrap({ children }: { children: ReactNode }) {

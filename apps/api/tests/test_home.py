@@ -107,10 +107,20 @@ async def test_my_list_row_shows_watching_then_plan_to_watch(client, session):
             200, json={"data": [{"node": node(30 if status == "watching" else 31)}]}
         )
 
-    respx.get(f"{API_BASE}/users/@me/animelist").mock(side_effect=answer)
+    route = respx.get(f"{API_BASE}/users/@me/animelist").mock(side_effect=answer)
     body = (await client.get("/home", headers=headers)).json()
     my_list = next(r for r in body["rows"] if r["id"] == "my_list")
     assert [i["anime"]["id"] for i in my_list["items"]] == [30, 31]
+
+    # A reload within the TTL reuses the list; changing it from the site drops the cache.
+    await client.get("/home", headers=headers)
+    assert route.call_count == 2
+    respx.patch(f"{API_BASE}/anime/30/my_list_status").mock(
+        return_value=httpx.Response(200, json={"status": "completed"})
+    )
+    await client.patch("/me/animelist/30", json={"status": "completed"}, headers=headers)
+    await client.get("/home", headers=headers)
+    assert route.call_count == 4
 
 
 @respx.mock

@@ -5,6 +5,7 @@ clear `mal_unavailable` error instead of a KeyError on an error body.
 """
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from datetime import date
 from typing import Any
 
@@ -85,15 +86,30 @@ class MalClient:
         # Listing pages (seasonal, top, search, browse pools) change slowly: a short TTL keeps
         # the home page from hitting MAL on every load.
         self._pages: TTLCache[tuple, dict] = TTLCache(maxsize=512, ttl=LIST_TTL)
+        # Requests in flight, so concurrent cold callers for the same page share one call.
+        self._inflight: dict[tuple, asyncio.Task[dict]] = {}
+
+    async def _single_flight(self, key: tuple, fetch: Callable[[], Awaitable[dict]]) -> dict:
+        task = self._inflight.get(key)
+        if task is None:
+            task = asyncio.ensure_future(fetch())
+            self._inflight[key] = task
+            task.add_done_callback(lambda _t: self._inflight.pop(key, None))
+        # Shielded: one caller giving up must not cancel the fetch the others wait on.
+        return await asyncio.shield(task)
 
     async def _get(self, path: str, params: dict[str, Any]) -> dict:
         key = (path, tuple(sorted(params.items())))
         cached = self._pages.get(key)
         if cached is not None:
             return cached
-        data = await self._fetch(path, params)
-        self._pages[key] = data
-        return data
+
+        async def load() -> dict:
+            data = await self._fetch(path, params)
+            self._pages[key] = data
+            return data
+
+        return await self._single_flight(key, load)
 
     async def _fetch(self, path: str, params: dict[str, Any]) -> dict:
         try:
@@ -206,6 +222,10 @@ class MalClient:
         cached = self._details.get(anime_id)
         if cached is not None:
             return cached
-        data = await self._fetch(f"/anime/{anime_id}", {"fields": DETAIL_FIELDS})
-        self._details[anime_id] = data
-        return data
+
+        async def load() -> dict:
+            data = await self._fetch(f"/anime/{anime_id}", {"fields": DETAIL_FIELDS})
+            self._details[anime_id] = data
+            return data
+
+        return await self._single_flight(("details", anime_id), load)

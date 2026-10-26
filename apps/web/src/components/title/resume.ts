@@ -5,13 +5,14 @@ export type Progress = components["schemas"]["ProgressOut"];
 export type NextUp = { episode: number; resume: boolean };
 
 /**
- * The episode the primary button opens: the last one started if it isn't finished, otherwise
- * the next available one, otherwise the first. `episodes` must be sorted.
+ * The episode the primary button opens: the furthest one started if it isn't finished,
+ * otherwise the next available one, otherwise the first. Furthest, not most recent, so
+ * rewatching an early episode doesn't move the resume point back. `episodes` must be sorted.
  */
 export function nextUp(progress: Progress[], episodes: number[]): NextUp | null {
   if (episodes.length === 0) return null;
   const latest = progress.reduce<Progress | undefined>(
-    (best, p) => (!best || p.updated_at > best.updated_at ? p : best),
+    (best, p) => (!best || p.episode > best.episode ? p : best),
     undefined,
   );
   if (!latest) return { episode: episodes[0], resume: false };

@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 
-import { MalSection, type MalStatus } from "@/components/account/MalSection";
+import { MalSection } from "@/components/account/MalSection";
 import { PasswordForm } from "@/components/account/PasswordForm";
 import { PreferencesForm } from "@/components/account/PreferencesForm";
 import { SessionsPanel } from "@/components/account/SessionsPanel";
@@ -52,7 +52,7 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
       </Section>
 
       <Section title={t("mal.title")}>
-        <MalSection status={malStatus as MalStatus} returned={typeof mal === "string" ? mal : undefined} />
+        <MalSection status={malStatus} returned={typeof mal === "string" ? mal : undefined} />
       </Section>
 
       <Section title={t("password.title")}>

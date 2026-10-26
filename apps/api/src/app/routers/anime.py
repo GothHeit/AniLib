@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query, Request
 
 from app.deps import CurrentUser
 from app.errors import ApiError
-from app.mal.client import MalClient
+from app.mal.client import MalClient, is_safe
 from app.mal.genres import GENRE_IDS, GENRES
 from app.schemas import (
     AnimeCard,
@@ -15,6 +15,7 @@ from app.schemas import (
     BrowseOut,
     GenreOut,
     SeasonalOut,
+    SourcesOut,
 )
 
 router = APIRouter(prefix="/anime", tags=["anime"])
@@ -24,6 +25,9 @@ Season = Literal["winter", "spring", "summer", "fall"]
 SOURCE_PROBE_TIMEOUT = 8.0
 SOURCE_HINT_TTL = 900
 SOURCE_FAILURE_TTL = 60
+# Related and recommended nodes carry no rating or genres: with NSFW off, this many of each are
+# checked against their (cached) details before being shown.
+SAFE_CHECK_LIMIT = 12
 
 
 # Values are (found, ttl): failures are remembered too, but only briefly.
@@ -97,21 +101,44 @@ async def browse(
 
 @router.get("/{anime_id}", response_model=AnimeDetailsOut)
 async def details(request: Request, anime_id: int, user: CurrentUser):
-    raw = await _mal(request).visible_details(anime_id, user.show_nsfw)
-
-    # Related and recommended nodes carry no rating or genres, so they can't be filtered here;
-    # opening one runs through the check above.
-    out = AnimeDetailsOut.model_validate(
+    mal = _mal(request)
+    raw = await mal.visible_details(anime_id, user.show_nsfw)
+    related = raw.get("related_anime") or []
+    recommended = raw.get("recommendations") or []
+    if not user.show_nsfw:
+        related, recommended = await asyncio.gather(
+            _only_safe(mal, related), _only_safe(mal, recommended)
+        )
+    return AnimeDetailsOut.model_validate(
         {
             **raw,
-            "related_anime": [{**r, "anime": r["node"]} for r in raw.get("related_anime") or []],
-            "recommendations": [
-                {**r, "anime": r["node"]} for r in raw.get("recommendations") or []
-            ],
+            "related_anime": [{**r, "anime": r["node"]} for r in related],
+            "recommendations": [{**r, "anime": r["node"]} for r in recommended],
         }
     )
-    out.available_sources = await _available_sources(request, raw)
-    return out
+
+
+@router.get("/{anime_id}/sources", response_model=SourcesOut)
+async def sources(request: Request, anime_id: int, user: CurrentUser):
+    """Which sources can play this title. Separate from the details so a slow scraper never
+    holds the title page back."""
+    raw = await _mal(request).visible_details(anime_id, user.show_nsfw)
+    return SourcesOut(sources=await _available_sources(request, raw))
+
+
+async def _only_safe(mal: MalClient, entries: list[dict]) -> list[dict]:
+    """Keeps the entries whose details say they are safe. A title that can't be checked is
+    dropped rather than shown."""
+
+    async def check(entry: dict) -> bool:
+        try:
+            return is_safe(await mal.details(entry["node"]["id"]))
+        except ApiError:
+            return False
+
+    head = entries[:SAFE_CHECK_LIMIT]
+    verdicts = await asyncio.gather(*(check(e) for e in head))
+    return [e for e, ok in zip(head, verdicts, strict=True) if ok]
 
 
 async def _has_episodes(request: Request, name: str, anime: dict) -> bool:

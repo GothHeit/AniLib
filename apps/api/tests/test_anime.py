@@ -87,7 +87,7 @@ async def test_browse_validates_filters(client, session):
 
 
 @respx.mock
-async def test_details_include_related_recommendations_and_sources(client, session):
+async def test_details_include_related_recommendations_and_lazy_sources(client, session):
     class Source:
         async def episodes(self, anime, lang):
             return EpisodeList(episodes=[1], source_title="x") if anime["id"] == 5 else None
@@ -106,15 +106,20 @@ async def test_details_include_related_recommendations_and_sources(client, sessi
         ],
         recommendations=[{"node": node(7, "Similar"), "num_recommendations": 12}],
     )
+    mock_details(6)
+    mock_details(7)
     mock_details(8)
 
     body = (await client.get("/anime/5", headers=headers)).json()
     assert body["synopsis"] == "Plot"
     assert body["related_anime"][0]["anime"]["title"] == "Sequel"
     assert body["recommendations"][0]["num_recommendations"] == 12
-    assert body["available_sources"] == ["present"]
+    assert "available_sources" not in body
 
-    assert (await client.get("/anime/8", headers=headers)).json()["available_sources"] == []
+    assert (await client.get("/anime/5/sources", headers=headers)).json() == {
+        "sources": ["present"]
+    }
+    assert (await client.get("/anime/8/sources", headers=headers)).json() == {"sources": []}
 
 
 @respx.mock
@@ -149,7 +154,58 @@ async def test_a_failing_or_slow_source_is_skipped_and_remembered(client, sessio
     _, headers = await make_user(session, "kafka")
     mock_details(5)
     for _ in range(2):
-        r = await client.get("/anime/5", headers=headers)
+        r = await client.get("/anime/5/sources", headers=headers)
         assert r.status_code == 200
-        assert r.json()["available_sources"] == []
+        assert r.json()["sources"] == []
     assert calls == {"broken": 1, "slow": 1}  # the second request used the cached failure
+
+
+@respx.mock
+async def test_details_do_not_wait_for_the_sources(client, session):
+    class Hung:
+        async def episodes(self, anime, lang):
+            raise AssertionError("details must not probe sources")
+
+    fastapi_app.state.sources = {"hung": Hung()}
+    _, headers = await make_user(session, "kafka")
+    mock_details(5)
+    assert (await client.get("/anime/5", headers=headers)).status_code == 200
+
+
+@respx.mock
+async def test_related_and_recommended_nsfw_titles_are_hidden_unless_enabled(client, session):
+    fastapi_app.state.sources = {}
+    _, normal = await make_user(session, "kafka")
+    _, nsfw = await make_user(session, "friend", nsfw=True)
+
+    def link(anime_id):
+        return {
+            "node": node(anime_id, f"Show {anime_id}"),
+            "relation_type": "sequel",
+            "relation_type_formatted": "Sequel",
+        }
+
+    mock_details(
+        5,
+        related_anime=[link(6), link(7)],
+        recommendations=[{"node": node(7), "num_recommendations": 3}],
+    )
+    mock_details(6)
+    mock_details(7, rating="rx")
+
+    body = (await client.get("/anime/5", headers=normal)).json()
+    assert [r["anime"]["id"] for r in body["related_anime"]] == [6]
+    assert body["recommendations"] == []
+    body = (await client.get("/anime/5", headers=nsfw)).json()
+    assert [r["anime"]["id"] for r in body["related_anime"]] == [6, 7]
+    assert len(body["recommendations"]) == 1
+
+
+@respx.mock
+async def test_concurrent_cold_requests_share_one_mal_call(client, session):
+    fastapi_app.state.sources = {}
+    _, headers = await make_user(session, "kafka")
+    route = mock_ranking(node(2, "Two"))
+    replies = await asyncio.gather(*(client.get("/anime/top", headers=headers) for _ in range(5)))
+    assert all(r.status_code == 200 for r in replies)
+    assert route.call_count == 1

@@ -8,6 +8,7 @@ from app.config import get_settings
 from app.deps import CurrentUser, Session
 from app.errors import ApiError
 from app.mal.account import MalAccounts
+from app.schemas import AnimeCard
 
 router = APIRouter(tags=["mal"])
 
@@ -28,11 +29,51 @@ class ListEntryOut(BaseModel):
     num_episodes_watched: int = 0
 
 
+class LinkOut(BaseModel):
+    auth_url: str
+
+
+class MalStatistics(BaseModel):
+    num_items_watching: int | None = None
+    num_items_completed: int | None = None
+    num_items_on_hold: int | None = None
+    num_items_dropped: int | None = None
+    num_items_plan_to_watch: int | None = None
+
+
+class MalStatusOut(BaseModel):
+    connected: bool
+    mal_username: str | None = None
+    mal_picture: str | None = None
+    statistics: MalStatistics | None = None
+
+
+class ListStatusOut(BaseModel):
+    status: ListStatus
+    score: int = 0
+    num_episodes_watched: int = 0
+
+
+class ListItemOut(BaseModel):
+    node: AnimeCard
+    list_status: ListStatusOut
+
+
+class AnimeListOut(BaseModel):
+    data: list[ListItemOut]
+
+
+class ListUpdated(BaseModel):
+    status: ListStatus | None = None
+    score: int = 0
+    num_episodes_watched: int = 0
+
+
 def _accounts(request: Request) -> MalAccounts:
     return request.app.state.mal_accounts
 
 
-@router.get("/mal/link")
+@router.get("/mal/link", response_model=LinkOut)
 async def start_link(request: Request, user: CurrentUser, session: Session):
     return {"auth_url": await _accounts(request).authorize_url(session, user)}
 
@@ -58,7 +99,7 @@ async def callback(
     return RedirectResponse(f"{target}?mal=linked")
 
 
-@router.get("/me/mal")
+@router.get("/me/mal", response_model=MalStatusOut)
 async def status(request: Request, user: CurrentUser, session: Session):
     return await _accounts(request).status(session, user)
 
@@ -68,7 +109,7 @@ async def unlink(request: Request, user: CurrentUser, session: Session):
     await _accounts(request).disconnect(session, user)
 
 
-@router.get("/me/animelist")
+@router.get("/me/animelist", response_model=AnimeListOut)
 async def animelist(
     request: Request, user: CurrentUser, session: Session, status: ListStatus | None = None
 ):
@@ -89,7 +130,7 @@ async def get_entry(request: Request, anime_id: int, user: CurrentUser, session:
     )
 
 
-@router.patch("/me/animelist/{anime_id}")
+@router.patch("/me/animelist/{anime_id}", response_model=ListUpdated)
 async def update_entry(
     request: Request, anime_id: int, body: ListUpdate, user: CurrentUser, session: Session
 ):

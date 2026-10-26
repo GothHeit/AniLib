@@ -17,13 +17,20 @@ describe("nextUp", () => {
     expect(nextUp([], [1, 2, 3])).toEqual({ episode: 1, resume: false });
   });
 
-  it("continues the latest unfinished episode", () => {
+  it("continues the furthest unfinished episode", () => {
     expect(nextUp([p(1, { completed: true }), p(2)], [1, 2, 3])).toEqual({ episode: 2, resume: true });
   });
 
-  it("moves on after a finished episode, picking the latest by time", () => {
-    const old = p(3, { updated_at: "2026-01-01T00:00:00Z" });
-    expect(nextUp([old, p(2, { completed: true })], [1, 2, 3])).toEqual({ episode: 3, resume: false });
+  it("moves on after a finished episode", () => {
+    expect(nextUp([p(1, { completed: true }), p(2, { completed: true })], [1, 2, 3])).toEqual({
+      episode: 3,
+      resume: false,
+    });
+  });
+
+  it("ignores a rewatched early episode when a later one is further along", () => {
+    const rewatch = p(1, { updated_at: "2027-01-01T00:00:00Z" });
+    expect(nextUp([p(2, { completed: true }), rewatch], [1, 2, 3])).toEqual({ episode: 3, resume: false });
   });
 
   it("starts over after the last episode and has nothing without episodes", () => {

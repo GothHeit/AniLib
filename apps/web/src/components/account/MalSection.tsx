@@ -1,6 +1,6 @@
 "use client";
 
-import { errorCode } from "@app/api-client";
+import { errorCode, type components } from "@app/api-client";
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
@@ -10,11 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 
-export type MalStatus = {
-  connected: boolean;
-  mal_username?: string | null;
-  statistics?: { num_items_watching?: number; num_items_completed?: number; num_items_plan_to_watch?: number } | null;
-};
+export type MalStatus = components["schemas"]["MalStatusOut"];
 
 const RETURN_TOASTS = { linked: "linkedToast", denied: "deniedToast", failed: "failedToast" } as const;
 
@@ -50,7 +46,7 @@ export function MalSection({ status, returned }: Props) {
     setBusy("link");
     try {
       const { data, error } = await api.GET("/mal/link");
-      const url = (data as { auth_url?: string } | undefined)?.auth_url;
+      const url = data?.auth_url;
       if (!url) throw error ?? new Error("no url");
       window.location.assign(url);
     } catch (e) {

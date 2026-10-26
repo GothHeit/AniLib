@@ -1,11 +1,20 @@
+import { errorCode } from "@app/api-client";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
+import type { ListState } from "@/components/title/AddToList";
 import { EpisodeList } from "@/components/title/EpisodeList";
-import { nextUp } from "@/components/title/resume";
 import { TitleHeader } from "@/components/title/TitleHeader";
+import {
+  WatchBadge,
+  WatchBadgeSkeleton,
+  WatchHint,
+  WatchPlay,
+  WatchPlaySkeleton,
+} from "@/components/title/WatchParts";
+import { watchPlan } from "@/components/title/watchPlan";
 import { PosterCard } from "@/components/ui/PosterCard";
 import { Row } from "@/components/ui/Row";
 import { APP_NAME } from "@/lib/brand";
@@ -28,43 +37,68 @@ export async function generateMetadata({ params }: PageProps<"/[locale]/anime/[i
   return { title: data ? `${data.title} · ${APP_NAME}` : APP_NAME };
 }
 
+/** The user's list status. A failed lookup is "unavailable", never an empty list entry. */
+async function listState(id: number): Promise<ListState> {
+  try {
+    const api = await serverApi();
+    const { data, error } = await api.GET("/me/animelist/{anime_id}", { params: { path: { anime_id: id } } });
+    if (data) return data.status ?? null;
+    // Not linked: the picker starts empty and says so when the user tries to save.
+    return errorCode(error) === "mal_not_linked" ? null : "unavailable";
+  } catch {
+    return "unavailable";
+  }
+}
+
+async function Episodes({ id }: { id: number }) {
+  const plan = await watchPlan(id);
+  if (!plan) return null;
+  return (
+    <EpisodeList
+      source={plan.source}
+      animeId={id}
+      episodes={plan.episodes}
+      progress={plan.progress}
+      current={plan.next.episode}
+    />
+  );
+}
+
 export default async function TitlePage({ params }: PageProps<"/[locale]/anime/[id]">) {
   const { locale, id: rawId } = await params;
   setRequestLocale(locale);
   const id = parseId(rawId);
   const t = await getTranslations("titlePage");
-  const api = await serverApi();
 
-  const [anime, progressResult, listResult] = await Promise.all([
-    unwrap(details(id), locale),
-    api.GET("/me/progress/{anime_id}", { params: { path: { anime_id: id } } }),
-    // Without it the picker just starts empty, so a MAL hiccup never blocks the page.
-    api.GET("/me/animelist/{anime_id}", { params: { path: { anime_id: id } } }).catch(() => undefined),
-  ]);
-  const progress = progressResult.data ?? [];
-  const listStatus = listResult?.data?.status ?? null;
+  const [anime, list] = await Promise.all([unwrap(details(id), locale), listState(id)]);
 
-  // The details call already probed the sources and cached the list, so this is quick. Any
-  // failure just leaves the title as tracking only.
-  const source = anime.available_sources?.[0];
-  const episodes = source
-    ? ((
-        await api
-          .GET("/watch/{source}/{anime_id}/episodes", { params: { path: { source, anime_id: id } } })
-          .catch(() => undefined)
-      )?.data?.episodes ?? [])
-    : [];
-  const sorted = [...episodes].sort((a, b) => a - b);
-  const next = nextUp(progress, sorted);
-  const watch = source && next ? { href: `/watch/${source}/${id}/${next.episode}`, next } : null;
-
+  // The sources come from scrapers that can be slow or down: the page renders without them and
+  // the parts that need them stream in.
   return (
     <>
-      <TitleHeader anime={anime} watch={watch} listStatus={listStatus} />
+      <TitleHeader
+        anime={anime}
+        list={list}
+        badge={
+          <Suspense fallback={<WatchBadgeSkeleton />}>
+            <WatchBadge id={id} />
+          </Suspense>
+        }
+        play={
+          <Suspense fallback={<WatchPlaySkeleton />}>
+            <WatchPlay id={id} />
+          </Suspense>
+        }
+        hint={
+          <Suspense fallback={null}>
+            <WatchHint id={id} />
+          </Suspense>
+        }
+      />
       <div className="flex flex-col gap-10 py-6">
-        {watch && source && (
-          <EpisodeList source={source} animeId={id} episodes={sorted} progress={progress} current={next?.episode} />
-        )}
+        <Suspense fallback={null}>
+          <Episodes id={id} />
+        </Suspense>
         {!!anime.related_anime?.length && (
           <Row title={t("related")}>
             {anime.related_anime?.map((r) => (

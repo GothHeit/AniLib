@@ -52,14 +52,26 @@ const HOME = {
       id: "continue_watching",
       items: [
         {
-          anime: CATALOG[1],
-          resume_episode: 4,
-          progress: { anime_id: 2, episode: 4, position_seconds: 600, duration_seconds: 1200, completed: false, updated_at: "2026-01-01T00:00:00Z" },
+          anime: CATALOG[0],
+          resume_episode: 2,
+          progress: { anime_id: 1, episode: 2, position_seconds: 600, duration_seconds: 1200, completed: false, updated_at: "2026-01-01T00:00:00Z" },
         },
       ],
     },
     { id: "seasonal", items: CATALOG.map((anime) => ({ anime })) },
   ],
+};
+
+// The "linked" user's MyAnimeList list: anime id -> status. Moves and removals change it.
+const linkedList = new Map([
+  [1, "watching"],
+  [2, "watching"],
+  [3, "completed"],
+]);
+const listItem = (id) => {
+  const status = linkedList.get(id);
+  const node = CATALOG.find((a) => a.id === id);
+  return { node, list_status: { status, score: 0, num_episodes_watched: status === "completed" ? 12 : 3 } };
 };
 
 const error = (code) => ({ error: { code, message: code } });
@@ -76,9 +88,11 @@ createServer(async (req, res) => {
 
   if (url.pathname === "/auth/login") {
     const { username, password } = await body(req);
-    // "expired" signs in fine but has a MyAnimeList link whose token has expired.
-    return (username === "kafka" || username === "expired") && password === "password123"
-      ? send(200, issue(username === "expired" ? "expired-" : ""))
+    // "expired" signs in fine but has a MyAnimeList link whose token has expired; "linked" has a
+    // working link and a small list.
+    const tag = { expired: "expired-", linked: "linked-" }[username] ?? "";
+    return (username === "kafka" || username in { expired: 1, linked: 1 }) && password === "password123"
+      ? send(200, issue(tag))
       : send(401, error("invalid_credentials"));
   }
   if (url.pathname === "/auth/register") {
@@ -104,6 +118,27 @@ createServer(async (req, res) => {
   }
   const token = req.headers.authorization?.replace("Bearer ", "");
   const authed = Boolean(token && accessTokens.has(token));
+  // Title 5's list entry can't be loaded, like a MyAnimeList outage.
+  if (authed && req.method === "GET" && url.pathname === "/me/animelist/5") {
+    return send(502, error("mal_unavailable"));
+  }
+  if (authed && token.includes("linked-")) {
+    if (url.pathname === "/me/animelist") {
+      const status = url.searchParams.get("status");
+      const ids = [...linkedList].filter(([, s]) => !status || s === status).map(([id]) => id);
+      return send(200, { data: ids.map(listItem) });
+    }
+    const entry = /^\/me\/animelist\/(\d+)$/.exec(url.pathname);
+    if (entry && req.method === "PATCH") {
+      const id = Number(entry[1]);
+      linkedList.set(id, (await body(req)).status);
+      return send(200, { status: linkedList.get(id), score: 0, num_episodes_watched: 0 });
+    }
+    if (entry && req.method === "DELETE") {
+      linkedList.delete(Number(entry[1]));
+      return send(204);
+    }
+  }
   if (await handleWatch(req, res, { url, send, error, body, authed })) return;
   if (url.pathname === "/me") {
     if (!authed) return send(401, error("not_authenticated"));
@@ -149,7 +184,7 @@ createServer(async (req, res) => {
   if (url.pathname === "/me/mal") {
     const token = req.headers.authorization?.replace("Bearer ", "");
     if (!token || !accessTokens.has(token)) return send(401, error("not_authenticated"));
-    return send(200, { connected: token.includes("expired") });
+    return send(200, { connected: token.includes("expired") || token.includes("linked") });
   }
   if (url.pathname === "/me/animelist") {
     const token = req.headers.authorization?.replace("Bearer ", "");
@@ -160,6 +195,9 @@ createServer(async (req, res) => {
     const token = req.headers.authorization?.replace("Bearer ", "");
     if (!token || !accessTokens.has(token)) return send(401, error("not_authenticated"));
     if (url.pathname === "/home") return send(200, HOME);
+    // Every title but the tracking-only one (id 2) has the stub source.
+    const sources = /^\/anime\/(\d+)\/sources$/.exec(url.pathname);
+    if (sources) return send(200, { sources: Number(sources[1]) === 2 ? [] : ["stub"] });
     if (url.pathname === "/anime/genres") return send(200, GENRES);
     if (url.pathname === "/anime/search") {
       const q = (url.searchParams.get("q") ?? "").toLowerCase();

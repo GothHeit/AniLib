@@ -22,7 +22,7 @@ export function LinkMalCard({ expired = false }: { expired?: boolean }) {
     setPending(true);
     try {
       const { data, error } = await api.GET("/mal/link");
-      const url = (data as { auth_url?: string } | undefined)?.auth_url;
+      const url = data?.auth_url;
       if (url) {
         window.location.assign(url);
         return;

@@ -148,13 +148,6 @@
               }
             ]
           },
-          "available_sources": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Available Sources",
-            "type": "array"
-          },
           "average_episode_duration": {
             "anyOf": [
               {
@@ -399,22 +392,6 @@
           "title"
         ],
         "title": "AnimeDetailsOut",
-        "type": "object"
-      },
-      "AnimeListOut": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/AnimeCard"
-            },
-            "title": "Data",
-            "type": "array"
-          }
-        },
-        "required": [
-          "data"
-        ],
-        "title": "AnimeListOut",
         "type": "object"
       },
       "Broadcast": {
@@ -718,6 +695,19 @@
         "title": "InviteOut",
         "type": "object"
       },
+      "LinkOut": {
+        "properties": {
+          "auth_url": {
+            "title": "Auth Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "auth_url"
+        ],
+        "title": "LinkOut",
+        "type": "object"
+      },
       "ListEntryOut": {
         "properties": {
           "linked": {
@@ -757,6 +747,52 @@
           "linked"
         ],
         "title": "ListEntryOut",
+        "type": "object"
+      },
+      "ListItemOut": {
+        "properties": {
+          "list_status": {
+            "$ref": "#/components/schemas/ListStatusOut"
+          },
+          "node": {
+            "$ref": "#/components/schemas/AnimeCard"
+          }
+        },
+        "required": [
+          "node",
+          "list_status"
+        ],
+        "title": "ListItemOut",
+        "type": "object"
+      },
+      "ListStatusOut": {
+        "properties": {
+          "num_episodes_watched": {
+            "default": 0,
+            "title": "Num Episodes Watched",
+            "type": "integer"
+          },
+          "score": {
+            "default": 0,
+            "title": "Score",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "watching",
+              "completed",
+              "on_hold",
+              "dropped",
+              "plan_to_watch"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "ListStatusOut",
         "type": "object"
       },
       "ListUpdate": {
@@ -808,6 +844,40 @@
         "title": "ListUpdate",
         "type": "object"
       },
+      "ListUpdated": {
+        "properties": {
+          "num_episodes_watched": {
+            "default": 0,
+            "title": "Num Episodes Watched",
+            "type": "integer"
+          },
+          "score": {
+            "default": 0,
+            "title": "Score",
+            "type": "integer"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "watching",
+                  "completed",
+                  "on_hold",
+                  "dropped",
+                  "plan_to_watch"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "ListUpdated",
+        "type": "object"
+      },
       "LoginIn": {
         "properties": {
           "password": {
@@ -828,6 +898,112 @@
           "password"
         ],
         "title": "LoginIn",
+        "type": "object"
+      },
+      "MalStatistics": {
+        "properties": {
+          "num_items_completed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Items Completed"
+          },
+          "num_items_dropped": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Items Dropped"
+          },
+          "num_items_on_hold": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Items On Hold"
+          },
+          "num_items_plan_to_watch": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Items Plan To Watch"
+          },
+          "num_items_watching": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Items Watching"
+          }
+        },
+        "title": "MalStatistics",
+        "type": "object"
+      },
+      "MalStatusOut": {
+        "properties": {
+          "connected": {
+            "title": "Connected",
+            "type": "boolean"
+          },
+          "mal_picture": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mal Picture"
+          },
+          "mal_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mal Username"
+          },
+          "statistics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MalStatistics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "connected"
+        ],
+        "title": "MalStatusOut",
         "type": "object"
       },
       "MeOut": {
@@ -1264,6 +1440,22 @@
         "title": "SessionOut",
         "type": "object"
       },
+      "SourcesOut": {
+        "properties": {
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sources"
+        ],
+        "title": "SourcesOut",
+        "type": "object"
+      },
       "StartSeason": {
         "properties": {
           "season": {
@@ -1390,6 +1582,38 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "app__routers__mal__AnimeListOut": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ListItemOut"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "AnimeListOut",
+        "type": "object"
+      },
+      "app__schemas__AnimeListOut": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AnimeCard"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "AnimeListOut",
         "type": "object"
       }
     },
@@ -1565,7 +1789,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AnimeListOut"
+                  "$ref": "#/components/schemas/app__schemas__AnimeListOut"
                 }
               }
             },
@@ -1650,7 +1874,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AnimeListOut"
+                  "$ref": "#/components/schemas/app__schemas__AnimeListOut"
                 }
               }
             },
@@ -1710,6 +1934,54 @@
           }
         ],
         "summary": "Details",
+        "tags": [
+          "anime"
+        ]
+      }
+    },
+    "/anime/{anime_id}/sources": {
+      "get": {
+        "description": "Which sources can play this title. Separate from the details so a slow scraper never\nholds the title page back.",
+        "operationId": "sources_anime__anime_id__sources_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anime_id",
+            "required": true,
+            "schema": {
+              "title": "Anime Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourcesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Sources",
         "tags": [
           "anime"
         ]
@@ -1998,7 +2270,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/LinkOut"
+                }
               }
             },
             "description": "Successful Response"
@@ -2117,7 +2391,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/app__routers__mal__AnimeListOut"
+                }
               }
             },
             "description": "Successful Response"
@@ -2255,7 +2531,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ListUpdated"
+                }
               }
             },
             "description": "Successful Response"
@@ -2306,7 +2584,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/MalStatusOut"
+                }
               }
             },
             "description": "Successful Response"
