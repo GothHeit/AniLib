@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "description": "{app}: your anime library with friends"
+  },
+  "home": {
+    "title": "Welcome to {app}",
+    "subtitle": "Track, discover and watch anime with your friends.",
+    "cta": "Sign in"
+  },
+  "login": {
+    "title": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "success": "Signed in. The catalog arrives in Phase 1."
+  },
+  "locale": {
+    "label": "Language",
+    "pt": "Português",
+    "en": "English"
+  },
+  "errors": {
+    "invalid_credentials": "Wrong username or password.",
+    "invalid_invite": "This invite is invalid, used or expired.",
+    "username_taken": "That username is taken.",
+    "not_authenticated": "Sign in to continue.",
+    "invalid_token": "Your session expired. Sign in again.",
+    "validation_failed": "Check the fields and try again.",
+    "mal_unavailable": "MyAnimeList didn't respond. Try again shortly.",
+    "anime_not_found": "Anime not found.",
+    "not_available": "Not available from this source.",
+    "network": "Couldn't reach the server.",
+    "unknown": "Something went wrong. Try again."
+  }
+}
