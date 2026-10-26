@@ -36,7 +36,8 @@ uv run uvicorn app.main:app --reload
 
 # 3. Web (http://localhost:3000)
 pnpm install
-pnpm dev:web
+pnpm dev:web          # reads API_URL (default http://localhost:8000) on the server side;
+                      # cookies are Secure in production, set COOKIE_SECURE=false to serve plain http on a LAN
 ```
 
 Depois de criar sua conta com o convite / After registering with the invite:

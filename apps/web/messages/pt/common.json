@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "description": "{app}: sua biblioteca de animes com os amigos"
+  },
+  "locale": {
+    "label": "Idioma",
+    "pt": "Português",
+    "en": "English"
+  },
+  "actions": {
+    "retry": "Tentar de novo",
+    "close": "Fechar",
+    "goHome": "Voltar ao início"
+  },
+  "states": {
+    "notFoundTitle": "Página não encontrada",
+    "notFoundBody": "Essa página não existe ou foi movida.",
+    "errorTitle": "Algo deu errado"
+  },
+  "placeholder": {
+    "greeting": "Olá, {name}",
+    "tagline": "Seu catálogo está a caminho.",
+    "rowTitle": "Em breve",
+    "comingSoon": "Esta página chega em breve."
+  },
+  "errors": {
+    "invalid_credentials": "Usuário ou senha incorretos.",
+    "invalid_invite": "Este convite é inválido, já foi usado ou expirou.",
+    "username_taken": "Esse nome de usuário já está em uso.",
+    "not_authenticated": "Entre para continuar.",
+    "invalid_token": "Sua sessão expirou. Entre de novo.",
+    "validation_failed": "Confira os campos e tente de novo.",
+    "rate_limited": "Muitas tentativas. Espere um pouco e tente de novo.",
+    "mal_unavailable": "O MyAnimeList não respondeu. Tente de novo em instantes.",
+    "anime_not_found": "Anime não encontrado.",
+    "not_available": "Não disponível nesta fonte.",
+    "network": "Não foi possível falar com o servidor.",
+    "unknown": "Algo deu errado. Tente de novo."
+  },
+  "row": {
+    "previous": "Rolar para a esquerda",
+    "next": "Rolar para a direita"
+  }
+}

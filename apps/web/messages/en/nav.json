@@ -1,0 +1,14 @@
+{
+  "nav": {
+    "main": "Main navigation",
+    "home": "Home",
+    "browse": "Browse",
+    "list": "My list",
+    "search": "Search",
+    "searchPlaceholder": "Search anime",
+    "you": "You",
+    "account": "Account menu",
+    "signedInAs": "Signed in as {name}",
+    "signOut": "Sign out"
+  }
+}

@@ -2,22 +2,26 @@
   "meta": {
     "description": "{app}: your anime library with friends"
   },
-  "home": {
-    "title": "Welcome to {app}",
-    "subtitle": "Track, discover and watch anime with your friends.",
-    "cta": "Sign in"
-  },
-  "login": {
-    "title": "Sign in",
-    "username": "Username",
-    "password": "Password",
-    "submit": "Sign in",
-    "success": "Signed in. The catalog arrives in Phase 1."
-  },
   "locale": {
     "label": "Language",
     "pt": "Português",
     "en": "English"
+  },
+  "actions": {
+    "retry": "Try again",
+    "close": "Close",
+    "goHome": "Back to home"
+  },
+  "states": {
+    "notFoundTitle": "Page not found",
+    "notFoundBody": "That page doesn't exist or was moved.",
+    "errorTitle": "Something went wrong"
+  },
+  "placeholder": {
+    "greeting": "Hello, {name}",
+    "tagline": "Your catalog is on its way.",
+    "rowTitle": "Coming soon",
+    "comingSoon": "This page is coming soon."
   },
   "errors": {
     "invalid_credentials": "Wrong username or password.",
@@ -26,10 +30,15 @@
     "not_authenticated": "Sign in to continue.",
     "invalid_token": "Your session expired. Sign in again.",
     "validation_failed": "Check the fields and try again.",
+    "rate_limited": "Too many attempts. Wait a moment and try again.",
     "mal_unavailable": "MyAnimeList didn't respond. Try again shortly.",
     "anime_not_found": "Anime not found.",
     "not_available": "Not available from this source.",
     "network": "Couldn't reach the server.",
     "unknown": "Something went wrong. Try again."
+  },
+  "row": {
+    "previous": "Scroll left",
+    "next": "Scroll right"
   }
 }

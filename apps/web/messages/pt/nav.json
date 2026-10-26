@@ -1,0 +1,14 @@
+{
+  "nav": {
+    "main": "Navegação principal",
+    "home": "Início",
+    "browse": "Explorar",
+    "list": "Minha lista",
+    "search": "Buscar",
+    "searchPlaceholder": "Buscar anime",
+    "you": "Você",
+    "account": "Menu da conta",
+    "signedInAs": "Conectado como {name}",
+    "signOut": "Sair"
+  }
+}
