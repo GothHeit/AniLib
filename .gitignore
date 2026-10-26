@@ -1,6 +1,9 @@
-backend/.venv/
-backend/__pycache__/
 **/__pycache__/
 *.pyc
-backend/.env
+.venv/
+.env
 .logs/
+node_modules/
+.pytest_cache/
+.ruff_cache/
+legacy/backend/.venv/
