@@ -285,7 +285,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get Entry */
+        get: operations["get_entry_me_animelist__anime_id__get"];
         put?: never;
         post?: never;
         /** Remove Entry */
@@ -628,6 +629,23 @@ export interface components {
             expires_at: string;
             /** Used */
             used: boolean;
+        };
+        /** ListEntryOut */
+        ListEntryOut: {
+            /** Linked */
+            linked: boolean;
+            /**
+             * Num Episodes Watched
+             * @default 0
+             */
+            num_episodes_watched: number;
+            /**
+             * Score
+             * @default 0
+             */
+            score: number;
+            /** Status */
+            status?: ("watching" | "completed" | "on_hold" | "dropped" | "plan_to_watch") | null;
         };
         /** ListUpdate */
         ListUpdate: {
@@ -1292,6 +1310,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_entry_me_animelist__anime_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                anime_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListEntryOut"];
                 };
             };
             /** @description Validation Error */

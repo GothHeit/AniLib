@@ -1,0 +1,72 @@
+{
+  "titlePage": {
+    "score": "Nota {score}",
+    "episodes": "{count, plural, one {# episódio} other {# episódios}}",
+    "studios": "Estúdio",
+    "genres": "Gêneros",
+    "synopsis": "Sinopse",
+    "noSynopsis": "Ainda sem sinopse.",
+    "watchHere": "Assista aqui",
+    "trackingOnly": "Só acompanhamento",
+    "trackingOnlyHint": "Este título não está disponível para assistir aqui. Você ainda pode acompanhá-lo na sua lista.",
+    "play": "Assistir episódio {episode}",
+    "continue": "Continuar episódio {episode}",
+    "episodeList": "Episódios",
+    "episode": "Episódio {episode}",
+    "episodeShort": "EP {episode}",
+    "watched": "Assistido",
+    "range": "Episódios exibidos",
+    "related": "Relacionados",
+    "recommended": "Recomendados",
+    "posterAlt": "Pôster de {title}",
+    "season": {
+      "winter": "Inverno {year}",
+      "spring": "Primavera {year}",
+      "summer": "Verão {year}",
+      "fall": "Outono {year}"
+    },
+    "mediaType": {
+      "tv": "TV",
+      "movie": "Filme",
+      "ova": "OVA",
+      "ona": "ONA",
+      "special": "Especial",
+      "music": "Música"
+    },
+    "airing": {
+      "finished_airing": "Finalizado",
+      "currently_airing": "Em exibição",
+      "not_yet_aired": "Ainda não lançado"
+    },
+    "relation": {
+      "sequel": "Continuação",
+      "prequel": "Prelúdio",
+      "alternative_setting": "Cenário alternativo",
+      "alternative_version": "Versão alternativa",
+      "side_story": "História paralela",
+      "parent_story": "História principal",
+      "summary": "Resumo",
+      "full_story": "História completa",
+      "spin_off": "Spin-off",
+      "character": "Personagens em comum",
+      "other": "Outro"
+    },
+    "list": {
+      "label": "Minha lista",
+      "add": "Adicionar à lista",
+      "saved": "Salvo em {status}.",
+      "status": {
+        "watching": "Assistindo",
+        "plan_to_watch": "Quero assistir",
+        "completed": "Completo",
+        "on_hold": "Em pausa",
+        "dropped": "Abandonado"
+      },
+      "errors": {
+        "mal_not_linked": "Vincule sua conta do MyAnimeList para ter uma lista.",
+        "mal_session_expired": "O vínculo com o MyAnimeList expirou. Vincule de novo na sua conta.",
+        "mal_update_failed": "O MyAnimeList não salvou a alteração. Tente de novo."
+      }
+    }
+  }
+}

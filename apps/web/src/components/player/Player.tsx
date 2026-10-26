@@ -1,0 +1,478 @@
+"use client";
+
+import { errorCode } from "@app/api-client";
+import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import { useToast } from "@/components/ui/Toast";
+import { Link, useRouter } from "@/i18n/navigation";
+import { api } from "@/lib/api";
+
+import { setAutoNext, useAutoNext } from "./autoNext";
+import { PlayerIcon } from "./icons";
+import { formatTime } from "./progress";
+import { useProgressSaver } from "./useProgressSaver";
+
+export type Lang = "sub" | "dub";
+
+type Props = {
+  source: string;
+  animeId: number;
+  episode: number;
+  title: string;
+  /** Sorted episode numbers the source has, used for the next episode. May be empty. */
+  episodes: number[];
+  lang: Lang;
+  /** Seconds to start from: the saved position, or where a sub/dub switch left off. */
+  startAt: number;
+};
+
+const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+const SEEK_STEP = 10;
+const VOLUME_STEP = 0.1;
+const HIDE_CONTROLS_MS = 3000;
+export const NEXT_COUNTDOWN = 10;
+const ERRORS = ["not_available", "hls_not_supported", "source_not_found", "upstream_failed", "playback_failed", "network"];
+
+export function watchHref(source: string, animeId: number, episode: number, lang: Lang = "sub", startAt = 0) {
+  const query = new URLSearchParams();
+  if (lang !== "sub") query.set("lang", lang);
+  if (startAt > 0) query.set("t", String(Math.floor(startAt)));
+  const qs = query.toString();
+  return `/watch/${source}/${animeId}/${episode}${qs ? `?${qs}` : ""}`;
+}
+
+export function Player({ source, animeId, episode, title, episodes, lang, startAt }: Props) {
+  const t = useTranslations("player");
+  const router = useRouter();
+  const toast = useToast();
+  const stage = useRef<HTMLDivElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  const started = useRef(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const [attempt, setAttempt] = useState(0);
+  const [url, setUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [waiting, setWaiting] = useState(true);
+  const [current, setCurrent] = useState(startAt);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const [rate, setRate] = useState(1);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [active, setActive] = useState(true);
+  const [ended, setEnded] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const autoNext = useAutoNext();
+
+  const next = episodes.find((e) => e > episode);
+  const backHref = `/anime/${animeId}`;
+  const { save, onTime } = useProgressSaver(video, animeId, episode);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .POST("/watch/{source}/{anime_id}/episodes/{episode}/play", {
+        params: { path: { source, anime_id: animeId, episode }, query: { lang } },
+      })
+      .then(({ data, error: body }) => {
+        if (cancelled) return;
+        if (data) setUrl(`/api/proxy${data.url}`);
+        else setError(errorCode(body));
+      })
+      .catch(() => !cancelled && setError("network"));
+    return () => {
+      cancelled = true;
+    };
+  }, [source, animeId, episode, lang, attempt]);
+
+  const goNext = useCallback(() => {
+    if (next !== undefined) router.push(watchHref(source, animeId, next, lang));
+  }, [next, router, source, animeId, lang]);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown <= 0) {
+      goNext();
+      return;
+    }
+    const id = setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000);
+    return () => clearTimeout(id);
+  }, [countdown, goNext]);
+
+  const poke = useCallback(() => {
+    setActive(true);
+    clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setActive(false), HIDE_CONTROLS_MS);
+  }, []);
+
+  useEffect(() => () => clearTimeout(hideTimer.current), []);
+
+  useEffect(() => {
+    const onChange = () => setFullscreen(document.fullscreenElement === stage.current);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const togglePlay = useCallback(() => {
+    const v = video.current;
+    if (!v || !url) return;
+    if (v.paused || v.ended) void v.play().catch(() => undefined);
+    else v.pause();
+  }, [url]);
+
+  const seekBy = useCallback((delta: number) => {
+    const v = video.current;
+    if (v && Number.isFinite(v.duration)) v.currentTime = Math.min(Math.max(v.currentTime + delta, 0), v.duration);
+  }, []);
+
+  const changeVolume = useCallback((delta: number) => {
+    const v = video.current;
+    if (!v) return;
+    v.volume = Math.round(Math.min(Math.max(v.volume + delta, 0), 1) * 100) / 100;
+    v.muted = v.volume === 0;
+  }, []);
+
+  const toggleMute = useCallback(() => {
+    const v = video.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    if (!v.muted && v.volume === 0) v.volume = 0.5;
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    else void stage.current?.requestFullscreen().catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target as HTMLElement;
+      const tag = target.tagName;
+      if (tag === "SELECT" || tag === "TEXTAREA" || (tag === "INPUT" && (target as HTMLInputElement).type !== "range")) {
+        return;
+      }
+      const onButton = tag === "BUTTON" || tag === "A";
+      switch (e.key) {
+        case " ":
+          // A focused button or link handles Space itself.
+          if (onButton) return;
+          togglePlay();
+          break;
+        case "k":
+          togglePlay();
+          break;
+        case "ArrowLeft":
+          seekBy(-SEEK_STEP);
+          break;
+        case "ArrowRight":
+          seekBy(SEEK_STEP);
+          break;
+        case "ArrowUp":
+          changeVolume(VOLUME_STEP);
+          break;
+        case "ArrowDown":
+          changeVolume(-VOLUME_STEP);
+          break;
+        case "f":
+          toggleFullscreen();
+          break;
+        case "m":
+          toggleMute();
+          break;
+        case "n":
+          goNext();
+          break;
+        default:
+          return;
+      }
+      e.preventDefault();
+      poke();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [togglePlay, seekBy, changeVolume, toggleFullscreen, toggleMute, goNext, poke]);
+
+  async function switchLang(to: Lang) {
+    if (to === lang) return;
+    const position = video.current?.currentTime ?? current;
+    // Check first, so a missing dub doesn't drop the viewer on an error screen.
+    const { data } = await api
+      .GET("/watch/{source}/{anime_id}/episodes", {
+        params: { path: { source, anime_id: animeId }, query: { lang: to } },
+      })
+      .catch(() => ({ data: undefined }));
+    if (!data?.episodes.includes(episode)) {
+      toast(to === "dub" ? t("dubUnavailable") : t("errors.not_available"), "error");
+      return;
+    }
+    router.replace(watchHref(source, animeId, episode, to, position));
+  }
+
+  function retry() {
+    setError(null);
+    setUrl(null);
+    started.current = false;
+    setAttempt((a) => a + 1);
+  }
+
+  function onLoadedMetadata() {
+    const v = video.current;
+    if (!v) return;
+    setDuration(v.duration);
+    if (!started.current) {
+      started.current = true;
+      const from = attempt > 0 ? current : startAt;
+      if (from > 0 && from < v.duration) v.currentTime = from;
+    }
+  }
+
+  function onEnded(e: React.SyntheticEvent<HTMLVideoElement>) {
+    setPlaying(false);
+    setEnded(true);
+    save(e.currentTarget);
+    if (next !== undefined && autoNext) setCountdown(NEXT_COUNTDOWN);
+  }
+
+  const shown = active || !playing || ended || error !== null;
+  const errorText = error && t(`errors.${ERRORS.includes(error) ? error : "unknown"}`);
+  const iconButton = "flex h-10 w-10 items-center justify-center rounded-ui text-fg hover:bg-white/10";
+
+  return (
+    <div
+      ref={stage}
+      role="region"
+      aria-label={t("region")}
+      onMouseMove={poke}
+      onTouchStart={poke}
+      className={`fixed inset-0 z-[60] bg-black text-fg ${shown ? "" : "cursor-none"}`}
+    >
+      {/* No source offers caption tracks yet; subtitles are burned into the video. */}
+      <video
+        ref={video}
+        src={url ?? undefined}
+        autoPlay
+        playsInline
+        onClick={togglePlay}
+        onDoubleClick={toggleFullscreen}
+        onLoadedMetadata={onLoadedMetadata}
+        onDurationChange={() => video.current && setDuration(video.current.duration)}
+        onTimeUpdate={(e) => {
+          setCurrent(e.currentTarget.currentTime);
+          onTime(e.currentTarget);
+        }}
+        onPlay={() => {
+          setPlaying(true);
+          setEnded(false);
+          setCountdown(null);
+          poke();
+        }}
+        onPause={(e) => {
+          setPlaying(false);
+          save(e.currentTarget);
+        }}
+        onEnded={onEnded}
+        onWaiting={() => setWaiting(true)}
+        onCanPlay={() => setWaiting(false)}
+        onPlaying={() => setWaiting(false)}
+        onVolumeChange={() => {
+          if (!video.current) return;
+          setVolume(video.current.volume);
+          setMuted(video.current.muted);
+        }}
+        onRateChange={() => video.current && setRate(video.current.playbackRate)}
+        onError={() => url && setError("playback_failed")}
+        className="absolute inset-0 h-full w-full"
+      />
+
+      {!error && waiting && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center" role="status">
+          <span className="h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-accent" />
+          <span className="sr-only">{t("loading")}</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center p-6">
+          <div role="alert" className="max-w-md text-center">
+            <p className="text-lg font-medium">{errorText}</p>
+            <div className="mt-6 flex justify-center gap-3">
+              {error !== "hls_not_supported" && error !== "source_not_found" && error !== "not_available" && (
+                <button type="button" onClick={retry} className="rounded-ui bg-accent px-4 py-2 text-sm font-bold text-on-accent">
+                  {t("retry")}
+                </button>
+              )}
+              <Link href={backHref} className="rounded-ui border border-line bg-surface px-4 py-2 text-sm font-bold">
+                {t("back")}
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`pointer-events-none absolute inset-0 flex flex-col justify-between transition-opacity duration-300 ${shown ? "opacity-100" : "opacity-0"}`}
+      >
+        <div className="pointer-events-auto flex items-center gap-3 bg-gradient-to-b from-black/80 to-transparent px-4 pb-10 pt-4 sm:px-8">
+          <Link href={backHref} aria-label={t("back")} className={iconButton}>
+            <PlayerIcon name="back" />
+          </Link>
+          <div className="min-w-0">
+            <p className="truncate font-display font-bold">{title}</p>
+            <p className="text-sm text-muted">{t("episode", { episode })}</p>
+          </div>
+        </div>
+
+        {!error && (
+          <div className="pointer-events-auto bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-10 sm:px-8">
+            <div className="flex items-center gap-3 text-xs tabular-nums text-muted">
+              <span>{formatTime(current)}</span>
+              <input
+                type="range"
+                aria-label={t("seek")}
+                aria-valuetext={`${formatTime(current)} / ${formatTime(duration)}`}
+                min={0}
+                max={duration || 0}
+                step={1}
+                value={Math.min(current, duration || 0)}
+                onChange={(e) => {
+                  const v = video.current;
+                  if (v) v.currentTime = Number(e.target.value);
+                  setCurrent(Number(e.target.value));
+                }}
+                className="h-1 flex-1 cursor-pointer accent-accent"
+              />
+              <span>{formatTime(duration)}</span>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-1 sm:gap-2">
+              <button type="button" onClick={togglePlay} aria-label={playing ? t("pause") : t("play")} className={iconButton}>
+                <PlayerIcon name={playing ? "pause" : "play"} />
+              </button>
+              <button type="button" onClick={() => seekBy(-SEEK_STEP)} aria-label={t("rewind")} className={iconButton}>
+                <PlayerIcon name="rewind" />
+              </button>
+              <button type="button" onClick={() => seekBy(SEEK_STEP)} aria-label={t("forward")} className={iconButton}>
+                <PlayerIcon name="forward" />
+              </button>
+              <button
+                type="button"
+                onClick={toggleMute}
+                aria-label={muted ? t("unmute") : t("mute")}
+                className={iconButton}
+              >
+                <PlayerIcon name={muted || volume === 0 ? "muted" : "volume"} />
+              </button>
+              <input
+                type="range"
+                aria-label={t("volume")}
+                min={0}
+                max={1}
+                step={0.05}
+                value={muted ? 0 : volume}
+                onChange={(e) => {
+                  const v = video.current;
+                  if (!v) return;
+                  v.volume = Number(e.target.value);
+                  v.muted = v.volume === 0;
+                }}
+                className="hidden w-24 cursor-pointer accent-accent sm:block"
+              />
+              <span className="flex-1" />
+              <div role="group" aria-label={t("audio")} className="flex rounded-ui border border-line text-xs font-bold">
+                {(["sub", "dub"] as const).map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    aria-pressed={lang === l}
+                    onClick={() => void switchLang(l)}
+                    className={`px-3 py-1.5 ${lang === l ? "bg-accent text-on-accent" : "text-muted hover:text-fg"}`}
+                  >
+                    {t(l)}
+                  </button>
+                ))}
+              </div>
+              <label className="text-xs">
+                <span className="sr-only">{t("speed")}</span>
+                <select
+                  value={rate}
+                  onChange={(e) => {
+                    if (video.current) video.current.playbackRate = Number(e.target.value);
+                  }}
+                  className="rounded-ui border border-line bg-black/60 px-2 py-1.5 text-fg"
+                >
+                  {SPEEDS.map((s) => (
+                    <option key={s} value={s}>
+                      {t("speedValue", { rate: s })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {next !== undefined && (
+                <button type="button" onClick={goNext} aria-label={t("next")} className={iconButton}>
+                  <PlayerIcon name="next" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                aria-label={fullscreen ? t("exitFullscreen") : t("fullscreen")}
+                className={iconButton}
+              >
+                <PlayerIcon name={fullscreen ? "exitFullscreen" : "fullscreen"} />
+              </button>
+            </div>
+            <p className="sr-only">{t("shortcuts")}</p>
+          </div>
+        )}
+      </div>
+
+      {ended && !error && (
+        <div className="absolute bottom-28 right-4 w-[min(22rem,calc(100%-2rem))] rounded-ui border border-line bg-surface p-4 shadow-lg sm:right-8">
+          {next !== undefined ? (
+            <>
+              <p className="font-medium" aria-live="polite">
+                {countdown !== null ? t("nextIn", { episode: next, seconds: countdown }) : t("nextReady", { episode: next })}
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button type="button" onClick={goNext} className="rounded-ui bg-accent px-4 py-2 text-sm font-bold text-on-accent">
+                  {t("playNow")}
+                </button>
+                {countdown !== null && (
+                  <button
+                    type="button"
+                    onClick={() => setCountdown(null)}
+                    className="rounded-ui border border-line px-4 py-2 text-sm font-bold"
+                  >
+                    {t("cancel")}
+                  </button>
+                )}
+              </div>
+              <label className="mt-4 flex items-center gap-2 text-sm text-muted">
+                <input
+                  type="checkbox"
+                  checked={autoNext}
+                  onChange={(e) => {
+                    setAutoNext(e.target.checked);
+                    if (!e.target.checked) setCountdown(null);
+                  }}
+                  className="accent-accent"
+                />
+                {t("autoNext")}
+              </label>
+            </>
+          ) : (
+            <>
+              <p className="font-medium">{t("finished")}</p>
+              <Link href={backHref} className="mt-4 inline-block rounded-ui bg-accent px-4 py-2 text-sm font-bold text-on-accent">
+                {t("back")}
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

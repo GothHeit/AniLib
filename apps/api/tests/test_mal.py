@@ -1,9 +1,11 @@
-from datetime import date
+from datetime import date, timedelta
 
 import httpx
 import respx
 
+from app.db import utcnow
 from app.mal.client import API_BASE, current_season, filter_nsfw, rank_search_results
+from app.models import MalLink
 from tests.conftest import make_user
 
 
@@ -71,3 +73,39 @@ async def test_mal_callback_handles_denied_consent(client):
 async def test_mal_callback_rejects_unknown_state(client):
     r = await client.get("/mal/callback", params={"code": "c", "state": "unknown"})
     assert r.headers["location"].endswith("/profile?mal=failed")
+
+
+async def test_list_entry_without_a_mal_link(client, session):
+    _, headers = await make_user(session, "kafka")
+    r = await client.get("/me/animelist/5", headers=headers)
+    assert r.status_code == 200
+    assert r.json() == {"linked": False, "status": None, "score": 0, "num_episodes_watched": 0}
+
+
+@respx.mock
+async def test_list_entry_reads_the_users_status(client, session):
+    user, headers = await make_user(session, "kafka")
+    session.add(
+        MalLink(
+            user_id=user.id,
+            access_token="a",
+            refresh_token="r",
+            expires_at=utcnow() + timedelta(hours=1),
+        )
+    )
+    await session.commit()
+    route = respx.get(f"{API_BASE}/anime/5").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "id": 5,
+                "my_list_status": {"status": "watching", "score": 8, "num_episodes_watched": 3},
+            },
+        )
+    )
+    respx.get(f"{API_BASE}/anime/6").mock(return_value=httpx.Response(200, json={"id": 6}))
+
+    body = (await client.get("/me/animelist/5", headers=headers)).json()
+    assert body == {"linked": True, "status": "watching", "score": 8, "num_episodes_watched": 3}
+    assert route.calls.last.request.headers["authorization"] == "Bearer a"
+    assert (await client.get("/me/animelist/6", headers=headers)).json()["status"] is None

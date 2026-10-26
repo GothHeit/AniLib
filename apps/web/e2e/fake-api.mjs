@@ -1,5 +1,7 @@
-// Minimal stand-in for the API's auth endpoints, so the web e2e tests need no database.
+// Minimal stand-in for the API, so the web e2e tests need no database.
 import { createServer } from "node:http";
+
+import { handleWatch } from "./fake-watch.mjs";
 
 const PORT = Number(process.env.FAKE_API_PORT ?? 4010);
 const accessTokens = new Set();
@@ -95,9 +97,11 @@ createServer(async (req, res) => {
     liveRefresh.delete(refresh_token);
     return send(204);
   }
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  const authed = Boolean(token && accessTokens.has(token));
+  if (await handleWatch(req, res, { url, send, error, body, authed })) return;
   if (url.pathname === "/me") {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    if (!token || !accessTokens.has(token)) return send(401, error("not_authenticated"));
+    if (!authed) return send(401, error("not_authenticated"));
     return send(200, { id: "1", username: "kafka", locale: "en", show_nsfw: false, is_admin: false });
   }
   if (url.pathname === "/me/mal") {

@@ -122,6 +122,23 @@ class MalAccounts:
             params = None  # the "next" URL already carries them
         return {"data": filter_nsfw(items, user.show_nsfw)}
 
+    async def entry(self, session: AsyncSession, user: User, anime_id: int) -> dict | None:
+        """The user's list entry for one title, or None when it isn't on their list."""
+        token = await self._valid_token(session, user)
+        response = await self._http.get(
+            f"{API_BASE}/anime/{anime_id}",
+            headers=_bearer(token),
+            params={"fields": "my_list_status"},
+        )
+        if response.status_code == 404:
+            return None
+        if response.status_code != 200:
+            raise ApiError(502, "mal_unavailable", f"MyAnimeList answered {response.status_code}")
+        return response.json().get("my_list_status")
+
+    async def is_linked(self, session: AsyncSession, user: User) -> bool:
+        return await session.get(MalLink, user.id) is not None
+
     async def update_entry(
         self, session: AsyncSession, user: User, anime_id: int, changes: dict
     ) -> dict:

@@ -1,0 +1,42 @@
+{
+  "player": {
+    "region": "Video player",
+    "back": "Back to the title",
+    "episode": "Episode {episode}",
+    "loading": "Loading episode…",
+    "play": "Play",
+    "pause": "Pause",
+    "seek": "Seek",
+    "rewind": "Back 10 seconds",
+    "forward": "Forward 10 seconds",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "volume": "Volume",
+    "speed": "Playback speed",
+    "speedValue": "{rate}×",
+    "fullscreen": "Full screen",
+    "exitFullscreen": "Exit full screen",
+    "audio": "Audio",
+    "sub": "Sub",
+    "dub": "Dub",
+    "dubUnavailable": "No dub for this episode.",
+    "next": "Next episode",
+    "nextIn": "Episode {episode} starts in {seconds, plural, one {# second} other {# seconds}}",
+    "nextReady": "Up next: episode {episode}",
+    "playNow": "Play now",
+    "cancel": "Cancel",
+    "autoNext": "Autoplay next episode",
+    "finished": "You've reached the last episode.",
+    "retry": "Try again",
+    "shortcuts": "Space play or pause, arrows seek and volume, F full screen, M mute, N next episode",
+    "errors": {
+      "not_available": "This episode isn't available from this source.",
+      "hls_not_supported": "This episode uses a stream format the player doesn't support yet.",
+      "source_not_found": "Streaming is turned off on this server.",
+      "upstream_failed": "The video host didn't answer. Try again in a moment.",
+      "playback_failed": "The video stopped loading. Try again.",
+      "network": "Couldn't reach the server.",
+      "unknown": "Something went wrong. Try again."
+    }
+  }
+}

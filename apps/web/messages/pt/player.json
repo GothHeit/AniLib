@@ -1,0 +1,42 @@
+{
+  "player": {
+    "region": "Player de vídeo",
+    "back": "Voltar ao título",
+    "episode": "Episódio {episode}",
+    "loading": "Carregando episódio…",
+    "play": "Reproduzir",
+    "pause": "Pausar",
+    "seek": "Posição",
+    "rewind": "Voltar 10 segundos",
+    "forward": "Avançar 10 segundos",
+    "mute": "Silenciar",
+    "unmute": "Ativar som",
+    "volume": "Volume",
+    "speed": "Velocidade",
+    "speedValue": "{rate}×",
+    "fullscreen": "Tela cheia",
+    "exitFullscreen": "Sair da tela cheia",
+    "audio": "Áudio",
+    "sub": "Legendado",
+    "dub": "Dublado",
+    "dubUnavailable": "Este episódio não tem versão dublada.",
+    "next": "Próximo episódio",
+    "nextIn": "O episódio {episode} começa em {seconds, plural, one {# segundo} other {# segundos}}",
+    "nextReady": "A seguir: episódio {episode}",
+    "playNow": "Assistir agora",
+    "cancel": "Cancelar",
+    "autoNext": "Reproduzir o próximo episódio automaticamente",
+    "finished": "Você chegou ao último episódio.",
+    "retry": "Tentar de novo",
+    "shortcuts": "Espaço reproduz ou pausa, setas avançam e mudam o volume, F tela cheia, M silencia, N próximo episódio",
+    "errors": {
+      "not_available": "Este episódio não está disponível nesta fonte.",
+      "hls_not_supported": "Este episódio usa um formato de vídeo que o player ainda não suporta.",
+      "source_not_found": "O streaming está desativado neste servidor.",
+      "upstream_failed": "O servidor do vídeo não respondeu. Tente de novo daqui a pouco.",
+      "playback_failed": "O vídeo parou de carregar. Tente de novo.",
+      "network": "Não foi possível conectar ao servidor.",
+      "unknown": "Algo deu errado. Tente de novo."
+    }
+  }
+}

@@ -20,6 +20,14 @@ class ListUpdate(BaseModel):
     num_watched_episodes: int | None = Field(default=None, ge=0)
 
 
+class ListEntryOut(BaseModel):
+    linked: bool
+    # None when the title isn't on the user's list.
+    status: ListStatus | None = None
+    score: int = 0
+    num_episodes_watched: int = 0
+
+
 def _accounts(request: Request) -> MalAccounts:
     return request.app.state.mal_accounts
 
@@ -63,6 +71,20 @@ async def animelist(
     request: Request, user: CurrentUser, session: Session, status: ListStatus | None = None
 ):
     return await _accounts(request).animelist(session, user, status)
+
+
+@router.get("/me/animelist/{anime_id}", response_model=ListEntryOut)
+async def get_entry(request: Request, anime_id: int, user: CurrentUser, session: Session):
+    accounts = _accounts(request)
+    if not await accounts.is_linked(session, user):
+        return ListEntryOut(linked=False)
+    entry = await accounts.entry(session, user, anime_id) or {}
+    return ListEntryOut(
+        linked=True,
+        status=entry.get("status"),
+        score=entry.get("score") or 0,
+        num_episodes_watched=entry.get("num_episodes_watched") or 0,
+    )
 
 
 @router.patch("/me/animelist/{anime_id}")

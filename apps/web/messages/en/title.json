@@ -1,0 +1,72 @@
+{
+  "titlePage": {
+    "score": "Score {score}",
+    "episodes": "{count, plural, one {# episode} other {# episodes}}",
+    "studios": "Studio",
+    "genres": "Genres",
+    "synopsis": "Synopsis",
+    "noSynopsis": "No synopsis yet.",
+    "watchHere": "Watch here",
+    "trackingOnly": "Tracking only",
+    "trackingOnlyHint": "This title isn't available to watch here. You can still track it in your list.",
+    "play": "Play episode {episode}",
+    "continue": "Continue episode {episode}",
+    "episodeList": "Episodes",
+    "episode": "Episode {episode}",
+    "episodeShort": "EP {episode}",
+    "watched": "Watched",
+    "range": "Episodes shown",
+    "related": "Related",
+    "recommended": "Recommended",
+    "posterAlt": "Poster of {title}",
+    "season": {
+      "winter": "Winter {year}",
+      "spring": "Spring {year}",
+      "summer": "Summer {year}",
+      "fall": "Fall {year}"
+    },
+    "mediaType": {
+      "tv": "TV",
+      "movie": "Movie",
+      "ova": "OVA",
+      "ona": "ONA",
+      "special": "Special",
+      "music": "Music"
+    },
+    "airing": {
+      "finished_airing": "Finished",
+      "currently_airing": "Airing",
+      "not_yet_aired": "Not yet aired"
+    },
+    "relation": {
+      "sequel": "Sequel",
+      "prequel": "Prequel",
+      "alternative_setting": "Alternative setting",
+      "alternative_version": "Alternative version",
+      "side_story": "Side story",
+      "parent_story": "Parent story",
+      "summary": "Summary",
+      "full_story": "Full story",
+      "spin_off": "Spin-off",
+      "character": "Shared characters",
+      "other": "Other"
+    },
+    "list": {
+      "label": "My list",
+      "add": "Add to list",
+      "saved": "Saved to {status}.",
+      "status": {
+        "watching": "Watching",
+        "plan_to_watch": "Plan to watch",
+        "completed": "Completed",
+        "on_hold": "On hold",
+        "dropped": "Dropped"
+      },
+      "errors": {
+        "mal_not_linked": "Link your MyAnimeList account to keep a list.",
+        "mal_session_expired": "Your MyAnimeList link expired. Link it again in your account.",
+        "mal_update_failed": "MyAnimeList didn't save the change. Try again."
+      }
+    }
+  }
+}
