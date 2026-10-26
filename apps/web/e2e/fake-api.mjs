@@ -3,6 +3,9 @@ import { createServer } from "node:http";
 
 import { handleWatch } from "./fake-watch.mjs";
 
+// The saved subtitle choice, like the real account setting.
+let subtitleLang = null;
+
 const PORT = Number(process.env.FAKE_API_PORT ?? 4010);
 const accessTokens = new Set();
 const spentRefresh = new Set();
@@ -102,7 +105,18 @@ createServer(async (req, res) => {
   if (await handleWatch(req, res, { url, send, error, body, authed })) return;
   if (url.pathname === "/me") {
     if (!authed) return send(401, error("not_authenticated"));
-    return send(200, { id: "1", username: "kafka", locale: "en", show_nsfw: false, is_admin: false });
+    if (req.method === "PATCH") {
+      const patch = await body(req);
+      if ("subtitle_lang" in patch) subtitleLang = patch.subtitle_lang;
+    }
+    return send(200, {
+      id: "1",
+      username: "kafka",
+      locale: "en",
+      show_nsfw: false,
+      subtitle_lang: subtitleLang,
+      is_admin: false,
+    });
   }
   if (url.pathname === "/me/mal") {
     const token = req.headers.authorization?.replace("Bearer ", "");

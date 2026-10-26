@@ -25,14 +25,28 @@ type Props = {
   lang: Lang;
   /** Seconds to start from: the saved position, or where a sub/dub switch left off. */
   startAt: number;
+  /** Saved subtitle choice: a language code, "off", or null for automatic. */
+  subtitleLang: string | null;
 };
+
+type Track = { lang: string; label: string; url: string };
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const SEEK_STEP = 10;
 const VOLUME_STEP = 0.1;
 const HIDE_CONTROLS_MS = 3000;
 export const NEXT_COUNTDOWN = 10;
-const ERRORS = ["not_available", "hls_not_supported", "source_not_found", "upstream_failed", "playback_failed", "network"];
+const ERRORS = ["not_available", "source_not_found", "upstream_failed", "playback_failed", "network"];
+
+/** The track to show: the saved language if this episode has it, else pt-BR, then English. */
+export function pickTrack(tracks: Track[], preference: string | null): number {
+  if (preference === "off") return -1;
+  for (const wanted of [preference, "pt-BR", "en"]) {
+    const index = tracks.findIndex((t) => t.lang === wanted);
+    if (wanted && index >= 0) return index;
+  }
+  return -1;
+}
 
 export function watchHref(source: string, animeId: number, episode: number, lang: Lang = "sub", startAt = 0) {
   const query = new URLSearchParams();
@@ -42,7 +56,7 @@ export function watchHref(source: string, animeId: number, episode: number, lang
   return `/watch/${source}/${animeId}/${episode}${qs ? `?${qs}` : ""}`;
 }
 
-export function Player({ source, animeId, episode, title, episodes, lang, startAt }: Props) {
+export function Player({ source, animeId, episode, title, episodes, lang, startAt, subtitleLang }: Props) {
   const t = useTranslations("player");
   const router = useRouter();
   const toast = useToast();
@@ -53,6 +67,10 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
 
   const [attempt, setAttempt] = useState(0);
   const [url, setUrl] = useState<string | null>(null);
+  const [kind, setKind] = useState<string>("mp4");
+  const [tracks, setTracks] = useState<Track[]>([]);
+  // null until the viewer picks one here; then it wins over the saved preference.
+  const [chosen, setChosen] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [waiting, setWaiting] = useState(true);
@@ -79,7 +97,12 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
       })
       .then(({ data, error: body }) => {
         if (cancelled) return;
-        if (data) setUrl(`/api/proxy${data.url}`);
+        if (data) {
+          setKind(data.kind);
+          setTracks(data.subtitles ?? []);
+          setChosen(null);
+          setUrl(`/api/proxy${data.url}`);
+        }
         else setError(errorCode(body));
       })
       .catch(() => !cancelled && setError("network"));
@@ -87,6 +110,62 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
       cancelled = true;
     };
   }, [source, animeId, episode, lang, attempt]);
+
+  const [preference, setPreference] = useState(subtitleLang);
+  const selected = chosen ?? pickTrack(tracks, preference);
+
+  // Only our own <track> elements are driven; hls.js may add text tracks of its own.
+  useEffect(() => {
+    const v = video.current;
+    if (!v) return;
+    const apply = () =>
+      v.querySelectorAll("track").forEach((el, i) => {
+        el.track.mode = i === selected ? "showing" : "disabled";
+      });
+    apply();
+    v.textTracks.addEventListener("addtrack", apply);
+    return () => v.textTracks.removeEventListener("addtrack", apply);
+  }, [selected, tracks]);
+
+  function chooseTrack(index: number) {
+    setChosen(index);
+    const lang = index < 0 ? "off" : tracks[index].lang;
+    setPreference(lang);
+    if (lang === "und") return;
+    // Best effort: the choice only matters again on the next episode.
+    void api.PATCH("/me", { body: { subtitle_lang: lang } }).catch(() => undefined);
+  }
+
+  // hls.js wherever it works (one code path, so tracks behave the same); native HLS only
+  // where it can't run, e.g. iPhone Safari.
+  useEffect(() => {
+    const v = video.current;
+    if (!v || !url || kind !== "hls") return;
+    let hls: import("hls.js").default | undefined;
+    let cancelled = false;
+    void import("hls.js").then(({ default: Hls }) => {
+      if (cancelled) return;
+      if (Hls.isSupported()) {
+        let recovered = false;
+        hls = new Hls();
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (!data.fatal) return;
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recovered) {
+            recovered = true;
+            hls?.recoverMediaError();
+          } else setError("playback_failed");
+        });
+        hls.loadSource(url);
+        hls.attachMedia(v);
+      } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
+        v.src = url;
+      } else setError("playback_failed");
+    });
+    return () => {
+      cancelled = true;
+      hls?.destroy();
+    };
+  }, [url, kind]);
 
   const goNext = useCallback(() => {
     if (next !== undefined) router.push(watchHref(source, animeId, next, lang));
@@ -250,10 +329,9 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
       onTouchStart={poke}
       className={`fixed inset-0 z-[60] bg-black text-fg ${shown ? "" : "cursor-none"}`}
     >
-      {/* No source offers caption tracks yet; subtitles are burned into the video. */}
       <video
         ref={video}
-        src={url ?? undefined}
+        src={kind === "mp4" ? (url ?? undefined) : undefined}
         autoPlay
         playsInline
         onClick={togglePlay}
@@ -286,7 +364,11 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
         onRateChange={() => video.current && setRate(video.current.playbackRate)}
         onError={() => url && setError("playback_failed")}
         className="absolute inset-0 h-full w-full"
-      />
+      >
+        {tracks.map((track) => (
+          <track key={track.url} kind="subtitles" src={`/api/proxy${track.url}`} srcLang={track.lang} label={track.label} />
+        ))}
+      </video>
 
       {!error && waiting && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center" role="status">
@@ -300,7 +382,7 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
           <div role="alert" className="max-w-md text-center">
             <p className="text-lg font-medium">{errorText}</p>
             <div className="mt-6 flex justify-center gap-3">
-              {error !== "hls_not_supported" && error !== "source_not_found" && error !== "not_available" && (
+              {error !== "source_not_found" && error !== "not_available" && (
                 <button type="button" onClick={retry} className="rounded-ui bg-accent px-4 py-2 text-sm font-bold text-on-accent">
                   {t("retry")}
                 </button>
@@ -394,6 +476,23 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
                   </button>
                 ))}
               </div>
+              {tracks.length > 0 && (
+                <label className="text-xs">
+                  <span className="sr-only">{t("subtitles")}</span>
+                  <select
+                    value={selected}
+                    onChange={(e) => chooseTrack(Number(e.target.value))}
+                    className="max-w-32 rounded-ui border border-line bg-black/60 px-2 py-1.5 text-fg"
+                  >
+                    <option value={-1}>{t("subtitles")}: {t("subtitlesOff")}</option>
+                    {tracks.map((track, i) => (
+                      <option key={track.url} value={i}>
+                        {track.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <label className="text-xs">
                 <span className="sr-only">{t("speed")}</span>
                 <select

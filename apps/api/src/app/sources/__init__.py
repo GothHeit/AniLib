@@ -10,6 +10,10 @@ def load_sources(names: list[str]) -> dict[str, VideoSource]:
             from app.sources.allanime import AllAnimeSource
 
             sources[name] = AllAnimeSource()
+        elif name == "zoko":
+            from app.sources.zoko import ZokoSource
+
+            sources[name] = ZokoSource()
         else:
             raise ValueError(f"Unknown video source: {name}")
     return sources

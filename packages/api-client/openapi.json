@@ -852,6 +852,17 @@
             "title": "Show Nsfw",
             "type": "boolean"
           },
+          "subtitle_lang": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtitle Lang"
+          },
           "username": {
             "title": "Username",
             "type": "string"
@@ -862,6 +873,7 @@
           "username",
           "locale",
           "show_nsfw",
+          "subtitle_lang",
           "is_admin"
         ],
         "title": "MeOut",
@@ -894,6 +906,18 @@
               }
             ],
             "title": "Show Nsfw"
+          },
+          "subtitle_lang": {
+            "anyOf": [
+              {
+                "pattern": "^(off|[a-z]{2,3}(-[A-Z]{2})?)$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtitle Lang"
           }
         },
         "title": "MeUpdate",
@@ -943,6 +967,14 @@
               }
             ],
             "title": "Resolution"
+          },
+          "subtitles": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SubtitleOut"
+            },
+            "title": "Subtitles",
+            "type": "array"
           },
           "url": {
             "title": "Url",
@@ -1190,6 +1222,29 @@
           "name"
         ],
         "title": "Studio",
+        "type": "object"
+      },
+      "SubtitleOut": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "lang": {
+            "title": "Lang",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lang",
+          "label",
+          "url"
+        ],
+        "title": "SubtitleOut",
         "type": "object"
       },
       "TokensOut": {
@@ -2362,6 +2417,100 @@
         "summary": "Save Progress",
         "tags": [
           "progress"
+        ]
+      }
+    },
+    "/watch/hls": {
+      "get": {
+        "description": "Without `u`, the master playlist of the episode the token is for. With `u`, one\nplaylist, segment or subtitle that an earlier response linked to (signed).",
+        "operationId": "hls_proxy_watch_hls_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          },
+          {
+            "in": "query",
+            "name": "u",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "U"
+            }
+          },
+          {
+            "in": "query",
+            "name": "r",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "R",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "e",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "E",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "s",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "S",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Hls Proxy",
+        "tags": [
+          "watch"
         ]
       }
     },

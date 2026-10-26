@@ -19,6 +19,8 @@ class User(TimestampMixin, Base):
     password_hash: Mapped[str]
     locale: Mapped[str] = mapped_column(String(5), default="pt")
     show_nsfw: Mapped[bool] = mapped_column(default=True)
+    # None means automatic (pt-BR, then English); "off" hides subtitles.
+    subtitle_lang: Mapped[str | None] = mapped_column(String(8), default=None)
     is_admin: Mapped[bool] = mapped_column(default=False)
 
 

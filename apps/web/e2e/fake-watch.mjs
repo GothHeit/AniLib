@@ -4,8 +4,9 @@ import { readFileSync } from "node:fs";
 const CLIP = readFileSync(new URL("./fixtures/clip.webm", import.meta.url));
 const SOURCE = "stub";
 const EPISODES = { sub: [1, 2, 3], dub: [1] };
-// Episode 3 only has an HLS stream, which the API refuses today.
-const HLS_EPISODE = 3;
+// Episode 1 comes with subtitle tracks; the others have none.
+const SUBTITLE_EPISODE = 1;
+const VTT = "WEBVTT\n\n00:00:00.000 --> 00:00:30.000\nHello moon\n";
 
 function details(id) {
   const watchable = id !== 2;
@@ -85,6 +86,11 @@ export async function handleWatch(req, res, { url, send, error, body, authed }) 
     const all = [...progress.values()].flatMap((m) => [...m.values()]);
     return reply(200, all);
   }
+  if (path === "/watch/subtitles") {
+    res.writeHead(200, { "Content-Type": "text/vtt" });
+    res.end(VTT);
+    return true;
+  }
   if (path === "/watch/video") {
     // The playback token stands in for the session, like the real API.
     if (!url.searchParams.get("token")?.startsWith("ep-")) return reply(401, error("invalid_token"));
@@ -128,8 +134,19 @@ export async function handleWatch(req, res, { url, send, error, body, authed }) 
     if (!m[3]) return reply(200, { source: SOURCE, source_title: "Moon Test", episodes: EPISODES[lang] });
     const episode = Number(m[3]);
     if (!EPISODES[lang].includes(episode)) return reply(404, error("not_available"));
-    if (episode === HLS_EPISODE) return reply(501, error("hls_not_supported"));
-    return reply(200, { kind: "mp4", resolution: 720, url: `/watch/video?token=ep-${episode}-${lang}` });
+    const subtitles =
+      episode === SUBTITLE_EPISODE
+        ? [
+            { lang: "en", label: "English", url: "/watch/subtitles?l=en" },
+            { lang: "pt-BR", label: "Portuguese", url: "/watch/subtitles?l=pt-BR" },
+          ]
+        : [];
+    return reply(200, {
+      kind: "mp4",
+      resolution: 720,
+      url: `/watch/video?token=ep-${episode}-${lang}`,
+      subtitles,
+    });
   }
   return false;
 }

@@ -366,6 +366,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/watch/hls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Hls Proxy
+         * @description Without `u`, the master playlist of the episode the token is for. With `u`, one
+         *     playlist, segment or subtitle that an earlier response linked to (signed).
+         */
+        get: operations["hls_proxy_watch_hls_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/watch/sources": {
         parameters: {
             query?: never;
@@ -676,6 +697,8 @@ export interface components {
             locale: "pt" | "en";
             /** Show Nsfw */
             show_nsfw: boolean;
+            /** Subtitle Lang */
+            subtitle_lang: string | null;
             /** Username */
             username: string;
         };
@@ -685,6 +708,8 @@ export interface components {
             locale?: ("pt" | "en") | null;
             /** Show Nsfw */
             show_nsfw?: boolean | null;
+            /** Subtitle Lang */
+            subtitle_lang?: string | null;
         };
         /** Picture */
         Picture: {
@@ -699,6 +724,11 @@ export interface components {
             kind: string;
             /** Resolution */
             resolution: number | null;
+            /**
+             * Subtitles
+             * @default []
+             */
+            subtitles: components["schemas"]["SubtitleOut"][];
             /** Url */
             url: string;
         };
@@ -790,6 +820,15 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+        };
+        /** SubtitleOut */
+        SubtitleOut: {
+            /** Label */
+            label: string;
+            /** Lang */
+            lang: string;
+            /** Url */
+            url: string;
         };
         /** TokensOut */
         TokensOut: {
@@ -1541,6 +1580,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProgressOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hls_proxy_watch_hls_get: {
+        parameters: {
+            query?: {
+                token?: string | null;
+                u?: string | null;
+                r?: string;
+                e?: number;
+                s?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

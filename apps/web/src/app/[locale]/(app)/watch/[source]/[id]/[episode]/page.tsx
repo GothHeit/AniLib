@@ -36,8 +36,9 @@ export default async function WatchPage({ params, searchParams }: Params) {
   const lang: Lang = query.lang === "dub" ? "dub" : "sub";
   const api = await serverApi();
 
-  const [anime, progressResult, episodesResult] = await Promise.all([
+  const [anime, me, progressResult, episodesResult] = await Promise.all([
     unwrap(details(animeId), locale),
+    unwrap(api.GET("/me"), locale),
     api.GET("/me/progress/{anime_id}", { params: { path: { anime_id: animeId } } }),
     // A failure here only hides the next-episode button; the player reports the real error.
     api
@@ -62,6 +63,7 @@ export default async function WatchPage({ params, searchParams }: Params) {
       episodes={episodes}
       lang={lang}
       startAt={startAt}
+      subtitleLang={me.subtitle_lang}
     />
   );
 }

@@ -1,8 +1,8 @@
 from datetime import timedelta
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
@@ -23,6 +23,7 @@ from app.security import (
 router = APIRouter(tags=["auth"])
 
 Locale = Literal["pt", "en"]
+SubtitleLang = Annotated[str, StringConstraints(pattern=r"^(off|[a-z]{2,3}(-[A-Z]{2})?)$")]
 
 
 class RegisterIn(BaseModel):
@@ -53,12 +54,14 @@ class MeOut(BaseModel):
     username: str
     locale: Locale
     show_nsfw: bool
+    subtitle_lang: str | None
     is_admin: bool
 
 
 class MeUpdate(BaseModel):
     locale: Locale | None = None
     show_nsfw: bool | None = None
+    subtitle_lang: SubtitleLang | None = None
 
 
 async def _issue_tokens(session: Session, user: User) -> TokensOut:
@@ -85,6 +88,7 @@ def _me(user: User) -> MeOut:
         username=user.username,
         locale=user.locale,
         show_nsfw=user.show_nsfw,
+        subtitle_lang=user.subtitle_lang,
         is_admin=user.is_admin,
     )
 

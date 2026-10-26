@@ -14,6 +14,8 @@
     "volume": "Volume",
     "speed": "Velocidade",
     "speedValue": "{rate}×",
+    "subtitles": "Legendas",
+    "subtitlesOff": "Desligadas",
     "fullscreen": "Tela cheia",
     "exitFullscreen": "Sair da tela cheia",
     "audio": "Áudio",
@@ -31,7 +33,6 @@
     "shortcuts": "Espaço reproduz ou pausa, setas avançam e mudam o volume, F tela cheia, M silencia, N próximo episódio",
     "errors": {
       "not_available": "Este episódio não está disponível nesta fonte.",
-      "hls_not_supported": "Este episódio usa um formato de vídeo que o player ainda não suporta.",
       "source_not_found": "O streaming está desativado neste servidor.",
       "upstream_failed": "O servidor do vídeo não respondeu. Tente de novo daqui a pouco.",
       "playback_failed": "O vídeo parou de carregar. Tente de novo.",

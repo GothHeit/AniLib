@@ -14,6 +14,8 @@
     "volume": "Volume",
     "speed": "Playback speed",
     "speedValue": "{rate}×",
+    "subtitles": "Subtitles",
+    "subtitlesOff": "Off",
     "fullscreen": "Full screen",
     "exitFullscreen": "Exit full screen",
     "audio": "Audio",
@@ -31,7 +33,6 @@
     "shortcuts": "Space play or pause, arrows seek and volume, F full screen, M mute, N next episode",
     "errors": {
       "not_available": "This episode isn't available from this source.",
-      "hls_not_supported": "This episode uses a stream format the player doesn't support yet.",
       "source_not_found": "Streaming is turned off on this server.",
       "upstream_failed": "The video host didn't answer. Try again in a moment.",
       "playback_failed": "The video stopped loading. Try again.",

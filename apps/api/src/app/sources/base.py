@@ -17,12 +17,21 @@ class EpisodeList:
 
 
 @dataclass(frozen=True)
+class Subtitle:
+    # BCP 47 code ("pt-BR", "en"); the player matches the user's preference against it.
+    lang: str
+    label: str
+    url: str
+
+
+@dataclass(frozen=True)
 class Stream:
     url: str
     kind: Literal["mp4", "hls"]
     resolution: int | None
     # Headers the upstream host needs, e.g. a Referer for hotlink protection.
     upstream_headers: dict[str, str]
+    subtitles: tuple[Subtitle, ...] = ()
 
 
 class VideoSource(Protocol):

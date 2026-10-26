@@ -51,11 +51,25 @@ test("cancels the countdown", async ({ page }) => {
   await expect(page).toHaveURL(/\/watch\/stub\/4\/2\?t=39$/);
 });
 
-test("explains an HLS-only episode", async ({ page }) => {
+test("offers subtitles, defaulting to Portuguese, and remembers Off", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/en/watch/stub/4/1");
+  const picker = page.getByRole("combobox", { name: "Subtitles" });
+  await expect(picker).toBeVisible();
+  await expect(picker.locator("option:checked")).toHaveText("Portuguese");
+  await expect(video(page).locator("track")).toHaveCount(2);
+
+  await picker.selectOption({ label: "Subtitles: Off" });
+  await page.reload();
+  await expect(page.getByRole("combobox", { name: "Subtitles" }).locator("option:checked")).toHaveText(/Off/);
+});
+
+test("hides the subtitle picker when the episode has no subtitles", async ({ page }) => {
   await signIn(page);
   await page.goto("/en/watch/stub/4/3");
-  await expect(page.getByText(/stream format the player doesn't support yet/)).toBeVisible();
-  await expect(page.getByRole("link", { name: "Back to the title" }).first()).toHaveAttribute("href", "/en/anime/4");
+  await expect(page.getByText("Episode 3", { exact: true })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Playback speed" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Subtitles" })).toHaveCount(0);
 });
 
 test("explains a disabled source", async ({ page }) => {

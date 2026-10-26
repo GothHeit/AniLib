@@ -152,3 +152,15 @@ async def test_adult_titles_are_on_by_default_and_can_be_switched(client, invite
     assert off.json()["show_nsfw"] is False
     on = await client.patch("/me", json={"show_nsfw": True}, headers=headers)
     assert on.json()["show_nsfw"] is True
+
+
+async def test_subtitle_preference_is_saved_and_validated(client, session):
+    _, headers = await make_user(session, "kafka")
+    assert (await client.get("/me", headers=headers)).json()["subtitle_lang"] is None
+    r = await client.patch("/me", json={"subtitle_lang": "pt-BR"}, headers=headers)
+    assert r.json()["subtitle_lang"] == "pt-BR"
+    assert (
+        await client.patch("/me", json={"subtitle_lang": "off"}, headers=headers)
+    ).status_code == 200
+    bad = await client.patch("/me", json={"subtitle_lang": "../x"}, headers=headers)
+    assert bad.status_code == 422

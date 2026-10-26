@@ -1,0 +1,230 @@
+import time
+
+import httpx
+import pytest
+import respx
+
+from app import hls
+from app.main import app as fastapi_app
+from app.mal.client import API_BASE
+from app.sources.base import EpisodeList, Stream, Subtitle
+from tests.conftest import make_user
+
+MASTER = "https://host.example/p/master.m3u8"
+MEDIA = (
+    "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1,RESOLUTION=1920x1080\n1080/index.m3u8\n"
+    '#EXT-X-MEDIA:TYPE=AUDIO,URI="audio/a.m3u8"\n'
+)
+
+
+@pytest.fixture(autouse=True)
+def public_dns(monkeypatch):
+    async def resolve(host):
+        return ["93.184.216.34"]
+
+    monkeypatch.setattr(hls, "resolve_host", resolve)
+
+
+def test_rewrite_resolves_relative_urls_and_signs_them():
+    out = hls.rewrite_playlist(MEDIA, MASTER, "https://ref.example/")
+    lines = out.splitlines()
+    assert lines[2].startswith("hls?u=https%3A%2F%2Fhost.example%2Fp%2F1080%2Findex.m3u8")
+    assert 'URI="hls?u=https%3A%2F%2Fhost.example%2Fp%2Faudio%2Fa.m3u8' in lines[3]
+
+
+def test_verify_rejects_tampering_and_expiry():
+    link = hls.signed_link("https://a.example/x", "https://r/")
+    q = dict(p.split("=") for p in link.split("?")[1].split("&"))
+    expires = int(q["e"])
+    assert hls.verify_link("https://a.example/x", "https://r/", expires, q["s"])
+    assert not hls.verify_link("https://evil.example/x", "https://r/", expires, q["s"])
+    assert not hls.verify_link("https://a.example/x", "https://other/", expires, q["s"])
+    old = int(time.time()) - 1
+    assert not hls.verify_link(
+        "https://a.example/x", "https://r/", old, hls._mac("https://a.example/x", "https://r/", old)
+    )
+
+
+class HlsSource:
+    name = "hlsfake"
+
+    async def episodes(self, anime, lang):
+        return EpisodeList(episodes=[1], source_title="x")
+
+    async def stream(self, anime, episode, lang):
+        return Stream(
+            MASTER,
+            "hls",
+            1080,
+            {"Referer": "https://ref.example/"},
+            (Subtitle("pt-BR", "Portuguese", "https://subs.example/pt.vtt"),),
+        )
+
+
+class BrokenSource:
+    name = "broken"
+
+    async def episodes(self, anime, lang):
+        raise RuntimeError("down")
+
+    async def stream(self, anime, episode, lang):
+        raise RuntimeError("down")
+
+
+class EmptySource(BrokenSource):
+    async def stream(self, anime, episode, lang):
+        return None
+
+
+def mock_details():
+    respx.get(f"{API_BASE}/anime/21").mock(
+        return_value=httpx.Response(200, json={"id": 21, "title": "One Piece"})
+    )
+
+
+@respx.mock
+async def test_hls_playback_falls_back_and_proxies_with_referer(client, session):
+    fastapi_app.state.sources = {
+        "broken": BrokenSource(),
+        "empty": EmptySource(),
+        "ok": HlsSource(),
+    }
+    _, headers = await make_user(session, "kafka")
+    mock_details()
+
+    play = await client.post("/watch/broken/21/episodes/1/play", headers=headers)
+    assert play.status_code == 200
+    assert play.json()["kind"] == "hls"
+    url = play.json()["url"]
+    assert url.startswith("/watch/hls?token=")
+    [track] = play.json()["subtitles"]
+    assert (track["lang"], track["label"]) == ("pt-BR", "Portuguese")
+    vtt = respx.get("https://subs.example/pt.vtt").mock(
+        return_value=httpx.Response(200, text="WEBVTT\n\n", headers={"content-type": "text/vtt"})
+    )
+    subs = await client.get(track["url"])
+    assert subs.text.startswith("WEBVTT")
+    assert subs.headers["content-type"].startswith("text/vtt")
+    assert vtt.calls.last.request.headers["referer"] == "https://ref.example/"
+
+    master = respx.get(MASTER).mock(return_value=httpx.Response(200, text=MEDIA))
+    seg = respx.get("https://seg.example/s0.ts.jpg").mock(
+        return_value=httpx.Response(
+            200, content=b"\x47data", headers={"content-type": "image/jpeg"}
+        )
+    )
+    r = await client.get(url)
+    assert r.status_code == 200
+    assert master.calls.last.request.headers["referer"] == "https://ref.example/"
+    variant = r.text.splitlines()[2]
+
+    respx.get("https://host.example/p/1080/index.m3u8").mock(
+        return_value=httpx.Response(
+            200, text="#EXTM3U\n#EXTINF:5,\nhttps://seg.example/s0.ts.jpg\n"
+        )
+    )
+    v = await client.get(f"/watch/{variant}")
+    segment_link = v.text.splitlines()[-1]
+    s = await client.get(f"/watch/{segment_link}")
+    assert s.content == b"\x47data"
+    assert s.headers["content-type"].startswith("video/mp2t")
+    assert seg.calls.last.request.headers["referer"] == "https://ref.example/"
+
+
+async def test_hls_proxy_refuses_unsigned_urls(client, session):
+    fastapi_app.state.sources = {"ok": HlsSource()}
+    _, headers = await make_user(session, "kafka")
+    r = await client.get(
+        "/watch/hls",
+        params={"u": "http://169.254.169.254/", "r": "", "e": 9999999999, "s": "0" * 32},
+    )
+    assert r.status_code == 401
+
+
+@respx.mock
+async def test_all_sources_failing_is_a_clean_error_not_a_crash(client, session):
+    fastapi_app.state.sources = {"broken": BrokenSource()}
+    _, headers = await make_user(session, "kafka")
+    mock_details()
+    r = await client.post("/watch/broken/21/episodes/1/play", headers=headers)
+    assert r.status_code == 502
+    assert r.json()["error"]["code"] == "upstream_failed"
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://127.0.0.1:8000/x",
+        "http://169.254.169.254/latest/meta-data",
+        "http://10.0.0.5/x.ts",
+        "http://[::1]/x",
+        "http://db:5432/x",
+        "http://localhost/x",
+        "http://service.internal/x",
+        "file:///etc/passwd",
+        "ftp://host.example/x",
+    ],
+)
+def test_internal_and_odd_urls_are_never_signed(url):
+    assert not hls.looks_public(url)
+    out = hls.rewrite_playlist(f"#EXTM3U\n#EXTINF:5,\n{url}\n", MASTER, "https://r/")
+    assert "hls?u=" not in out
+
+
+def test_public_urls_pass():
+    assert hls.looks_public("https://hls1.drama1.cfd/s/seg.ts.jpg")
+    assert hls.looks_public("http://93.184.216.34/x")
+
+
+async def test_names_resolving_to_private_addresses_are_refused(monkeypatch):
+    async def resolve(host):
+        return ["93.184.216.34", "10.0.0.7"]
+
+    monkeypatch.setattr(hls, "resolve_host", resolve)
+    assert not await hls.is_public_target("https://rebind.example/x")
+
+
+def signed(url: str) -> str:
+    return "/watch/" + hls.signed_link(url, "https://ref.example/")
+
+
+@respx.mock
+async def test_proxy_refuses_signed_internal_urls_and_internal_redirects(client, session):
+    fastapi_app.state.sources = {"ok": HlsSource()}
+    internal = respx.get("http://127.0.0.1:8000/secret").mock(return_value=httpx.Response(200))
+
+    direct = await client.get(signed("http://127.0.0.1:8000/secret"))
+    assert direct.status_code == 502
+
+    respx.get("https://host.example/redir.ts").mock(
+        return_value=httpx.Response(302, headers={"location": "http://127.0.0.1:8000/secret"})
+    )
+    redirected = await client.get(signed("https://host.example/redir.ts"))
+    assert redirected.status_code == 502
+    assert not internal.called
+
+
+@respx.mock
+async def test_proxy_follows_public_redirects_but_not_forever(client, session):
+    fastapi_app.state.sources = {"ok": HlsSource()}
+    respx.get("https://host.example/a.ts").mock(
+        return_value=httpx.Response(302, headers={"location": "https://cdn.example/a.ts"})
+    )
+    respx.get("https://cdn.example/a.ts").mock(return_value=httpx.Response(200, content=b"seg"))
+    assert (await client.get(signed("https://host.example/a.ts"))).content == b"seg"
+
+    respx.get("https://host.example/loop.ts").mock(
+        return_value=httpx.Response(302, headers={"location": "https://host.example/loop.ts"})
+    )
+    assert (await client.get(signed("https://host.example/loop.ts"))).status_code == 502
+
+
+@respx.mock
+async def test_oversized_playlists_are_cut_off(client, session):
+    fastapi_app.state.sources = {"ok": HlsSource()}
+    big = "#EXTM3U\n" + "#EXTINF:1,\nhttps://seg.example/s.ts\n" * 80_000
+    respx.get("https://host.example/big.m3u8").mock(return_value=httpx.Response(200, text=big))
+    assert len(big) > hls.MAX_PLAYLIST_BYTES
+    r = await client.get(signed("https://host.example/big.m3u8"))
+    assert r.status_code == 502
+    assert r.json()["error"]["code"] == "upstream_failed"
