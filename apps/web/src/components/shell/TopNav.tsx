@@ -7,6 +7,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { APP_NAME } from "@/lib/brand";
 
 import { LocaleSwitcher } from "./LocaleSwitcher";
+import { Logo } from "./Logo";
 import { isActive, NAV_ITEMS } from "./nav-items";
 import { SearchBox } from "./SearchBox";
 import { UserMenu } from "./UserMenu";
@@ -30,8 +31,8 @@ export function TopNav({ username, isAdmin }: { username: string; isAdmin: boole
       className={`fixed inset-x-0 top-0 z-40 transition-colors ${scrolled ? "bg-bg shadow-lg shadow-black/40" : "bg-gradient-to-b from-bg/80 to-transparent"}`}
     >
       <nav aria-label={t("main")} className="flex items-center gap-6 px-4 py-3 sm:px-8">
-        <Link href="/" className="font-display text-xl font-bold tracking-tight text-accent">
-          {APP_NAME}
+        <Link href="/" aria-label={APP_NAME}>
+          <Logo />
         </Link>
         <ul className="hidden items-center gap-1 md:flex">
           {NAV_ITEMS.map(({ href, key }) => {

@@ -20,7 +20,14 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: LayoutProps<"/[locale]">): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "meta" });
-  return { title: APP_NAME, description: t("description", { app: APP_NAME }) };
+  return {
+    title: APP_NAME,
+    description: t("description", { app: APP_NAME }),
+    icons: {
+      icon: [{ url: "/icon.svg", type: "image/svg+xml" }, { url: "/favicon.ico", sizes: "any" }],
+      apple: "/apple-touch-icon.png",
+    },
+  };
 }
 
 export default async function LocaleLayout({ children, params }: LayoutProps<"/[locale]">) {

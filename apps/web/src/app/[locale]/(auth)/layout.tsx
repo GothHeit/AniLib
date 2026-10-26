@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { LocaleSwitcher } from "@/components/shell/LocaleSwitcher";
 import { Link } from "@/i18n/navigation";
+import { Logo } from "@/components/shell/Logo";
 import { APP_NAME } from "@/lib/brand";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
@@ -10,8 +11,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <div className="absolute right-4 top-4 sm:right-8 sm:top-6">
         <LocaleSwitcher />
       </div>
-      <Link href="/" className="font-display text-3xl font-bold tracking-tight text-accent">
-        {APP_NAME}
+      <Link href="/" aria-label={APP_NAME}>
+        <Logo size="lg" />
       </Link>
       {children}
     </div>
