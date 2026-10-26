@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { postAuth } from "@/lib/bff";
 
 type Props = {
@@ -16,6 +16,7 @@ type Props = {
 
 export function UserMenu({ username, variant = "nav", trigger, triggerClassName }: Props) {
   const t = useTranslations("nav");
+  const tAccount = useTranslations("account");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -63,6 +64,14 @@ export function UserMenu({ username, variant = "nav", trigger, triggerClassName 
           }`}
         >
           <p className="px-3 py-2 text-sm text-muted">{t("signedInAs", { name: username })}</p>
+          <Link
+            href="/settings"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line"
+          >
+            {tAccount("menuSettings")}
+          </Link>
           <button
             type="button"
             role="menuitem"

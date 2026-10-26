@@ -1,0 +1,60 @@
+{
+  "account": {
+    "menuSettings": "Settings",
+    "settings": {
+      "title": "Settings",
+      "profile": "Profile",
+      "username": "Username",
+      "admin": "Administrator",
+      "preferences": "Preferences",
+      "language": "Language",
+      "languageHint": "Used for menus and messages.",
+      "contentFilter": "Adult content",
+      "contentFilterLabel": "Show +18 titles",
+      "contentFilterHint": "On by default. Turn it off to hide adult titles from browse, search and your lists.",
+      "saved": "Settings saved.",
+      "saveFailed": "Couldn't save your settings."
+    },
+    "mal": {
+      "title": "MyAnimeList",
+      "intro": "Link your MyAnimeList account to see your list here and keep it updated as you watch.",
+      "notLinked": "Not linked",
+      "linkedAs": "Linked as {name}",
+      "linkedNoName": "Linked",
+      "stats": "{watching} watching · {completed} completed · {planned} plan to watch",
+      "link": "Link MyAnimeList",
+      "linking": "Redirecting…",
+      "unlink": "Unlink",
+      "unlinking": "Unlinking…",
+      "unlinkTitle": "Unlink MyAnimeList?",
+      "unlinkBody": "Your list will stop showing here. Nothing is deleted on MyAnimeList and you can link again any time.",
+      "cancel": "Cancel",
+      "linkedToast": "MyAnimeList linked.",
+      "deniedToast": "You didn't allow access on MyAnimeList.",
+      "failedToast": "Couldn't link MyAnimeList. Try again.",
+      "unlinkedToast": "MyAnimeList unlinked."
+    },
+    "invites": {
+      "title": "Invites",
+      "manage": "Manage invites",
+      "intro": "Share an invite link with a friend so they can create an account.",
+      "validFor": "Valid for",
+      "days": "{count, plural, one {# day} other {# days}}",
+      "create": "Create invite",
+      "creating": "Creating…",
+      "created": "Invite created and link copied.",
+      "createdNoCopy": "Invite created.",
+      "createFailed": "Couldn't create the invite.",
+      "empty": "No invites yet.",
+      "code": "Code",
+      "expires": "Expires",
+      "status": "Status",
+      "statusActive": "Active",
+      "statusUsed": "Used",
+      "statusExpired": "Expired",
+      "copy": "Copy link",
+      "copied": "Link copied.",
+      "copyFailed": "Couldn't copy. Select the code and copy it by hand."
+    }
+  }
+}

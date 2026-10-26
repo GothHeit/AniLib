@@ -1,0 +1,60 @@
+{
+  "account": {
+    "menuSettings": "Configurações",
+    "settings": {
+      "title": "Configurações",
+      "profile": "Perfil",
+      "username": "Usuário",
+      "admin": "Administrador",
+      "preferences": "Preferências",
+      "language": "Idioma",
+      "languageHint": "Usado nos menus e nas mensagens.",
+      "contentFilter": "Conteúdo adulto",
+      "contentFilterLabel": "Mostrar títulos +18",
+      "contentFilterHint": "Ativado por padrão. Desative para ocultar títulos adultos na busca, na navegação e nas suas listas.",
+      "saved": "Configurações salvas.",
+      "saveFailed": "Não foi possível salvar suas configurações."
+    },
+    "mal": {
+      "title": "MyAnimeList",
+      "intro": "Vincule sua conta do MyAnimeList para ver sua lista aqui e mantê-la atualizada enquanto assiste.",
+      "notLinked": "Não vinculada",
+      "linkedAs": "Vinculada como {name}",
+      "linkedNoName": "Vinculada",
+      "stats": "{watching} assistindo · {completed} concluídos · {planned} para assistir",
+      "link": "Vincular MyAnimeList",
+      "linking": "Redirecionando…",
+      "unlink": "Desvincular",
+      "unlinking": "Desvinculando…",
+      "unlinkTitle": "Desvincular o MyAnimeList?",
+      "unlinkBody": "Sua lista deixará de aparecer aqui. Nada é apagado no MyAnimeList e você pode vincular de novo quando quiser.",
+      "cancel": "Cancelar",
+      "linkedToast": "MyAnimeList vinculado.",
+      "deniedToast": "Você não autorizou o acesso no MyAnimeList.",
+      "failedToast": "Não foi possível vincular o MyAnimeList. Tente de novo.",
+      "unlinkedToast": "MyAnimeList desvinculado."
+    },
+    "invites": {
+      "title": "Convites",
+      "manage": "Gerenciar convites",
+      "intro": "Compartilhe um link de convite com um amigo para ele criar uma conta.",
+      "validFor": "Válido por",
+      "days": "{count, plural, one {# dia} other {# dias}}",
+      "create": "Criar convite",
+      "creating": "Criando…",
+      "created": "Convite criado e link copiado.",
+      "createdNoCopy": "Convite criado.",
+      "createFailed": "Não foi possível criar o convite.",
+      "empty": "Nenhum convite ainda.",
+      "code": "Código",
+      "expires": "Expira em",
+      "status": "Situação",
+      "statusActive": "Ativo",
+      "statusUsed": "Usado",
+      "statusExpired": "Expirado",
+      "copy": "Copiar link",
+      "copied": "Link copiado.",
+      "copyFailed": "Não foi possível copiar. Selecione o código e copie manualmente."
+    }
+  }
+}
