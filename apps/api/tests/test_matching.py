@@ -17,13 +17,17 @@ def test_prefers_main_series_over_specials():
         Candidate("b", "One Piece"),
         Candidate("c", "One Piece Film: Red"),
     ]
-    assert match(DETAIL, fake_search(results), lambda _: []).identifier == "b"
+    best = match(DETAIL, fake_search(results), lambda _: [])
+    assert best is not None
+    assert best.identifier == "b"
 
 
 def test_uses_alternative_names_for_stylised_titles():
     results = [Candidate("x", "1P")]
     alt = {"x": ["One Piece"]}
-    assert match(DETAIL, fake_search(results), lambda i: alt.get(i, [])).identifier == "x"
+    best = match(DETAIL, fake_search(results), lambda i: alt.get(i, []))
+    assert best is not None
+    assert best.identifier == "x"
 
 
 def test_returns_none_when_nothing_is_close():

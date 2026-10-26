@@ -24,6 +24,7 @@ jobs:
     env:
       DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/app_test
       JWT_SECRET: ci-secret-that-is-at-least-32-characters-long
+      TOKEN_ENCRYPTION_KEY: Zm9yLWNpLW9ubHktZG8tbm90LXVzZS1pbi1wcm9kLTE=
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -32,6 +33,7 @@ jobs:
       - run: uv sync --frozen --extra allanime
       - run: uv run ruff check .
       - run: uv run ruff format --check .
+      - run: uv run mypy
       - run: uv run pytest -q
       - name: Migrations match the models
         run: uv run alembic upgrade head && uv run alembic check

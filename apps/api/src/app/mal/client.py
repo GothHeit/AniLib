@@ -4,6 +4,7 @@ Every response is status-checked: a bad client ID, a rate limit or an outage bec
 clear `mal_unavailable` error instead of a KeyError on an error body.
 """
 
+import asyncio
 from datetime import date
 from typing import Any
 
@@ -25,6 +26,9 @@ DETAIL_FIELDS = (
     "broadcast,source,average_episode_duration,rating,pictures,background,related_anime,"
     "recommendations,studios,statistics"
 )
+
+LIST_TTL = 600  # seconds
+POOL_SIZE = 500  # the most MAL returns for one season or ranking request
 
 _NSFW_RATINGS = {"r+", "rx"}
 _NSFW_GENRES = {"ecchi", "erotica", "hentai"}
@@ -78,8 +82,20 @@ class MalClient:
         self._headers = {"X-MAL-CLIENT-ID": client_id}
         self._http = http
         self._details: TTLCache[int, dict] = TTLCache(maxsize=2048, ttl=1800)
+        # Listing pages (seasonal, top, search, browse pools) change slowly: a short TTL keeps
+        # the home page from hitting MAL on every load.
+        self._pages: TTLCache[tuple, dict] = TTLCache(maxsize=512, ttl=LIST_TTL)
 
     async def _get(self, path: str, params: dict[str, Any]) -> dict:
+        key = (path, tuple(sorted(params.items())))
+        cached = self._pages.get(key)
+        if cached is not None:
+            return cached
+        data = await self._fetch(path, params)
+        self._pages[key] = data
+        return data
+
+    async def _fetch(self, path: str, params: dict[str, Any]) -> dict:
         try:
             response = await self._http.get(
                 f"{API_BASE}{path}", headers=self._headers, params=params, timeout=15
@@ -131,10 +147,65 @@ class MalClient:
         )
         return {"data": filter_nsfw(data.get("data", []), allow_nsfw)}
 
+    async def season_pool(self, year: int, season: str, allow_nsfw: bool) -> list[dict]:
+        """Up to POOL_SIZE nodes of one season, most followed first."""
+        data = await self._get(
+            f"/anime/season/{year}/{season}",
+            {
+                "limit": POOL_SIZE,
+                "sort": "anime_num_list_users",
+                "fields": LIST_FIELDS,
+                "nsfw": str(allow_nsfw).lower(),
+            },
+        )
+        return [i["node"] for i in filter_nsfw(data.get("data", []), allow_nsfw)]
+
+    async def ranking_pool(self, allow_nsfw: bool, ranking_type: str = "all") -> list[dict]:
+        data = await self._get(
+            "/anime/ranking",
+            {
+                "ranking_type": ranking_type,
+                "limit": POOL_SIZE,
+                "fields": LIST_FIELDS,
+                "nsfw": str(allow_nsfw).lower(),
+            },
+        )
+        return [i["node"] for i in filter_nsfw(data.get("data", []), allow_nsfw)]
+
+    async def browse(
+        self,
+        genre: int | None,
+        year: int | None,
+        season: str | None,
+        page: int,
+        allow_nsfw: bool,
+        page_size: int = 24,
+    ) -> tuple[list[dict], bool]:
+        """Filter by genre, year and season. MAL's API can't filter by genre, so the pool for
+        the chosen season (or ranking) is fetched once, cached, and filtered here."""
+        if year is None:
+            pool = await self.ranking_pool(allow_nsfw)
+        else:
+            seasons = [season] if season else list(_SEASONS)
+            pools = await asyncio.gather(*(self.season_pool(year, s, allow_nsfw) for s in seasons))
+            merged = {n["id"]: n for p in pools for n in p}
+            pool = sorted(merged.values(), key=lambda n: n.get("num_list_users", 0), reverse=True)
+        if genre is not None:
+            pool = [n for n in pool if any(g.get("id") == genre for g in n.get("genres") or [])]
+        start = (page - 1) * page_size
+        return pool[start : start + page_size], len(pool) > start + page_size
+
+    async def visible_details(self, anime_id: int, allow_nsfw: bool) -> dict:
+        """Details of a title the user may see: NSFW ones look like they don't exist."""
+        raw = await self.details(anime_id)
+        if not allow_nsfw and not is_safe(raw):
+            raise ApiError(404, "anime_not_found", "Anime not found")
+        return raw
+
     async def details(self, anime_id: int) -> dict:
         cached = self._details.get(anime_id)
         if cached is not None:
             return cached
-        data = await self._get(f"/anime/{anime_id}", {"fields": DETAIL_FIELDS})
+        data = await self._fetch(f"/anime/{anime_id}", {"fields": DETAIL_FIELDS})
         self._details[anime_id] = data
         return data

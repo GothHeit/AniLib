@@ -5,6 +5,7 @@ import os
 
 # The spec doesn't depend on secrets, but settings validation does.
 os.environ.setdefault("JWT_SECRET", "x" * 32)
+os.environ.setdefault("TOKEN_ENCRYPTION_KEY", "x" * 32)
 
 from app.main import create_app  # noqa: E402
 

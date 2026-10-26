@@ -9,7 +9,8 @@ from app.config import get_settings
 from app.errors import install_error_handlers
 from app.mal.account import MalAccounts
 from app.mal.client import MalClient
-from app.routers import anime, auth, invites, mal, watch
+from app.ratelimit import AuthLimits
+from app.routers import anime, auth, home, invites, mal, progress, watch
 from app.sources import load_sources
 
 
@@ -21,6 +22,8 @@ async def lifespan(app: FastAPI):
         app.state.http = http
         app.state.mal = MalClient(settings.mal_client_id, http)
         app.state.mal_accounts = MalAccounts(settings, http)
+        app.state.auth_limits = AuthLimits(settings)
+        app.state.source_hints = anime.new_source_hints()
         app.state.sources = load_sources(settings.video_source_names)
         yield
     await db.dispose_engine()
@@ -41,7 +44,7 @@ def create_app() -> FastAPI:
     async def health():
         return {"status": "ok"}
 
-    for module in (auth, invites, anime, mal, watch):
+    for module in (auth, invites, anime, mal, watch, progress, home):
         app.include_router(module.router)
     return app
 

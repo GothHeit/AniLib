@@ -28,7 +28,7 @@ docker compose up -d db
 
 # 2. API (http://localhost:8000/docs)
 cd apps/api
-cp .env.example .env          # fill JWT_SECRET and the MAL keys
+cp .env.example .env          # fill JWT_SECRET, TOKEN_ENCRYPTION_KEY and the MAL keys
 uv sync                       # add --extra allanime for the private video source
 uv run alembic upgrade head
 uv run python -m app.cli invite        # prints an invite code for the first account

@@ -88,3 +88,36 @@ async def test_unknown_source_and_missing_episode(client, session):
 async def test_no_sources_enabled_by_default(client, session):
     _, headers = await make_user(session, "kafka")
     assert (await client.get("/watch/sources", headers=headers)).json() == []
+
+
+@respx.mock
+async def test_video_proxy_passes_range_not_satisfiable_through(client, session):
+    fastapi_app.state.sources = {"fake": FakeSource()}
+    _, headers = await make_user(session, "kafka")
+    mock_details()
+    url = (await client.post("/watch/fake/21/episodes/1/play", headers=headers)).json()["url"]
+
+    respx.get(VIDEO_URL).mock(
+        return_value=httpx.Response(416, headers={"content-range": "bytes */100"})
+    )
+    video = await client.get(url, headers={"Range": "bytes=500-"})
+    assert video.status_code == 416
+    assert video.headers["content-range"] == "bytes */100"
+
+    respx.get(VIDEO_URL).mock(return_value=httpx.Response(403))
+    assert (await client.get(url)).status_code == 502
+
+
+@respx.mock
+async def test_nsfw_titles_cannot_be_listed_or_played_with_nsfw_off(client, session):
+    fastapi_app.state.sources = {"fake": FakeSource()}
+    _, normal = await make_user(session, "kafka")
+    _, nsfw = await make_user(session, "friend", nsfw=True)
+    respx.get(f"{API_BASE}/anime/21").mock(
+        return_value=httpx.Response(200, json={"id": 21, "title": "Adult", "rating": "rx"})
+    )
+    r = await client.get("/watch/fake/21/episodes", headers=normal)
+    assert r.json()["error"]["code"] == "anime_not_found"
+    r = await client.post("/watch/fake/21/episodes/1/play", headers=normal)
+    assert r.status_code == 404
+    assert (await client.get("/watch/fake/21/episodes", headers=nsfw)).status_code == 200

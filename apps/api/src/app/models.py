@@ -1,10 +1,11 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import Float, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db import Base, TimestampMixin
+from app.crypto import EncryptedString
+from app.db import Base, TimestampMixin, utcnow
 
 LOCALES = ("pt", "en")
 
@@ -17,7 +18,7 @@ class User(TimestampMixin, Base):
     username: Mapped[str] = mapped_column(String(32), unique=True)
     password_hash: Mapped[str]
     locale: Mapped[str] = mapped_column(String(5), default="pt")
-    show_nsfw: Mapped[bool] = mapped_column(default=False)
+    show_nsfw: Mapped[bool] = mapped_column(default=True)
     is_admin: Mapped[bool] = mapped_column(default=False)
 
 
@@ -52,8 +53,9 @@ class MalLink(TimestampMixin, Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
-    access_token: Mapped[str]
-    refresh_token: Mapped[str]
+    # Encrypted at rest with TOKEN_ENCRYPTION_KEY.
+    access_token: Mapped[str] = mapped_column(EncryptedString)
+    refresh_token: Mapped[str] = mapped_column(EncryptedString)
     expires_at: Mapped[datetime]
     mal_username: Mapped[str | None]
     mal_picture: Mapped[str | None]
@@ -65,3 +67,20 @@ class MalOAuthState(TimestampMixin, Base):
     state: Mapped[str] = mapped_column(String(64), primary_key=True)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     verifier: Mapped[str] = mapped_column(String(128))
+
+
+class WatchProgress(Base):
+    """Where a user stopped in one episode. Keyed by MAL anime id, so it is source-agnostic."""
+
+    __tablename__ = "watch_progress"
+    __table_args__ = (Index("ix_watch_progress_user_updated", "user_id", "updated_at"),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    anime_id: Mapped[int] = mapped_column(primary_key=True)
+    episode: Mapped[int] = mapped_column(primary_key=True)
+    position_seconds: Mapped[float] = mapped_column(Float)
+    duration_seconds: Mapped[float | None] = mapped_column(Float)
+    completed: Mapped[bool] = mapped_column(default=False)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)

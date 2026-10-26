@@ -2,6 +2,7 @@
 
 import secrets
 from datetime import timedelta
+from typing import Any
 from urllib.parse import urlencode
 
 import httpx
@@ -97,14 +98,15 @@ class MalAccounts:
 
     async def animelist(self, session: AsyncSession, user: User, status: str | None) -> dict:
         token = await self._valid_token(session, user)
-        params: dict | None = {
+        first_params: dict[str, Any] = {
             "fields": "list_status,num_episodes,main_picture,mean,rating,genres",
             "limit": 1000,
             "nsfw": str(user.show_nsfw).lower(),
             "sort": "list_updated_at",
         }
         if status:
-            params["status"] = status
+            first_params["status"] = status
+        params: dict[str, Any] | None = first_params
 
         items: list[dict] = []
         url: str | None = f"{API_BASE}/users/@me/animelist"

@@ -1,6 +1,476 @@
 {
   "components": {
     "schemas": {
+      "AlternativeTitles": {
+        "properties": {
+          "en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "En"
+          },
+          "ja": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ja"
+          },
+          "synonyms": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Synonyms",
+            "type": "array"
+          }
+        },
+        "title": "AlternativeTitles",
+        "type": "object"
+      },
+      "AnimeCard": {
+        "description": "What a poster needs.",
+        "properties": {
+          "alternative_titles": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AlternativeTitles"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "genres": {
+            "items": {
+              "$ref": "#/components/schemas/Genre"
+            },
+            "title": "Genres",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "main_picture": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Picture"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean"
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type"
+          },
+          "num_episodes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Episodes"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "start_season": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StartSeason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AnimeCard",
+        "type": "object"
+      },
+      "AnimeDetailsOut": {
+        "properties": {
+          "alternative_titles": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AlternativeTitles"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "available_sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Available Sources",
+            "type": "array"
+          },
+          "average_episode_duration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Episode Duration"
+          },
+          "background": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background"
+          },
+          "broadcast": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Broadcast"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "genres": {
+            "items": {
+              "$ref": "#/components/schemas/Genre"
+            },
+            "title": "Genres",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "main_picture": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Picture"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mean"
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type"
+          },
+          "num_episodes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Episodes"
+          },
+          "num_list_users": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num List Users"
+          },
+          "num_scoring_users": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Scoring Users"
+          },
+          "pictures": {
+            "items": {
+              "$ref": "#/components/schemas/Picture"
+            },
+            "title": "Pictures",
+            "type": "array"
+          },
+          "popularity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Popularity"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rating"
+          },
+          "recommendations": {
+            "items": {
+              "$ref": "#/components/schemas/Recommendation"
+            },
+            "title": "Recommendations",
+            "type": "array"
+          },
+          "related_anime": {
+            "items": {
+              "$ref": "#/components/schemas/RelatedAnime"
+            },
+            "title": "Related Anime",
+            "type": "array"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "start_season": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StartSeason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "studios": {
+            "items": {
+              "$ref": "#/components/schemas/Studio"
+            },
+            "title": "Studios",
+            "type": "array"
+          },
+          "synopsis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synopsis"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AnimeDetailsOut",
+        "type": "object"
+      },
+      "AnimeListOut": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AnimeCard"
+            },
+            "title": "Data",
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "AnimeListOut",
+        "type": "object"
+      },
+      "Broadcast": {
+        "properties": {
+          "day_of_the_week": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Day Of The Week"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          }
+        },
+        "title": "Broadcast",
+        "type": "object"
+      },
+      "BrowseOut": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AnimeCard"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data",
+          "page",
+          "has_next"
+        ],
+        "title": "BrowseOut",
+        "type": "object"
+      },
       "EpisodesOut": {
         "properties": {
           "episodes": {
@@ -27,6 +497,56 @@
         "title": "EpisodesOut",
         "type": "object"
       },
+      "Genre": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Genre",
+        "type": "object"
+      },
+      "GenreOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "genre",
+              "demographic"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "nsfw": {
+            "title": "Nsfw",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "nsfw"
+        ],
+        "title": "GenreOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -38,6 +558,127 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HomeHero": {
+        "properties": {
+          "anime": {
+            "$ref": "#/components/schemas/AnimeCard"
+          },
+          "backdrop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backdrop"
+          },
+          "synopsis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synopsis"
+          }
+        },
+        "required": [
+          "anime"
+        ],
+        "title": "HomeHero",
+        "type": "object"
+      },
+      "HomeItem": {
+        "properties": {
+          "anime": {
+            "$ref": "#/components/schemas/AnimeCard"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProgressOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resume_episode": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Episode"
+          }
+        },
+        "required": [
+          "anime"
+        ],
+        "title": "HomeItem",
+        "type": "object"
+      },
+      "HomeOut": {
+        "properties": {
+          "hero": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HomeHero"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/HomeRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "hero",
+          "rows"
+        ],
+        "title": "HomeOut",
+        "type": "object"
+      },
+      "HomeRow": {
+        "properties": {
+          "id": {
+            "enum": [
+              "continue_watching",
+              "my_list",
+              "seasonal",
+              "top"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HomeItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "items"
+        ],
+        "title": "HomeRow",
         "type": "object"
       },
       "InviteIn": {
@@ -217,6 +858,34 @@
         "title": "MeUpdate",
         "type": "object"
       },
+      "Picture": {
+        "properties": {
+          "large": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Large"
+          },
+          "medium": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medium"
+          }
+        },
+        "title": "Picture",
+        "type": "object"
+      },
       "PlaybackOut": {
         "properties": {
           "kind": {
@@ -245,6 +914,102 @@
           "url"
         ],
         "title": "PlaybackOut",
+        "type": "object"
+      },
+      "ProgressIn": {
+        "properties": {
+          "completed": {
+            "default": false,
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 86400.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "position_seconds": {
+            "maximum": 86400.0,
+            "minimum": 0.0,
+            "title": "Position Seconds",
+            "type": "number"
+          }
+        },
+        "required": [
+          "position_seconds"
+        ],
+        "title": "ProgressIn",
+        "type": "object"
+      },
+      "ProgressOut": {
+        "properties": {
+          "anime_id": {
+            "title": "Anime Id",
+            "type": "integer"
+          },
+          "completed": {
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "episode": {
+            "title": "Episode",
+            "type": "integer"
+          },
+          "position_seconds": {
+            "title": "Position Seconds",
+            "type": "number"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "anime_id",
+          "episode",
+          "position_seconds",
+          "duration_seconds",
+          "completed",
+          "updated_at"
+        ],
+        "title": "ProgressOut",
+        "type": "object"
+      },
+      "Recommendation": {
+        "properties": {
+          "anime": {
+            "$ref": "#/components/schemas/AnimeCard"
+          },
+          "num_recommendations": {
+            "title": "Num Recommendations",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "anime",
+          "num_recommendations"
+        ],
+        "title": "Recommendation",
         "type": "object"
       },
       "RefreshIn": {
@@ -295,6 +1060,95 @@
           "invite_code"
         ],
         "title": "RegisterIn",
+        "type": "object"
+      },
+      "RelatedAnime": {
+        "properties": {
+          "anime": {
+            "$ref": "#/components/schemas/AnimeCard"
+          },
+          "relation_type": {
+            "title": "Relation Type",
+            "type": "string"
+          },
+          "relation_type_formatted": {
+            "title": "Relation Type Formatted",
+            "type": "string"
+          }
+        },
+        "required": [
+          "relation_type",
+          "relation_type_formatted",
+          "anime"
+        ],
+        "title": "RelatedAnime",
+        "type": "object"
+      },
+      "SeasonalOut": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AnimeCard"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "has_next": {
+            "title": "Has Next",
+            "type": "boolean"
+          },
+          "season": {
+            "title": "Season",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data",
+          "year",
+          "season",
+          "has_next"
+        ],
+        "title": "SeasonalOut",
+        "type": "object"
+      },
+      "StartSeason": {
+        "properties": {
+          "season": {
+            "title": "Season",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "season"
+        ],
+        "title": "StartSeason",
+        "type": "object"
+      },
+      "Studio": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Studio",
         "type": "object"
       },
       "TokensOut": {
@@ -380,6 +1234,144 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/anime/browse": {
+      "get": {
+        "operationId": "browse_anime_browse_get",
+        "parameters": [
+          {
+            "description": "MAL genre id, see /anime/genres",
+            "in": "query",
+            "name": "genre",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "MAL genre id, see /anime/genres",
+              "title": "Genre"
+            }
+          },
+          {
+            "in": "query",
+            "name": "year",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 2100,
+                  "minimum": 1960,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Year"
+            }
+          },
+          {
+            "in": "query",
+            "name": "season",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "winter",
+                    "spring",
+                    "summer",
+                    "fall"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Season"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowseOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Browse",
+        "tags": [
+          "anime"
+        ]
+      }
+    },
+    "/anime/genres": {
+      "get": {
+        "operationId": "genres_anime_genres_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GenreOut"
+                  },
+                  "title": "Response Genres Anime Genres Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Genres",
+        "tags": [
+          "anime"
+        ]
+      }
+    },
     "/anime/search": {
       "get": {
         "operationId": "search_anime_search_get",
@@ -400,7 +1392,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AnimeListOut"
+                }
               }
             },
             "description": "Successful Response"
@@ -447,7 +1441,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SeasonalOut"
+                }
               }
             },
             "description": "Successful Response"
@@ -481,7 +1477,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AnimeListOut"
+                }
               }
             },
             "description": "Successful Response"
@@ -516,7 +1514,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AnimeDetailsOut"
+                }
               }
             },
             "description": "Successful Response"
@@ -716,6 +1716,32 @@
         "summary": "Health",
         "tags": [
           "meta"
+        ]
+      }
+    },
+    "/home": {
+      "get": {
+        "operationId": "home_home_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Home",
+        "tags": [
+          "home"
         ]
       }
     },
@@ -1077,6 +2103,179 @@
         "summary": "Status",
         "tags": [
           "mal"
+        ]
+      }
+    },
+    "/me/progress": {
+      "get": {
+        "operationId": "continue_watching_me_progress_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProgressOut"
+                  },
+                  "title": "Response Continue Watching Me Progress Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Continue Watching",
+        "tags": [
+          "progress"
+        ]
+      }
+    },
+    "/me/progress/{anime_id}": {
+      "get": {
+        "operationId": "anime_progress_me_progress__anime_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anime_id",
+            "required": true,
+            "schema": {
+              "title": "Anime Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProgressOut"
+                  },
+                  "title": "Response Anime Progress Me Progress  Anime Id  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Anime Progress",
+        "tags": [
+          "progress"
+        ]
+      }
+    },
+    "/me/progress/{anime_id}/{episode}": {
+      "put": {
+        "operationId": "save_progress_me_progress__anime_id___episode__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anime_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Anime Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "episode",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Episode",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Save Progress",
+        "tags": [
+          "progress"
         ]
       }
     },

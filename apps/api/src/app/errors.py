@@ -11,10 +11,11 @@ class ApiError(Exception):
     English and only meant for logs and API explorers.
     """
 
-    def __init__(self, status: int, code: str, message: str):
+    def __init__(self, status: int, code: str, message: str, headers: dict[str, str] | None = None):
         self.status = status
         self.code = code
         self.message = message
+        self.headers = headers
 
 
 def _body(code: str, message: str, **extra) -> dict:
@@ -24,7 +25,9 @@ def _body(code: str, message: str, **extra) -> dict:
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def api_error(_: Request, exc: ApiError):
-        return JSONResponse(_body(exc.code, exc.message), status_code=exc.status)
+        return JSONResponse(
+            _body(exc.code, exc.message), status_code=exc.status, headers=exc.headers
+        )
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(_: Request, exc: RequestValidationError):

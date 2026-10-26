@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/anime/browse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Browse */
+        get: operations["browse_anime_browse_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/anime/genres": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Genres */
+        get: operations["genres_anime_genres_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/anime/search": {
         parameters: {
             query?: never;
@@ -157,6 +191,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/home": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Home */
+        get: operations["home_home_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/invites": {
         parameters: {
             query?: never;
@@ -263,6 +314,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Continue Watching */
+        get: operations["continue_watching_me_progress_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/progress/{anime_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Anime Progress */
+        get: operations["anime_progress_me_progress__anime_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/progress/{anime_id}/{episode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save Progress */
+        put: operations["save_progress_me_progress__anime_id___episode__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/watch/sources": {
         parameters: {
             query?: never;
@@ -335,6 +437,112 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AlternativeTitles */
+        AlternativeTitles: {
+            /** En */
+            en?: string | null;
+            /** Ja */
+            ja?: string | null;
+            /** Synonyms */
+            synonyms?: string[];
+        };
+        /**
+         * AnimeCard
+         * @description What a poster needs.
+         */
+        AnimeCard: {
+            alternative_titles?: components["schemas"]["AlternativeTitles"] | null;
+            /** Genres */
+            genres?: components["schemas"]["Genre"][];
+            /** Id */
+            id: number;
+            main_picture?: components["schemas"]["Picture"] | null;
+            /** Mean */
+            mean?: number | null;
+            /** Media Type */
+            media_type?: string | null;
+            /** Num Episodes */
+            num_episodes?: number | null;
+            /** Rating */
+            rating?: string | null;
+            start_season?: components["schemas"]["StartSeason"] | null;
+            /** Title */
+            title: string;
+        };
+        /** AnimeDetailsOut */
+        AnimeDetailsOut: {
+            alternative_titles?: components["schemas"]["AlternativeTitles"] | null;
+            /** Available Sources */
+            available_sources?: string[];
+            /** Average Episode Duration */
+            average_episode_duration?: number | null;
+            /** Background */
+            background?: string | null;
+            broadcast?: components["schemas"]["Broadcast"] | null;
+            /** End Date */
+            end_date?: string | null;
+            /** Genres */
+            genres?: components["schemas"]["Genre"][];
+            /** Id */
+            id: number;
+            main_picture?: components["schemas"]["Picture"] | null;
+            /** Mean */
+            mean?: number | null;
+            /** Media Type */
+            media_type?: string | null;
+            /** Num Episodes */
+            num_episodes?: number | null;
+            /** Num List Users */
+            num_list_users?: number | null;
+            /** Num Scoring Users */
+            num_scoring_users?: number | null;
+            /** Pictures */
+            pictures?: components["schemas"]["Picture"][];
+            /** Popularity */
+            popularity?: number | null;
+            /** Rank */
+            rank?: number | null;
+            /** Rating */
+            rating?: string | null;
+            /** Recommendations */
+            recommendations?: components["schemas"]["Recommendation"][];
+            /** Related Anime */
+            related_anime?: components["schemas"]["RelatedAnime"][];
+            /** Source */
+            source?: string | null;
+            /** Start Date */
+            start_date?: string | null;
+            start_season?: components["schemas"]["StartSeason"] | null;
+            /** Status */
+            status?: string | null;
+            /** Studios */
+            studios?: components["schemas"]["Studio"][];
+            /** Synopsis */
+            synopsis?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** AnimeListOut */
+        AnimeListOut: {
+            /** Data */
+            data: components["schemas"]["AnimeCard"][];
+        };
+        /** Broadcast */
+        Broadcast: {
+            /** Day Of The Week */
+            day_of_the_week?: string | null;
+            /** Start Time */
+            start_time?: string | null;
+        };
+        /** BrowseOut */
+        BrowseOut: {
+            /** Data */
+            data: components["schemas"]["AnimeCard"][];
+            /** Has Next */
+            has_next: boolean;
+            /** Page */
+            page: number;
+        };
         /** EpisodesOut */
         EpisodesOut: {
             /** Episodes */
@@ -344,10 +552,62 @@ export interface components {
             /** Source Title */
             source_title: string;
         };
+        /** Genre */
+        Genre: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /** GenreOut */
+        GenreOut: {
+            /** Id */
+            id: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "genre" | "demographic";
+            /** Name */
+            name: string;
+            /** Nsfw */
+            nsfw: boolean;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HomeHero */
+        HomeHero: {
+            anime: components["schemas"]["AnimeCard"];
+            /** Backdrop */
+            backdrop?: string | null;
+            /** Synopsis */
+            synopsis?: string | null;
+        };
+        /** HomeItem */
+        HomeItem: {
+            anime: components["schemas"]["AnimeCard"];
+            progress?: components["schemas"]["ProgressOut"] | null;
+            /** Resume Episode */
+            resume_episode?: number | null;
+        };
+        /** HomeOut */
+        HomeOut: {
+            hero: components["schemas"]["HomeHero"] | null;
+            /** Rows */
+            rows: components["schemas"]["HomeRow"][];
+        };
+        /** HomeRow */
+        HomeRow: {
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "continue_watching" | "my_list" | "seasonal" | "top";
+            /** Items */
+            items: components["schemas"]["HomeItem"][];
         };
         /** InviteIn */
         InviteIn: {
@@ -408,6 +668,13 @@ export interface components {
             /** Show Nsfw */
             show_nsfw?: boolean | null;
         };
+        /** Picture */
+        Picture: {
+            /** Large */
+            large?: string | null;
+            /** Medium */
+            medium?: string | null;
+        };
         /** PlaybackOut */
         PlaybackOut: {
             /** Kind */
@@ -416,6 +683,42 @@ export interface components {
             resolution: number | null;
             /** Url */
             url: string;
+        };
+        /** ProgressIn */
+        ProgressIn: {
+            /**
+             * Completed
+             * @default false
+             */
+            completed: boolean;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /** Position Seconds */
+            position_seconds: number;
+        };
+        /** ProgressOut */
+        ProgressOut: {
+            /** Anime Id */
+            anime_id: number;
+            /** Completed */
+            completed: boolean;
+            /** Duration Seconds */
+            duration_seconds: number | null;
+            /** Episode */
+            episode: number;
+            /** Position Seconds */
+            position_seconds: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** Recommendation */
+        Recommendation: {
+            anime: components["schemas"]["AnimeCard"];
+            /** Num Recommendations */
+            num_recommendations: number;
         };
         /** RefreshIn */
         RefreshIn: {
@@ -436,6 +739,39 @@ export interface components {
             password: string;
             /** Username */
             username: string;
+        };
+        /** RelatedAnime */
+        RelatedAnime: {
+            anime: components["schemas"]["AnimeCard"];
+            /** Relation Type */
+            relation_type: string;
+            /** Relation Type Formatted */
+            relation_type_formatted: string;
+        };
+        /** SeasonalOut */
+        SeasonalOut: {
+            /** Data */
+            data: components["schemas"]["AnimeCard"][];
+            /** Has Next */
+            has_next: boolean;
+            /** Season */
+            season: string;
+            /** Year */
+            year: number;
+        };
+        /** StartSeason */
+        StartSeason: {
+            /** Season */
+            season: string;
+            /** Year */
+            year: number;
+        };
+        /** Studio */
+        Studio: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
         };
         /** TokensOut */
         TokensOut: {
@@ -474,6 +810,61 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    browse_anime_browse_get: {
+        parameters: {
+            query?: {
+                /** @description MAL genre id, see /anime/genres */
+                genre?: number | null;
+                year?: number | null;
+                season?: ("winter" | "spring" | "summer" | "fall") | null;
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    genres_anime_genres_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenreOut"][];
+                };
+            };
+        };
+    };
     search_anime_search_get: {
         parameters: {
             query: {
@@ -491,7 +882,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AnimeListOut"];
                 };
             };
             /** @description Validation Error */
@@ -522,7 +913,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SeasonalOut"];
                 };
             };
             /** @description Validation Error */
@@ -551,7 +942,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AnimeListOut"];
                 };
             };
         };
@@ -573,7 +964,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["AnimeDetailsOut"];
                 };
             };
             /** @description Validation Error */
@@ -733,6 +1124,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    home_home_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeOut"];
                 };
             };
         };
@@ -993,6 +1404,104 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    continue_watching_me_progress_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    anime_progress_me_progress__anime_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                anime_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_progress_me_progress__anime_id___episode__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                anime_id: number;
+                episode: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProgressIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProgressOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };

@@ -142,3 +142,13 @@ async def test_unknown_user_still_runs_a_password_check(client, session, monkeyp
     assert r.status_code == 401
     assert r.json()["error"]["code"] == "invalid_credentials"
     assert calls == [auth.DUMMY_PASSWORD_HASH]
+
+
+async def test_adult_titles_are_on_by_default_and_can_be_switched(client, invite_code):
+    tokens = (await register(client, invite_code)).json()
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+    assert (await client.get("/me", headers=headers)).json()["show_nsfw"] is True
+    off = await client.patch("/me", json={"show_nsfw": False}, headers=headers)
+    assert off.json()["show_nsfw"] is False
+    on = await client.patch("/me", json={"show_nsfw": True}, headers=headers)
+    assert on.json()["show_nsfw"] is True

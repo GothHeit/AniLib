@@ -3,7 +3,7 @@ from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Query, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 from app.deps import CurrentUser, Session
@@ -46,7 +46,7 @@ async def episodes(
     request: Request, source: str, anime_id: int, user: CurrentUser, lang: Lang = "sub"
 ):
     src = _source(request, source)
-    anime = await request.app.state.mal.details(anime_id)
+    anime = await request.app.state.mal.visible_details(anime_id, user.show_nsfw)
     result = await src.episodes(anime, lang)
     if result is None:
         raise ApiError(404, "not_available", "This anime isn't available from this source")
@@ -63,7 +63,7 @@ async def play(
     lang: Lang = "sub",
 ):
     src = _source(request, source)
-    anime = await request.app.state.mal.details(anime_id)
+    anime = await request.app.state.mal.visible_details(anime_id, user.show_nsfw)
     stream = await src.stream(anime, episode, lang)
     if stream is None:
         raise ApiError(404, "not_available", "This episode isn't available from this source")
@@ -98,6 +98,13 @@ async def video(request: Request, session: Session, token: Annotated[str, Query(
         ),
         stream=True,
     )
+    if upstream.status_code == 416:
+        # A seek past the end: players expect the real 416 and the size in Content-Range.
+        await upstream.aclose()
+        return Response(
+            status_code=416,
+            headers={h: upstream.headers[h] for h in ("content-range",) if h in upstream.headers},
+        )
     if upstream.status_code >= 400:
         await upstream.aclose()
         raise ApiError(502, "upstream_failed", f"Video host answered {upstream.status_code}")

@@ -1,0 +1,139 @@
+from datetime import timedelta
+
+import httpx
+import respx
+from sqlalchemy import text
+
+from app.db import utcnow
+from app.main import app as fastapi_app
+from app.mal.client import API_BASE, current_season
+from app.models import MalLink
+from tests.conftest import make_user
+from tests.mal_fixtures import mock_details, mock_ranking, mock_season, node
+
+
+async def watch(client, headers, anime, episode, position=60, duration=1400, **extra):
+    await client.put(
+        f"/me/progress/{anime}/{episode}",
+        json={"position_seconds": position, "duration_seconds": duration, **extra},
+        headers=headers,
+    )
+
+
+@respx.mock
+async def test_home_has_hero_and_rows_in_order(client, session):
+    fastapi_app.state.sources = {}
+    _, headers = await make_user(session, "kafka")
+    mock_season(
+        node(1, "Popular", mean=7.5),
+        node(2, "Best", mean=8.9),
+        node(3, "No art", mean=9.5, main_picture=None),
+    )
+    mock_ranking(node(10, "Classic"))
+    mock_details(2, synopsis="Why it is best", pictures=[{"large": "https://img/back.jpg"}])
+    await watch(client, headers, 20, 3)
+    mock_details(20, num_episodes=12)
+
+    body = (await client.get("/home", headers=headers)).json()
+    assert body["hero"]["anime"]["title"] == "Best"
+    assert body["hero"]["synopsis"] == "Why it is best"
+    assert body["hero"]["backdrop"] == "https://img/back.jpg"
+    # No MAL link, so there is no "my list" row.
+    assert [r["id"] for r in body["rows"]] == ["continue_watching", "seasonal", "top"]
+    first = body["rows"][0]["items"][0]
+    assert first["anime"]["id"] == 20
+    assert first["progress"]["episode"] == 3
+    assert first["resume_episode"] == 3
+
+
+@respx.mock
+async def test_continue_watching_moves_to_the_next_episode_and_drops_finished_series(
+    client, session
+):
+    _, headers = await make_user(session, "kafka")
+    mock_season(node(1))
+    mock_ranking(node(10))
+    mock_details(1)
+    await watch(client, headers, 20, 3, completed=True)
+    await watch(client, headers, 21, 12, completed=True)
+    mock_details(20, num_episodes=12)
+    mock_details(21, num_episodes=12)
+
+    body = (await client.get("/home", headers=headers)).json()
+    items = body["rows"][0]["items"]
+    assert [(i["anime"]["id"], i["resume_episode"]) for i in items] == [(20, 4)]
+
+
+@respx.mock
+async def test_home_survives_a_failing_section_but_not_total_mal_failure(client, session):
+    _, headers = await make_user(session, "kafka")
+    year, season = current_season()
+    respx.get(f"{API_BASE}/anime/season/{year}/{season}").mock(return_value=httpx.Response(500))
+    mock_ranking(node(10, "Classic"))
+    body = (await client.get("/home", headers=headers)).json()
+    assert [r["id"] for r in body["rows"]] == ["top"]
+    assert body["hero"] is None
+
+    respx.get(f"{API_BASE}/anime/ranking").mock(return_value=httpx.Response(500))
+    fastapi_app.state.mal._pages.clear()
+    r = await client.get("/home", headers=headers)
+    assert r.status_code == 502
+    assert r.json()["error"]["code"] == "mal_unavailable"
+
+
+async def test_home_needs_login(client):
+    assert (await client.get("/home")).status_code == 401
+
+
+@respx.mock
+async def test_my_list_row_shows_watching_then_plan_to_watch(client, session):
+    user, headers = await make_user(session, "kafka")
+    session.add(
+        MalLink(
+            user_id=user.id,
+            access_token="a",
+            refresh_token="r",
+            expires_at=utcnow() + timedelta(hours=1),
+        )
+    )
+    await session.commit()
+    mock_season(node(1))
+    mock_ranking(node(10))
+    mock_details(1)
+
+    def answer(request):
+        status = request.url.params["status"]
+        return httpx.Response(
+            200, json={"data": [{"node": node(30 if status == "watching" else 31)}]}
+        )
+
+    respx.get(f"{API_BASE}/users/@me/animelist").mock(side_effect=answer)
+    body = (await client.get("/home", headers=headers)).json()
+    my_list = next(r for r in body["rows"] if r["id"] == "my_list")
+    assert [i["anime"]["id"] for i in my_list["items"]] == [30, 31]
+
+
+@respx.mock
+async def test_home_skips_my_list_when_the_stored_token_cannot_be_decrypted(client, session):
+    user, headers = await make_user(session, "kafka")
+    user_id = user.id
+    session.add(
+        MalLink(
+            user_id=user_id,
+            access_token="a",
+            refresh_token="r",
+            expires_at=utcnow() + timedelta(hours=1),
+        )
+    )
+    await session.commit()
+    await session.execute(
+        text("UPDATE mal_links SET access_token = 'gAAAAAnot-valid' WHERE user_id = :u"),
+        {"u": user_id},
+    )
+    await session.commit()
+    mock_season(node(1))
+    mock_ranking(node(10))
+    mock_details(1)
+    r = await client.get("/home", headers=headers)
+    assert r.status_code == 200
+    assert "my_list" not in [row["id"] for row in r.json()["rows"]]

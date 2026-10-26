@@ -18,6 +18,20 @@ class Settings(BaseSettings):
     refresh_token_days: int = 30
     playback_token_minutes: int = 360
 
+    # Fernet key that encrypts MAL tokens at rest. Generate one with
+    # `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`.
+    token_encryption_key: str = Field(min_length=32)
+
+    # Failed attempts allowed per window before /auth answers 429.
+    login_ip_limit: int = 30
+    login_user_limit: int = 8
+    login_window_seconds: int = 900
+    register_ip_limit: int = 10
+    register_user_limit: int = 5
+    register_window_seconds: int = 3600
+    # Read the client address from X-Forwarded-For. Only enable behind a trusted reverse proxy.
+    trust_proxy_headers: bool = False
+
     # Comma-separated list of browser origins allowed to call the API.
     cors_origins: str = "http://localhost:3000"
     web_url: str = "http://localhost:3000"

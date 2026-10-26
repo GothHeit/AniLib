@@ -1,9 +1,10 @@
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.db import get_session
 from app.errors import ApiError
 from app.models import User
@@ -39,3 +40,15 @@ async def current_admin(user: CurrentUser) -> User:
 
 
 CurrentAdmin = Annotated[User, Depends(current_admin)]
+
+
+def client_ip(request: Request) -> str:
+    if get_settings().trust_proxy_headers:
+        forwarded = request.headers.get("x-forwarded-for", "")
+        if forwarded:
+            # The last hop is the one our own proxy appended; earlier ones are client-supplied.
+            return forwarded.split(",")[-1].strip()
+    return request.client.host if request.client else "unknown"
+
+
+ClientIp = Annotated[str, Depends(client_ip)]

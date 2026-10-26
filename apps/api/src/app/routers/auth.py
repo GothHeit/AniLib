@@ -1,14 +1,14 @@
 from datetime import timedelta
 from typing import Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.config import get_settings
 from app.db import utcnow
-from app.deps import CurrentUser, Session
+from app.deps import ClientIp, CurrentUser, Session
 from app.errors import ApiError
 from app.models import Invite, RefreshToken, User
 from app.security import (
@@ -90,14 +90,19 @@ def _me(user: User) -> MeOut:
 
 
 @router.post("/auth/register", response_model=TokensOut, status_code=201)
-async def register(body: RegisterIn, session: Session):
+async def register(body: RegisterIn, session: Session, request: Request, ip: ClientIp):
+    limits = request.app.state.auth_limits
+    username = body.username.lower()
+    limits.register_ip.check(ip)
+    limits.register_user.check(username)
+    limits.register_ip.record(ip)
+    limits.register_user.record(username)
     invite = await session.scalar(
         select(Invite).where(Invite.code == body.invite_code).with_for_update()
     )
     if invite is None or invite.used_at is not None or invite.expires_at < utcnow():
         raise ApiError(400, "invalid_invite", "Invite code is invalid, used or expired")
 
-    username = body.username.lower()
     if await session.scalar(select(User.id).where(User.username == username)):
         raise ApiError(409, "username_taken", "Username already taken")
 
@@ -115,18 +120,31 @@ async def register(body: RegisterIn, session: Session):
 
 
 @router.post("/auth/login", response_model=TokensOut)
-async def login(body: LoginIn, session: Session):
+async def login(body: LoginIn, session: Session, request: Request, ip: ClientIp):
+    limits = request.app.state.auth_limits
+    username = body.username.lower()
+    limits.login_ip.check(ip)
+    limits.login_user.check(username)
+    # Recorded before the slow checks so a burst of concurrent guesses is counted; a
+    # successful login takes its hit back, so friends who log in normally are never throttled.
+    limits.login_ip.record(ip)
+    limits.login_user.record(username)
     user = await session.scalar(select(User).where(User.username == body.username.lower()))
     password_hash = user.password_hash if user else DUMMY_PASSWORD_HASH
     if not verify_password(body.password, password_hash) or user is None:
         raise ApiError(401, "invalid_credentials", "Wrong username or password")
+    limits.login_ip.forgive(ip)
+    limits.login_user.reset(username)
     return await _issue_tokens(session, user)
 
 
 @router.post("/auth/refresh", response_model=TokensOut)
 async def refresh(body: RefreshIn, session: Session):
     token = await session.scalar(
-        select(RefreshToken).where(RefreshToken.token_hash == sha256(body.refresh_token))
+        select(RefreshToken)
+        .where(RefreshToken.token_hash == sha256(body.refresh_token))
+        # Row lock: a concurrent refresh with the same token waits here, then sees it revoked.
+        .with_for_update()
     )
     if token is None or token.expires_at < utcnow():
         raise ApiError(401, "invalid_refresh_token", "Refresh token is invalid or expired")

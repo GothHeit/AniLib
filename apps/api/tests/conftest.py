@@ -3,6 +3,7 @@ import os
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://app:app@localhost:5432/app_test")
 os.environ.setdefault("JWT_SECRET", "test-secret-that-is-at-least-32-characters")
 os.environ.setdefault("MAL_CLIENT_ID", "test-client-id")
+os.environ.setdefault("TOKEN_ENCRYPTION_KEY", "U7IyWg9977JGpiW4T6DkGZvteDb8a_l1bU8cy-JhLmc=")
 
 from pathlib import Path  # noqa: E402
 
