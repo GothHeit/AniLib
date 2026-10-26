@@ -2,7 +2,9 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { MalSection, type MalStatus } from "@/components/account/MalSection";
+import { PasswordForm } from "@/components/account/PasswordForm";
 import { PreferencesForm } from "@/components/account/PreferencesForm";
+import { SessionsPanel } from "@/components/account/SessionsPanel";
 import { ButtonLink } from "@/components/ui/Button";
 import { serverApi, unwrap } from "@/lib/server-api";
 
@@ -22,7 +24,11 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
   const { mal } = await searchParams;
 
   const api = await serverApi();
-  const [me, malStatus] = await Promise.all([unwrap(api.GET("/me"), locale), unwrap(api.GET("/me/mal"), locale)]);
+  const [me, malStatus, sessions] = await Promise.all([
+    unwrap(api.GET("/me"), locale),
+    unwrap(api.GET("/me/mal"), locale),
+    unwrap(api.GET("/me/sessions"), locale),
+  ]);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 pb-8 pt-24 sm:px-8">
@@ -47,6 +53,14 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
 
       <Section title={t("mal.title")}>
         <MalSection status={malStatus as MalStatus} returned={typeof mal === "string" ? mal : undefined} />
+      </Section>
+
+      <Section title={t("password.title")}>
+        <PasswordForm />
+      </Section>
+
+      <Section title={t("sessions.title")}>
+        <SessionsPanel sessions={sessions} />
       </Section>
     </div>
   );

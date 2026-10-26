@@ -43,14 +43,21 @@ def _decode(token: str, kind: str) -> dict | None:
     return claims if claims.get("typ") == kind else None
 
 
-def create_access_token(user_id: uuid.UUID) -> str:
+def create_access_token(user_id: uuid.UUID, session_id: uuid.UUID | None = None) -> str:
     minutes = get_settings().access_token_minutes
-    return _encode({"sub": str(user_id), "typ": "access"}, timedelta(minutes=minutes))
+    claims: dict = {"sub": str(user_id), "typ": "access"}
+    if session_id is not None:
+        claims["sid"] = str(session_id)
+    return _encode(claims, timedelta(minutes=minutes))
 
 
-def decode_access_token(token: str) -> uuid.UUID | None:
+def decode_access_token(token: str) -> tuple[uuid.UUID, uuid.UUID | None] | None:
+    """The user id and, for tokens issued by a login, the id of the session they belong to."""
     claims = _decode(token, "access")
-    return uuid.UUID(claims["sub"]) if claims else None
+    if not claims:
+        return None
+    sid = claims.get("sid")
+    return uuid.UUID(claims["sub"]), uuid.UUID(sid) if sid else None
 
 
 def create_playback_token(

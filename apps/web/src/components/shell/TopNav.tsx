@@ -12,7 +12,7 @@ import { SearchBox } from "./SearchBox";
 import { UserMenu } from "./UserMenu";
 
 /** Transparent over the hero, solid once the page scrolls. */
-export function TopNav({ username }: { username: string }) {
+export function TopNav({ username, isAdmin }: { username: string; isAdmin: boolean }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -55,7 +55,7 @@ export function TopNav({ username }: { username: string }) {
           </div>
           <LocaleSwitcher />
           <div className="hidden md:block">
-            <UserMenu username={username} />
+            <UserMenu username={username} isAdmin={isAdmin} />
           </div>
         </div>
       </nav>

@@ -35,7 +35,10 @@
     "anime_not_found": "Anime not found.",
     "not_available": "Not available from this source.",
     "network": "Couldn't reach the server.",
-    "unknown": "Something went wrong. Try again."
+    "unknown": "Something went wrong. Try again.",
+    "wrong_password": "The current password is wrong.",
+    "session_not_found": "That session is already gone.",
+    "forbidden": "That request was refused."
   },
   "row": {
     "previous": "Scroll left",

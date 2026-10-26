@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 
 import httpx
@@ -13,6 +14,15 @@ from app.ratelimit import AuthLimits
 from app.routers import anime, auth, home, invites, mal, progress, watch
 from app.sources import load_sources
 
+SWEEP_INTERVAL_SECONDS = 300
+
+
+async def _sweep_limits(limits: AuthLimits) -> None:
+    # Idle rate-limit keys are otherwise only dropped when the same key is seen again.
+    while True:
+        await asyncio.sleep(SWEEP_INTERVAL_SECONDS)
+        limits.sweep()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,7 +35,11 @@ async def lifespan(app: FastAPI):
         app.state.auth_limits = AuthLimits(settings)
         app.state.source_hints = anime.new_source_hints()
         app.state.sources = load_sources(settings.video_source_names)
-        yield
+        sweeper = asyncio.create_task(_sweep_limits(app.state.auth_limits))
+        try:
+            yield
+        finally:
+            sweeper.cancel()
     await db.dispose_engine()
 
 

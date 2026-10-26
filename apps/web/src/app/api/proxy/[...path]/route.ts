@@ -10,7 +10,9 @@ import {
   sessionCookies,
   type CookieSpec,
 } from "@/lib/cookies";
-import { refreshSession } from "@/lib/session";
+import { FORBIDDEN_ORIGIN, isSameOrigin } from "@/lib/origin";
+import { isAuthFailure, isProxyPathAllowed } from "@/lib/proxy-paths";
+import { deviceHeaders, refreshSession } from "@/lib/session";
 
 // Request headers passed to the API; everything else (cookies above all) stays here.
 const FORWARD_REQUEST = ["accept", "content-type", "range", "if-none-match"];
@@ -43,8 +45,9 @@ async function forward(request: NextRequest, path: string[]) {
   try {
     upstream = await send(request.cookies.get(ACCESS_COOKIE)?.value);
     const refresh = request.cookies.get(REFRESH_COOKIE)?.value;
-    if (upstream.status === 401 && refresh) {
-      const tokens = await refreshSession(refresh);
+    // Only a bad access token is worth a refresh; other 401s (an expired MAL link) would rotate it for nothing.
+    if (refresh && (await isAuthFailure(upstream))) {
+      const tokens = await refreshSession(refresh, deviceHeaders(request.headers));
       if (tokens === "unavailable") {
         return NextResponse.json({ error: { code: "network", message: "API unreachable" } }, { status: 502 });
       }
@@ -73,8 +76,9 @@ type Ctx = RouteContext<"/api/proxy/[...path]">;
 
 async function handle(request: NextRequest, ctx: Ctx) {
   const { path } = await ctx.params;
-  if (path.some((segment) => segment === "." || segment === "..")) {
-    return NextResponse.json({ error: { code: "validation_failed", message: "Bad path" } }, { status: 400 });
+  if (!isSameOrigin(request)) return NextResponse.json(FORBIDDEN_ORIGIN, { status: 403 });
+  if (!isProxyPathAllowed(path)) {
+    return NextResponse.json({ error: { code: "not_found", message: "Not found" } }, { status: 404 });
   }
   return forward(request, path);
 }

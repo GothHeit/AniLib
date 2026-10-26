@@ -1,4 +1,5 @@
-from datetime import timedelta
+import uuid
+from datetime import datetime, timedelta
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Request
@@ -8,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.config import get_settings
 from app.db import utcnow
-from app.deps import ClientIp, CurrentUser, Session
+from app.deps import ClientIp, CurrentSessionId, CurrentUser, Session
 from app.errors import ApiError
 from app.models import Invite, RefreshToken, User
 from app.security import (
@@ -23,7 +24,8 @@ from app.security import (
 router = APIRouter(tags=["auth"])
 
 Locale = Literal["pt", "en"]
-SubtitleLang = Annotated[str, StringConstraints(pattern=r"^(off|[a-z]{2,3}(-[A-Z]{2})?)$")]
+# "auto" clears the preference (pt-BR, then English); "off" hides subtitles.
+SubtitleLang = Annotated[str, StringConstraints(pattern=r"^(auto|off|[a-z]{2,3}(-[A-Z]{2})?)$")]
 
 
 class RegisterIn(BaseModel):
@@ -64,19 +66,48 @@ class MeUpdate(BaseModel):
     subtitle_lang: SubtitleLang | None = None
 
 
-async def _issue_tokens(session: Session, user: User) -> TokensOut:
+class PasswordIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class SessionOut(BaseModel):
+    id: str
+    user_agent: str | None
+    ip: str | None
+    started_at: datetime
+    last_active_at: datetime
+    current: bool
+
+
+def _device(request: Request, ip: str) -> dict:
+    agent = request.headers.get("user-agent")
+    return {"user_agent": agent[:255] if agent else None, "ip": ip[:64]}
+
+
+async def _issue_tokens(
+    session: Session,
+    user: User,
+    device: dict,
+    family: tuple[uuid.UUID, datetime] | None = None,
+) -> TokensOut:
+    """Starts a session, or with `family` (id, started_at) continues one after a rotation."""
     settings = get_settings()
     refresh = new_opaque_token()
+    family_id, started_at = family or (uuid.uuid4(), utcnow())
     session.add(
         RefreshToken(
             user_id=user.id,
             token_hash=sha256(refresh),
             expires_at=utcnow() + timedelta(days=settings.refresh_token_days),
+            family_id=family_id,
+            started_at=started_at,
+            **device,
         )
     )
     await session.commit()
     return TokensOut(
-        access_token=create_access_token(user.id),
+        access_token=create_access_token(user.id, family_id),
         refresh_token=refresh,
         expires_in=settings.access_token_minutes * 60,
     )
@@ -120,7 +151,7 @@ async def register(body: RegisterIn, session: Session, request: Request, ip: Cli
         raise ApiError(409, "username_taken", "Username already taken") from None
     invite.used_by = user.id
     invite.used_at = utcnow()
-    return await _issue_tokens(session, user)
+    return await _issue_tokens(session, user, _device(request, ip))
 
 
 @router.post("/auth/login", response_model=TokensOut)
@@ -128,22 +159,25 @@ async def login(body: LoginIn, session: Session, request: Request, ip: ClientIp)
     limits = request.app.state.auth_limits
     username = body.username.lower()
     limits.login_ip.check(ip)
-    limits.login_user.check(username)
+    # Keyed on (ip, username), so a stranger's bad guesses can't lock a friend out of their own
+    # account from another address.
+    attempt = f"{ip}|{username}"
+    limits.login_user.check(attempt)
     # Recorded before the slow checks so a burst of concurrent guesses is counted; a
     # successful login takes its hit back, so friends who log in normally are never throttled.
     limits.login_ip.record(ip)
-    limits.login_user.record(username)
+    limits.login_user.record(attempt)
     user = await session.scalar(select(User).where(User.username == body.username.lower()))
     password_hash = user.password_hash if user else DUMMY_PASSWORD_HASH
     if not verify_password(body.password, password_hash) or user is None:
         raise ApiError(401, "invalid_credentials", "Wrong username or password")
     limits.login_ip.forgive(ip)
-    limits.login_user.reset(username)
-    return await _issue_tokens(session, user)
+    limits.login_user.reset(attempt)
+    return await _issue_tokens(session, user, _device(request, ip))
 
 
 @router.post("/auth/refresh", response_model=TokensOut)
-async def refresh(body: RefreshIn, session: Session):
+async def refresh(body: RefreshIn, session: Session, request: Request, ip: ClientIp):
     token = await session.scalar(
         select(RefreshToken)
         .where(RefreshToken.token_hash == sha256(body.refresh_token))
@@ -167,7 +201,9 @@ async def refresh(body: RefreshIn, session: Session):
     user = await session.get(User, token.user_id)
     if user is None:
         raise ApiError(401, "invalid_refresh_token", "User no longer exists")
-    return await _issue_tokens(session, user)
+    return await _issue_tokens(
+        session, user, _device(request, ip), (token.family_id, token.started_at)
+    )
 
 
 @router.post("/auth/logout", status_code=204)
@@ -178,7 +214,7 @@ async def logout(body: RefreshIn, session: Session):
             RefreshToken.token_hash == sha256(body.refresh_token),
             RefreshToken.revoked_at.is_(None),
         )
-        .values(revoked_at=utcnow())
+        .values(revoked_at=utcnow(), expires_at=utcnow())
     )
     await session.commit()
 
@@ -191,6 +227,79 @@ async def me(user: CurrentUser):
 @router.patch("/me", response_model=MeOut)
 async def update_me(body: MeUpdate, user: CurrentUser, session: Session):
     for field, value in body.model_dump(exclude_none=True).items():
-        setattr(user, field, value)
+        setattr(user, field, None if value == "auto" else value)
     await session.commit()
     return _me(user)
+
+
+def _revoke(user: User, *, keep: uuid.UUID | None = None, only: uuid.UUID | None = None):
+    statement = update(RefreshToken).where(
+        RefreshToken.user_id == user.id, RefreshToken.revoked_at.is_(None)
+    )
+    if keep is not None:
+        statement = statement.where(RefreshToken.family_id != keep)
+    if only is not None:
+        statement = statement.where(RefreshToken.family_id == only)
+    # Expiring the token too makes a later refresh with it a plain 401. A token merely marked
+    # revoked reads as a replayed (stolen) one and would end every session.
+    return statement.values(revoked_at=utcnow(), expires_at=utcnow())
+
+
+@router.get("/me/sessions", response_model=list[SessionOut])
+async def list_sessions(user: CurrentUser, session: Session, current: CurrentSessionId):
+    tokens = await session.scalars(
+        select(RefreshToken)
+        .where(
+            RefreshToken.user_id == user.id,
+            RefreshToken.revoked_at.is_(None),
+            RefreshToken.expires_at > utcnow(),
+        )
+        .order_by(RefreshToken.created_at.desc())
+    )
+    return [
+        SessionOut(
+            id=str(t.family_id),
+            user_agent=t.user_agent,
+            ip=t.ip,
+            started_at=t.started_at,
+            last_active_at=t.created_at,
+            current=t.family_id == current,
+        )
+        for t in tokens
+    ]
+
+
+@router.delete("/me/sessions/{session_id}", status_code=204)
+async def revoke_session(session_id: uuid.UUID, user: CurrentUser, session: Session):
+    result = await session.execute(_revoke(user, only=session_id))
+    await session.commit()
+    if result.rowcount == 0:  # type: ignore[attr-defined]
+        raise ApiError(404, "session_not_found", "No such session")
+
+
+@router.delete("/me/sessions", status_code=204)
+async def revoke_all_sessions(user: CurrentUser, session: Session):
+    """Signs the user out everywhere, this device included."""
+    await session.execute(_revoke(user))
+    await session.commit()
+
+
+@router.post("/me/password", status_code=204)
+async def change_password(
+    body: PasswordIn,
+    user: CurrentUser,
+    session: Session,
+    request: Request,
+    current: CurrentSessionId,
+):
+    limiter = request.app.state.auth_limits.password_user
+    key = str(user.id)
+    limiter.check(key)
+    limiter.record(key)
+    if not verify_password(body.current_password, user.password_hash):
+        raise ApiError(403, "wrong_password", "Current password is wrong")
+    limiter.reset(key)
+    user.password_hash = hash_password(body.new_password)
+    # Every other device must sign in again; this one keeps its session.
+    await session.execute(_revoke(user, keep=current))
+    await session.commit()

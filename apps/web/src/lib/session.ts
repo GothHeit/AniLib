@@ -24,11 +24,21 @@ function prune(now: number) {
   for (const [key, value] of state.finished) if (now - value.at > REUSE_WINDOW_MS) state.finished.delete(key);
 }
 
-async function callRefresh(refreshToken: string): Promise<RefreshResult> {
+/** The browser details the API shows in the sessions list. Everything else is dropped. */
+export function deviceHeaders(headers: Headers): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const name of ["user-agent", "x-forwarded-for"]) {
+    const value = headers.get(name);
+    if (value) result[name] = value;
+  }
+  return result;
+}
+
+async function callRefresh(refreshToken: string, device: Record<string, string>): Promise<RefreshResult> {
   try {
     const res = await fetch(`${API_URL}/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...device },
       body: JSON.stringify({ refresh_token: refreshToken }),
       cache: "no-store",
     });
@@ -39,7 +49,7 @@ async function callRefresh(refreshToken: string): Promise<RefreshResult> {
   }
 }
 
-export function refreshSession(refreshToken: string): Promise<RefreshResult> {
+export function refreshSession(refreshToken: string, device: Record<string, string> = {}): Promise<RefreshResult> {
   const now = Date.now();
   prune(now);
   const recent = state.finished.get(refreshToken);
@@ -47,7 +57,7 @@ export function refreshSession(refreshToken: string): Promise<RefreshResult> {
   const running = state.inflight.get(refreshToken);
   if (running) return running;
 
-  const promise = callRefresh(refreshToken).then((result) => {
+  const promise = callRefresh(refreshToken, device).then((result) => {
     state.inflight.delete(refreshToken);
     // A transient failure is never cached: the next request may succeed.
     if (result !== "unavailable") state.finished.set(refreshToken, { result, at: Date.now() });

@@ -5,6 +5,8 @@ import { handleWatch } from "./fake-watch.mjs";
 
 // The saved subtitle choice, like the real account setting.
 let subtitleLang = null;
+// Other devices shown in the sessions list; revoking one removes it.
+const otherSessions = new Set(["phone"]);
 
 const PORT = Number(process.env.FAKE_API_PORT ?? 4010);
 const accessTokens = new Set();
@@ -117,6 +119,32 @@ createServer(async (req, res) => {
       subtitle_lang: subtitleLang,
       is_admin: false,
     });
+  }
+  if (url.pathname === "/me/sessions" || url.pathname.startsWith("/me/sessions/")) {
+    if (!authed) return send(401, error("not_authenticated"));
+    if (req.method === "DELETE") {
+      const id = url.pathname.split("/")[3];
+      if (!id) otherSessions.clear();
+      else if (!otherSessions.delete(id)) return send(404, error("session_not_found"));
+      return send(204);
+    }
+    const now = new Date().toISOString();
+    return send(200, [
+      { id: "current", user_agent: "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0", ip: "10.0.0.1", started_at: now, last_active_at: now, current: true },
+      ...[...otherSessions].map((id) => ({
+        id,
+        user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Version/17.5 Safari/604.1",
+        ip: null,
+        started_at: now,
+        last_active_at: now,
+        current: false,
+      })),
+    ]);
+  }
+  if (url.pathname === "/me/password" && req.method === "POST") {
+    if (!authed) return send(401, error("not_authenticated"));
+    const { current_password } = await body(req);
+    return current_password === "password123" ? send(204) : send(403, error("wrong_password"));
   }
   if (url.pathname === "/me/mal") {
     const token = req.headers.authorization?.replace("Bearer ", "");

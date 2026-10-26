@@ -35,7 +35,10 @@
     "anime_not_found": "Anime não encontrado.",
     "not_available": "Não disponível nesta fonte.",
     "network": "Não foi possível falar com o servidor.",
-    "unknown": "Algo deu errado. Tente de novo."
+    "unknown": "Algo deu errado. Tente de novo.",
+    "wrong_password": "A senha atual está errada.",
+    "session_not_found": "Essa sessão já foi encerrada.",
+    "forbidden": "Essa solicitação foi recusada."
   },
   "row": {
     "previous": "Rolar para a esquerda",

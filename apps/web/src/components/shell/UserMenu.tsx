@@ -8,13 +8,14 @@ import { postAuth } from "@/lib/bff";
 
 type Props = {
   username: string;
+  isAdmin?: boolean;
   /** "tab" opens upward from the phone tab bar. */
   variant?: "nav" | "tab";
   trigger?: ReactNode;
   triggerClassName?: string;
 };
 
-export function UserMenu({ username, variant = "nav", trigger, triggerClassName }: Props) {
+export function UserMenu({ username, isAdmin = false, variant = "nav", trigger, triggerClassName }: Props) {
   const t = useTranslations("nav");
   const tAccount = useTranslations("account");
   const router = useRouter();
@@ -72,6 +73,16 @@ export function UserMenu({ username, variant = "nav", trigger, triggerClassName 
           >
             {tAccount("menuSettings")}
           </Link>
+          {isAdmin && (
+            <Link
+              href="/invites"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line"
+            >
+              {tAccount("menuInvites")}
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"

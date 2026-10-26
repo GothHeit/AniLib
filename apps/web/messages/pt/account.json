@@ -55,6 +55,38 @@
       "copy": "Copiar link",
       "copied": "Link copiado.",
       "copyFailed": "Não foi possível copiar. Selecione o código e copie manualmente."
+    },
+    "security": "Segurança",
+    "menuInvites": "Convites",
+    "password": {
+      "title": "Alterar senha",
+      "current": "Senha atual",
+      "new": "Nova senha",
+      "hint": "Pelo menos {count} caracteres.",
+      "again": "Repita a nova senha",
+      "tooShort": "A nova senha precisa ter pelo menos {count} caracteres.",
+      "mismatch": "As duas novas senhas não são iguais.",
+      "submit": "Alterar senha",
+      "saving": "Salvando…",
+      "changed": "Senha alterada.",
+      "othersNote": "Seus outros dispositivos serão desconectados."
+    },
+    "sessions": {
+      "title": "Onde você está conectado",
+      "intro": "Estes dispositivos estão conectados à sua conta. Remova os que você não reconhece.",
+      "device": "{browser} em {system}",
+      "unknownDevice": "Dispositivo desconhecido",
+      "thisDevice": "Este dispositivo",
+      "lastActive": "Ativo {when}",
+      "signedInOn": "Conectado em {date}",
+      "revoke": "Desconectar",
+      "revoking": "Desconectando…",
+      "revoked": "Dispositivo desconectado.",
+      "revokeAll": "Desconectar em todos os lugares",
+      "revokeAllTitle": "Desconectar em todos os lugares?",
+      "revokeAllBody": "Todos os dispositivos, inclusive este, serão desconectados e vão precisar da sua senha de novo.",
+      "revokeAllConfirm": "Desconectar tudo",
+      "cancel": "Cancelar"
     }
   }
 }

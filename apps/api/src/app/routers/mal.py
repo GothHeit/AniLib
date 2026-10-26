@@ -46,7 +46,9 @@ async def callback(
     error: str | None = None,
 ):
     # MAL sends `error` and no `code` when the user denies access.
-    target = f"{get_settings().web_url}/profile"
+    # The state row remembers the user's language, so they land back on their own locale.
+    locale = (await _accounts(request).state_locale(session, state)) if state else None
+    target = f"{get_settings().web_url}/{locale or 'pt'}/settings"
     if error or not code or not state:
         return RedirectResponse(f"{target}?mal=denied")
     try:

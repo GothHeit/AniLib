@@ -32,7 +32,9 @@ class MalAccounts:
         # MAL only supports the "plain" PKCE method.
         verifier = secrets.token_urlsafe(64)
         state = secrets.token_urlsafe(24)
-        session.add(MalOAuthState(state=state, user_id=user.id, verifier=verifier))
+        session.add(
+            MalOAuthState(state=state, user_id=user.id, verifier=verifier, locale=user.locale)
+        )
         await session.commit()
         params = {
             "response_type": "code",
@@ -43,6 +45,10 @@ class MalAccounts:
             "redirect_uri": self._settings.mal_redirect_uri,
         }
         return f"{OAUTH_BASE}/authorize?{urlencode(params)}"
+
+    async def state_locale(self, session: AsyncSession, state: str) -> str | None:
+        pending = await session.get(MalOAuthState, state)
+        return pending.locale if pending else None
 
     async def complete(self, session: AsyncSession, code: str, state: str) -> None:
         pending = await session.get(MalOAuthState, state)

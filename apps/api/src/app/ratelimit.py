@@ -52,6 +52,11 @@ class RateLimiter:
         self._recent(key)
         self._hits.setdefault(key, deque()).append(self._clock())
 
+    def sweep(self) -> None:
+        """Drop every key whose hits have all expired; `_recent` prunes each key it visits."""
+        for key in list(self._hits):
+            self._recent(key)
+
     def forgive(self, key: str) -> None:
         """Drop the most recent hit, e.g. when an attempt turned out to be fine."""
         hits = self._hits.get(key)
@@ -73,3 +78,10 @@ class AuthLimits:
         self.register_user = RateLimiter(
             settings.register_user_limit, settings.register_window_seconds
         )
+        # Wrong current passwords on /me/password, per user.
+        self.password_user = RateLimiter(settings.login_user_limit, window)
+
+    def sweep(self) -> None:
+        for limiter in (self.login_ip, self.login_user, self.register_ip, self.register_user):
+            limiter.sweep()
+        self.password_user.sweep()

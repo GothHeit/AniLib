@@ -11,7 +11,7 @@ import { UserMenu } from "./UserMenu";
 const item = "flex flex-1 flex-col items-center gap-1 py-2 text-xs";
 
 /** Phone navigation: Home, Browse, My list, Search, You. */
-export function TabBar({ username }: { username: string }) {
+export function TabBar({ username, isAdmin }: { username: string; isAdmin: boolean }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const tabs = [...NAV_ITEMS, { href: "/search" as const, key: "search" as const, icon: "search" as const }];
@@ -38,6 +38,7 @@ export function TabBar({ username }: { username: string }) {
       <div className="flex flex-1 justify-center">
         <UserMenu
           username={username}
+          isAdmin={isAdmin}
           variant="tab"
           triggerClassName={`${item} h-full w-full text-muted`}
           trigger={

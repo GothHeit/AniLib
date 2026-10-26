@@ -47,6 +47,12 @@ class RefreshToken(TimestampMixin, Base):
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)
     expires_at: Mapped[datetime]
     revoked_at: Mapped[datetime | None]
+    # One login = one family: rotation keeps the family, so a family is a "session" the user can
+    # see and revoke. The device details are refreshed on every rotation.
+    family_id: Mapped[uuid.UUID] = mapped_column(index=True)
+    started_at: Mapped[datetime]
+    user_agent: Mapped[str | None] = mapped_column(String(255))
+    ip: Mapped[str | None] = mapped_column(String(64))
 
 
 class MalLink(TimestampMixin, Base):
@@ -69,6 +75,8 @@ class MalOAuthState(TimestampMixin, Base):
     state: Mapped[str] = mapped_column(String(64), primary_key=True)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     verifier: Mapped[str] = mapped_column(String(128))
+    # The user's language when linking started, so the callback can send them back to it.
+    locale: Mapped[str | None] = mapped_column(String(5))
 
 
 class WatchProgress(Base):

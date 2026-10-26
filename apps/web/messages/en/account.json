@@ -55,6 +55,38 @@
       "copy": "Copy link",
       "copied": "Link copied.",
       "copyFailed": "Couldn't copy. Select the code and copy it by hand."
+    },
+    "security": "Security",
+    "menuInvites": "Invites",
+    "password": {
+      "title": "Change password",
+      "current": "Current password",
+      "new": "New password",
+      "hint": "At least {count} characters.",
+      "again": "Repeat the new password",
+      "tooShort": "The new password needs at least {count} characters.",
+      "mismatch": "The two new passwords don't match.",
+      "submit": "Change password",
+      "saving": "Saving…",
+      "changed": "Password changed.",
+      "othersNote": "Your other devices will be signed out."
+    },
+    "sessions": {
+      "title": "Where you're signed in",
+      "intro": "These devices are signed in to your account. Remove any you don't recognize.",
+      "device": "{browser} on {system}",
+      "unknownDevice": "Unknown device",
+      "thisDevice": "This device",
+      "lastActive": "Active {when}",
+      "signedInOn": "Signed in on {date}",
+      "revoke": "Sign out",
+      "revoking": "Signing out…",
+      "revoked": "Device signed out.",
+      "revokeAll": "Sign out everywhere",
+      "revokeAllTitle": "Sign out everywhere?",
+      "revokeAllBody": "Every device, including this one, will be signed out and will need your password again.",
+      "revokeAllConfirm": "Sign out everywhere",
+      "cancel": "Cancel"
     }
   }
 }

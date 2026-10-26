@@ -97,3 +97,38 @@ async def test_successful_logins_do_not_use_up_the_ip_limit(client, session):
     await make_user(session, "kafka")
     for _ in range(get_settings().login_ip_limit + 3):
         assert (await login(client, "kafka", "password123")).status_code == 200
+
+
+async def test_a_strangers_guesses_do_not_lock_the_real_user_out(client, session, monkeypatch):
+    monkeypatch.setattr(get_settings(), "trust_proxy_headers", True)
+    await make_user(session, "kafka")
+    for _ in range(get_settings().login_user_limit):
+        r = await client.post(
+            "/auth/login",
+            json={"username": "kafka", "password": "nope"},
+            headers={"x-forwarded-for": "203.0.113.9"},
+        )
+        assert r.status_code == 401
+    blocked = await client.post(
+        "/auth/login",
+        json={"username": "kafka", "password": "password123"},
+        headers={"x-forwarded-for": "203.0.113.9"},
+    )
+    assert blocked.status_code == 429
+    owner = await client.post(
+        "/auth/login",
+        json={"username": "kafka", "password": "password123"},
+        headers={"x-forwarded-for": "198.51.100.4"},
+    )
+    assert owner.status_code == 200
+
+
+def test_sweep_drops_idle_keys():
+    clock = Clock()
+    limiter = RateLimiter(2, 60, clock)
+    limiter.record("old")
+    clock.now += 30
+    limiter.record("new")
+    clock.now += 40
+    limiter.sweep()
+    assert list(limiter._hits) == ["new"]

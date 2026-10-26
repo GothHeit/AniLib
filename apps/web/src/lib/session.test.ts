@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { refreshSession, resetSessionState } from "./session";
+import { deviceHeaders, refreshSession, resetSessionState } from "./session";
 
 const tokens = { access_token: "new", refresh_token: "next", token_type: "bearer", expires_in: 900 };
 
@@ -50,5 +50,20 @@ describe("refreshSession", () => {
     vi.stubGlobal("fetch", fetchMock);
     expect(await copy.refreshSession("old")).toMatchObject({ access_token: "new" });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("deviceHeaders", () => {
+  it("keeps only what the sessions list shows", () => {
+    const headers = new Headers({ "user-agent": "Firefox", "x-forwarded-for": "1.2.3.4", cookie: "secret", accept: "*/*" });
+    expect(deviceHeaders(headers)).toEqual({ "user-agent": "Firefox", "x-forwarded-for": "1.2.3.4" });
+  });
+
+  it("is sent with the refresh call", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => Response.json(tokens));
+    vi.stubGlobal("fetch", fetchMock);
+    await refreshSession("old", { "user-agent": "Firefox" });
+    const init = fetchMock.mock.calls[0][1];
+    expect(init?.headers).toMatchObject({ "user-agent": "Firefox" });
   });
 });

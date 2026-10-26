@@ -67,12 +67,12 @@ async def test_anime_routes_need_login(client):
 async def test_mal_callback_handles_denied_consent(client):
     r = await client.get("/mal/callback", params={"error": "access_denied", "state": "s"})
     assert r.status_code == 307
-    assert r.headers["location"].endswith("/profile?mal=denied")
+    assert r.headers["location"].endswith("/pt/settings?mal=denied")
 
 
 async def test_mal_callback_rejects_unknown_state(client):
     r = await client.get("/mal/callback", params={"code": "c", "state": "unknown"})
-    assert r.headers["location"].endswith("/profile?mal=failed")
+    assert r.headers["location"].endswith("/pt/settings?mal=failed")
 
 
 async def test_list_entry_without_a_mal_link(client, session):
@@ -109,3 +109,13 @@ async def test_list_entry_reads_the_users_status(client, session):
     assert body == {"linked": True, "status": "watching", "score": 8, "num_episodes_watched": 3}
     assert route.calls.last.request.headers["authorization"] == "Bearer a"
     assert (await client.get("/me/animelist/6", headers=headers)).json()["status"] is None
+
+
+async def test_mal_callback_returns_to_the_users_language(client, session):
+    from app.models import MalOAuthState
+
+    user, _ = await make_user(session, "kafka")
+    session.add(MalOAuthState(state="abc", user_id=user.id, verifier="v", locale="en"))
+    await session.commit()
+    r = await client.get("/mal/callback", params={"error": "access_denied", "state": "abc"})
+    assert r.headers["location"].endswith("/en/settings?mal=denied")

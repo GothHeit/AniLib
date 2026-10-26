@@ -12,9 +12,9 @@ export default async function AppLayout({ children, params }: LayoutProps<"/[loc
 
   return (
     <>
-      <TopNav username={me.username} />
+      <TopNav username={me.username} isAdmin={me.is_admin} />
       <main className="pb-24 md:pb-16">{children}</main>
-      <TabBar username={me.username} />
+      <TabBar username={me.username} isAdmin={me.is_admin} />
     </>
   );
 }

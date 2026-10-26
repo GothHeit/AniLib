@@ -10,7 +10,7 @@ import {
   sessionCookies,
   type CookieSpec,
 } from "./lib/cookies";
-import { refreshSession } from "./lib/session";
+import { deviceHeaders, refreshSession } from "./lib/session";
 
 const intl = createIntlMiddleware(routing);
 
@@ -47,7 +47,7 @@ export default async function proxy(request: NextRequest) {
   // The access cookie expires early. Renew it here so server components always see a valid one.
   const refresh = request.cookies.get(REFRESH_COOKIE)?.value;
   if (!signedIn && refresh) {
-    const tokens = await refreshSession(refresh);
+    const tokens = await refreshSession(refresh, deviceHeaders(request.headers));
     if (tokens === "unavailable") {
       // The API is down, not the session: keep the cookies and let the page's own fetch fail.
       return first;

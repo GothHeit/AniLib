@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated
 
 from fastapi import Depends, Request
@@ -21,16 +22,28 @@ async def current_user(
 ) -> User:
     if credentials is None:
         raise ApiError(401, "not_authenticated", "Missing bearer token")
-    user_id = decode_access_token(credentials.credentials)
-    if user_id is None:
+    decoded = decode_access_token(credentials.credentials)
+    if decoded is None:
         raise ApiError(401, "invalid_token", "Invalid or expired token")
-    user = await session.get(User, user_id)
+    user = await session.get(User, decoded[0])
     if user is None:
         raise ApiError(401, "invalid_token", "User no longer exists")
     return user
 
 
 CurrentUser = Annotated[User, Depends(current_user)]
+
+
+async def current_session_id(
+    user: CurrentUser,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
+) -> uuid.UUID | None:
+    """The login session the request belongs to; None for tokens that predate sessions."""
+    decoded = decode_access_token(credentials.credentials) if credentials else None
+    return decoded[1] if decoded else None
+
+
+CurrentSessionId = Annotated[uuid.UUID | None, Depends(current_session_id)]
 
 
 async def current_admin(user: CurrentUser) -> User:
