@@ -45,6 +45,15 @@ def with_retry[T](
     raise AssertionError("unreachable")
 
 
+def _fetch_video(provider: AllAnimeProvider, identifier: str, episode: int, lang: Lang) -> list:
+    # AllAnime answers some episodes with "episode": null, which makes anipy raise while
+    # parsing. That is a permanent "not available", so it must not be retried.
+    try:
+        return provider.get_video(identifier, episode, _lang(lang)) or []
+    except (AttributeError, KeyError, TypeError):
+        return []
+
+
 def _lang(lang: Lang) -> LanguageTypeEnum:
     return LanguageTypeEnum.DUB if lang == "dub" else LanguageTypeEnum.SUB
 
@@ -92,7 +101,7 @@ class AllAnimeSource:
         found = self._resolve(anime)
         if found is None:
             return None
-        streams = with_retry(self._provider.get_video, found.identifier, episode, _lang(lang))
+        streams = with_retry(_fetch_video, self._provider, found.identifier, episode, lang)
         if not streams:
             return None
         best = max(streams, key=lambda s: s.resolution or 0)
