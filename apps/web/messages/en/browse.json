@@ -1,0 +1,32 @@
+{
+  "browse": {
+    "title": "Browse",
+    "filters": "Filters",
+    "genre": "Genre",
+    "year": "Year",
+    "season": "Season",
+    "any": "Any",
+    "clear": "Clear filters",
+    "seasons": {
+      "winter": "Winter",
+      "spring": "Spring",
+      "summer": "Summer",
+      "fall": "Fall"
+    },
+    "seasonNeedsYear": "Pick a year to filter by season.",
+    "empty": "No titles match these filters.",
+    "pagination": "Pages",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page}"
+  },
+  "search": {
+    "title": "Search",
+    "resultsFor": "Results for “{q}”",
+    "prompt": "Type a title in the search box.",
+    "empty": "Nothing found for “{q}”.",
+    "suggestions": "Suggestions",
+    "noSuggestions": "No suggestions",
+    "viewAll": "See all results"
+  }
+}

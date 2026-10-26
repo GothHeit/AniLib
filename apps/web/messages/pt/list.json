@@ -1,0 +1,31 @@
+{
+  "list": {
+    "title": "Minha lista",
+    "tabs": "Status da lista",
+    "status": {
+      "watching": "Assistindo",
+      "plan_to_watch": "Quero assistir",
+      "completed": "Concluídos",
+      "on_hold": "Em pausa",
+      "dropped": "Abandonados"
+    },
+    "empty": "Nada por aqui ainda.",
+    "progress": "{watched} de {total} episódios",
+    "progressUnknown": "{watched} episódios",
+    "menu": "Opções de {title}",
+    "moveTo": "Mover para {status}",
+    "remove": "Remover da lista",
+    "updated": "Lista atualizada.",
+    "removed": "Removido da sua lista.",
+    "unlinked": {
+      "title": "Vincule sua conta do MyAnimeList",
+      "body": "Sua lista fica no MyAnimeList. Vincule para ver e gerenciar por aqui.",
+      "action": "Vincular MyAnimeList"
+    },
+    "errors": {
+      "mal_not_linked": "Vincule sua conta do MyAnimeList primeiro.",
+      "mal_session_expired": "Sua sessão do MyAnimeList expirou. Vincule de novo.",
+      "mal_update_failed": "O MyAnimeList recusou a alteração. Tente de novo."
+    }
+  }
+}

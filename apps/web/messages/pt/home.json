@@ -1,0 +1,14 @@
+{
+  "home": {
+    "play": "Assistir agora",
+    "episode": "Episódio {n}",
+    "score": "Nota {score}",
+    "rows": {
+      "continue_watching": "Continuar assistindo",
+      "my_list": "Minha lista",
+      "seasonal": "Nesta temporada",
+      "top": "Mais bem avaliados"
+    },
+    "empty": "Nada para mostrar ainda. Tente de novo em instantes."
+  }
+}

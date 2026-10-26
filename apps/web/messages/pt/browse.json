@@ -1,0 +1,32 @@
+{
+  "browse": {
+    "title": "Explorar",
+    "filters": "Filtros",
+    "genre": "Gênero",
+    "year": "Ano",
+    "season": "Temporada",
+    "any": "Qualquer",
+    "clear": "Limpar filtros",
+    "seasons": {
+      "winter": "Inverno",
+      "spring": "Primavera",
+      "summer": "Verão",
+      "fall": "Outono"
+    },
+    "seasonNeedsYear": "Escolha um ano para filtrar por temporada.",
+    "empty": "Nenhum título combina com esses filtros.",
+    "pagination": "Páginas",
+    "previous": "Anterior",
+    "next": "Próxima",
+    "page": "Página {page}"
+  },
+  "search": {
+    "title": "Buscar",
+    "resultsFor": "Resultados para “{q}”",
+    "prompt": "Digite um título na caixa de busca.",
+    "empty": "Nada encontrado para “{q}”.",
+    "suggestions": "Sugestões",
+    "noSuggestions": "Sem sugestões",
+    "viewAll": "Ver todos os resultados"
+  }
+}

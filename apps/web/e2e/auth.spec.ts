@@ -13,7 +13,7 @@ test("sends signed-out visitors to login and back to the page they wanted", asyn
 
 test("signs in, keeps tokens out of the page, and signs out", async ({ page, context }) => {
   await signIn(page);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("kafka");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Frieren");
 
   const cookies = await context.cookies();
   expect(cookies.filter((c) => c.name.startsWith("mr_")).every((c) => c.httpOnly)).toBe(true);

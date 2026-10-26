@@ -1,10 +1,41 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { Suspense } from "react";
 
-import { ComingSoon } from "@/components/shell/ComingSoon";
+import { GridSkeleton, PosterGrid } from "@/components/grid/PosterGrid";
+import { PosterCard } from "@/components/ui/PosterCard";
+import { animeHref, captionOf, posterOf } from "@/lib/catalog";
+import { serverApi, unwrap } from "@/lib/server-api";
 
-export default async function Page({ params }: PageProps<"/[locale]/search">) {
+async function Results({ q, locale }: { q: string; locale: string }) {
+  const t = await getTranslations("search");
+  const { data } = await unwrap((await serverApi()).GET("/anime/search", { params: { query: { q } } }), locale);
+  if (data.length === 0) return <p className="py-12 text-center text-muted">{t("empty", { q })}</p>;
+  return (
+    <PosterGrid>
+      {data.map((a) => (
+        <PosterCard key={a.id} href={animeHref(a.id)} title={a.title} image={posterOf(a)} caption={captionOf(a)} />
+      ))}
+    </PosterGrid>
+  );
+}
+
+export default async function SearchPage({ params, searchParams }: PageProps<"/[locale]/search">) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations("nav");
-  return <ComingSoon title={t("search")} />;
+  const t = await getTranslations("search");
+  const raw = (await searchParams).q;
+  const q = (Array.isArray(raw) ? raw[0] : raw)?.trim().slice(0, 100) ?? "";
+
+  return (
+    <section className="px-4 pb-8 pt-24 sm:px-8">
+      <h1 className="mb-6 text-3xl font-bold">{q ? t("resultsFor", { q }) : t("title")}</h1>
+      {q ? (
+        <Suspense key={q} fallback={<GridSkeleton />}>
+          <Results q={q} locale={locale} />
+        </Suspense>
+      ) : (
+        <p className="text-muted">{t("prompt")}</p>
+      )}
+    </section>
+  );
 }

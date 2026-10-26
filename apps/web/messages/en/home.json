@@ -1,0 +1,14 @@
+{
+  "home": {
+    "play": "Watch now",
+    "episode": "Episode {n}",
+    "score": "Score {score}",
+    "rows": {
+      "continue_watching": "Continue watching",
+      "my_list": "My list",
+      "seasonal": "This season",
+      "top": "Top rated"
+    },
+    "empty": "Nothing to show yet. Try again in a moment."
+  }
+}

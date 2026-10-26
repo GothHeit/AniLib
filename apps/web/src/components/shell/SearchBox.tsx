@@ -1,32 +1,142 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
+import { api } from "@/lib/api";
+import { animeHref, captionOf, posterOf, type AnimeCard } from "@/lib/catalog";
 
+const MIN_CHARS = 2;
+const DEBOUNCE_MS = 250;
+const MAX_SUGGESTIONS = 6;
+
+/** Search field with an instant results dropdown. Enter opens the full results page. */
 export function SearchBox() {
   const t = useTranslations("nav");
+  const tSearch = useTranslations("search");
   const router = useRouter();
+  const listId = useId();
+  const root = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<AnimeCard[]>([]);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+
+  const q = query.trim();
+
+  useEffect(() => {
+    if (q.length < MIN_CHARS) return;
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await api.GET("/anime/search", { params: { query: { q } }, signal: controller.signal });
+        setResults((data?.data ?? []).slice(0, MAX_SUGGESTIONS));
+        setActive(-1);
+      } catch {
+        // aborted by a newer keystroke, or the API is down: keep what is shown
+      }
+    }, DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [q]);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => !root.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  const visible = open && q.length >= MIN_CHARS;
+  const shown = q.length >= MIN_CHARS ? results : [];
+
+  function go(href: string | { pathname: string; query: Record<string, string> }) {
+    setOpen(false);
+    router.push(href);
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Escape") setOpen(false);
+    else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      if (!shown.length) return;
+      e.preventDefault();
+      setOpen(true);
+      const step = e.key === "ArrowDown" ? 1 : -1;
+      setActive((i) => {
+        const n = i + step;
+        return n < -1 ? shown.length - 1 : n >= shown.length ? -1 : n;
+      });
+    }
+  }
 
   return (
-    <form
-      role="search"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const q = query.trim();
-        if (q) router.push({ pathname: "/search", query: { q } });
-      }}
-    >
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        aria-label={t("search")}
-        placeholder={t("searchPlaceholder")}
-        className="w-40 rounded-ui border border-line bg-surface/80 px-3 py-1.5 text-sm placeholder:text-muted focus:w-64 focus:border-accent lg:w-56"
-      />
-    </form>
+    <div ref={root} className="relative">
+      <form
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (active >= 0 && shown[active]) go(animeHref(shown[active].id));
+          else if (q) go({ pathname: "/search", query: { q } });
+        }}
+      >
+        <input
+          type="search"
+          role="combobox"
+          aria-expanded={visible}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={visible && active >= 0 ? `${listId}-${active}` : undefined}
+          autoComplete="off"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
+          aria-label={t("search")}
+          placeholder={t("searchPlaceholder")}
+          className="w-40 rounded-ui border border-line bg-surface/80 px-3 py-1.5 text-sm placeholder:text-muted focus:w-64 focus:border-accent lg:w-56"
+        />
+      </form>
+      <ul
+        id={listId}
+        role="listbox"
+        aria-label={tSearch("suggestions")}
+        hidden={!visible}
+        className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-ui border border-line bg-surface shadow-lg shadow-black/50"
+      >
+        {shown.length === 0 && <li className="px-3 py-3 text-sm text-muted">{tSearch("noSuggestions")}</li>}
+        {shown.map((a, i) => (
+          <li key={a.id} id={`${listId}-${i}`} role="option" aria-selected={i === active}>
+            <Link
+              href={animeHref(a.id)}
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2 hover:bg-bg ${i === active ? "bg-bg" : ""}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- posters come from remote catalogs */}
+              {posterOf(a) && <img src={posterOf(a)!} alt="" className="h-12 w-8 shrink-0 rounded-ui object-cover" />}
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium">{a.title}</span>
+                <span className="block text-xs text-muted">{captionOf(a)}</span>
+              </span>
+            </Link>
+          </li>
+        ))}
+        {q && (
+          <li role="none" className="border-t border-line">
+            <Link
+              href={{ pathname: "/search", query: { q } }}
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-sm font-bold text-accent hover:bg-bg"
+            >
+              {tSearch("viewAll")}
+            </Link>
+          </li>
+        )}
+      </ul>
+    </div>
   );
 }
