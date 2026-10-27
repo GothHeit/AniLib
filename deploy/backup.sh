@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Dumps the database to deploy/backups/ and keeps the newest 14. Run it from cron, e.g. daily:
-#   0 4 * * * /path/to/AniLib/deploy/backup.sh
+#   0 4 * * * /path/to/MoonRoom/deploy/backup.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p backups

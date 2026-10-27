@@ -51,7 +51,7 @@ once in WSL (systemd must be on: `/etc/wsl.conf` with `[boot]` / `systemd=true`,
 from Windows):
 
 ```bash
-git clone https://github.com/GothHeit/AniLib ~/moonroom-prod
+git clone https://github.com/GothHeit/MoonRoom ~/moonroom-prod
 cp ~/projetos/AniLib/deploy/.env ~/moonroom-prod/deploy/.env
 mkdir -p ~/.config/systemd/user
 cp ~/moonroom-prod/deploy/systemd/moonroom-deploy.* ~/.config/systemd/user/
