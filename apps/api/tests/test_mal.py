@@ -147,3 +147,30 @@ async def test_animelist_is_cached_until_the_list_changes(client, session):
     await client.patch("/me/animelist/5", json={"status": "completed"}, headers=headers)
     await client.get("/me/animelist", headers=headers)
     assert listing.call_count == 2
+
+
+@respx.mock
+async def test_animelist_cache_is_dropped_on_delete_and_unlink(client, session):
+    user, headers = await make_user(session, "kafka")
+    session.add(
+        MalLink(
+            user_id=user.id,
+            access_token="a",
+            refresh_token="r",
+            expires_at=utcnow() + timedelta(hours=1),
+        )
+    )
+    await session.commit()
+    listing = respx.get(f"{API_BASE}/users/@me/animelist").mock(
+        return_value=httpx.Response(200, json={"data": []})
+    )
+    respx.delete(f"{API_BASE}/anime/5/my_list_status").mock(return_value=httpx.Response(200))
+
+    await client.get("/me/animelist", headers=headers)
+    await client.delete("/me/animelist/5", headers=headers)
+    await client.get("/me/animelist", headers=headers)
+    assert listing.call_count == 2
+
+    await client.delete("/me/mal", headers=headers)
+    assert (await client.get("/me/animelist", headers=headers)).status_code != 200
+    assert listing.call_count == 2

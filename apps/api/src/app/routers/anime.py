@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import Sequence
 from typing import Annotated, Literal
 
@@ -20,6 +21,7 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/anime", tags=["anime"])
+log = logging.getLogger(__name__)
 
 Season = Literal["winter", "spring", "summer", "fall"]
 
@@ -130,6 +132,23 @@ async def sources(request: Request, anime_id: int, user: CurrentUser):
     return SourcesOut(sources=await _available_sources(request, raw))
 
 
+# Checks left running after the response. The loop only holds tasks weakly, so keep them here
+# until they finish, and read their outcome so a failure is not left unretrieved.
+_running: set[asyncio.Future] = set()
+
+
+def _reap(task: asyncio.Future) -> None:
+    _running.discard(task)
+    if not task.cancelled() and task.exception() is not None:
+        log.warning("anime: safety check failed: %s", task.exception())
+
+
+def _track[T: asyncio.Future](task: T) -> T:
+    _running.add(task)
+    task.add_done_callback(_reap)
+    return task
+
+
 async def _only_safe(mal: MalClient, *groups: list[dict]) -> tuple[list[dict], ...]:
     """Keeps the entries whose details say they are safe. A title that can't be checked, or
     isn't checked within the budget, is dropped rather than shown."""
@@ -143,7 +162,7 @@ async def _only_safe(mal: MalClient, *groups: list[dict]) -> tuple[list[dict], .
                 return False
 
     heads = [group[:SAFE_CHECK_LIMIT] for group in groups]
-    tasks = [[asyncio.ensure_future(check(e)) for e in head] for head in heads]
+    tasks = [[_track(asyncio.ensure_future(check(e))) for e in head] for head in heads]
     pending = [t for group in tasks for t in group]
     if pending:
         await asyncio.wait(pending, timeout=SAFE_CHECK_BUDGET)

@@ -3,7 +3,7 @@ import logging
 import uuid
 from datetime import timedelta
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import new_session, utcnow
@@ -87,6 +87,20 @@ async def withdraw(
     await _forget(session, user_id, kind, actor_id, None, None)
 
 
+async def forget_pair(session: AsyncSession, a: uuid.UUID, b: uuid.UUID) -> None:
+    """Removes what the two sent each other once they stop being friends: their acceptance
+    notices and room invites (a room invite needs a friendship to be useful)."""
+    await session.execute(
+        delete(Notification).where(
+            Notification.kind.in_(("friend_request", "friend_accepted", "room_invite")),
+            or_(
+                and_(Notification.user_id == a, Notification.actor_id == b),
+                and_(Notification.user_id == b, Notification.actor_id == a),
+            ),
+        )
+    )
+
+
 async def purge_old(session: AsyncSession) -> None:
     await session.execute(
         delete(Notification).where(Notification.created_at < utcnow() - RETENTION)
@@ -97,15 +111,19 @@ async def purge_old(session: AsyncSession) -> None:
 
 
 async def _latest_episode(sources: dict[str, VideoSource], anime: dict) -> int | None:
-    """The newest episode the first source that knows the title has."""
+    """The newest episode the first source that knows the title has, in either language."""
     for source in sources.values():
-        try:
-            found = await asyncio.wait_for(source.episodes(anime, "sub"), SOURCE_TIMEOUT_SECONDS)
-        except Exception as exc:  # a broken source just isn't consulted
-            log.warning("notifications: %s failed for %s: %s", source.name, anime["id"], exc)
-            continue
-        if found and found.episodes:
-            return max(found.episodes)
+        latest: list[int] = []
+        for lang in ("sub", "dub"):
+            try:
+                found = await asyncio.wait_for(source.episodes(anime, lang), SOURCE_TIMEOUT_SECONDS)
+            except Exception as exc:  # a broken source just isn't consulted
+                log.warning("notifications: %s failed for %s: %s", source.name, anime["id"], exc)
+                continue
+            if found and found.episodes:
+                latest.append(max(found.episodes))
+        if latest:
+            return max(latest)
     return None
 
 

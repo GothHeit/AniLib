@@ -58,8 +58,8 @@ async def test_marking_read_and_dismissing(client, session):
     _, bob = await make_user(session, "bob")
     await client.post("/friends/requests", json={"username": "bob"}, headers=ana)
     await client.post("/friends/requests", json={"username": "ana"}, headers=bob)
-    await client.delete(f"/friends/{ana_user.id}", headers=bob)
-    await client.post("/friends/requests", json={"username": "ana"}, headers=bob)
+    _, cat = await make_user(session, "cat")
+    await client.post("/friends/requests", json={"username": "ana"}, headers=cat)
     items = (await bell(client, ana))["items"]
     assert [i["kind"] for i in items] == ["friend_request", "friend_accepted"]
 
@@ -219,3 +219,37 @@ async def test_new_episode_checks_skip_finished_titles_adult_ones_and_muted_user
     assert (await bell(client, ana))["items"] == []
     assert (await bell(client, bob))["items"] == []
     assert await session.get(EpisodeSeen, 7) is None
+
+
+class DubOnly(Airing):
+    """A source that has the airing episodes only in English audio."""
+
+    async def episodes(self, anime, lang):
+        return await super().episodes(anime, lang) if lang == "dub" else None
+
+
+async def test_new_dub_episodes_count_when_there_is_no_sub_listing(client, session):
+    from sqlalchemy import delete
+
+    await session.execute(delete(EpisodeSeen))
+    await session.commit()
+    _, ana = await make_user(session, "ana")
+    await watch(client, ana, 5, 2)
+    mal = FakeMal({5: node(5, "Airing Show", status="currently_airing", nsfw="white")})
+    source = DubOnly(3)
+    await check(mal, source)
+    source.latest = 4
+    await check(mal, source)
+    assert [i["episode"] for i in (await bell(client, ana))["items"]] == [4]
+
+
+async def test_unfriending_clears_what_the_two_sent_each_other(client, session):
+    ana_user, ana = await make_user(session, "ana")
+    bob_user, bob = await make_user(session, "bob")
+    await befriend(client, ana, bob, "bob")
+    assert [i["kind"] for i in (await bell(client, ana))["items"]] == ["friend_accepted"]
+    session.add(Notification(user_id=bob_user.id, kind="room_invite", actor_id=ana_user.id))
+    await session.commit()
+    await client.delete(f"/friends/{ana_user.id}", headers=bob)
+    assert (await bell(client, ana))["items"] == []
+    assert (await bell(client, bob))["items"] == []

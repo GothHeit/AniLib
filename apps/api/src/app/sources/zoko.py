@@ -11,7 +11,7 @@ import asyncio
 import base64
 import json
 import re
-from typing import Literal
+from typing import Literal, cast
 
 import httpx
 from cachetools import TTLCache
@@ -27,6 +27,8 @@ USER_AGENT = (
 BLOB = re.compile(r'window\.__P="([^"]*)"')
 RESOLUTION = re.compile(r"RESOLUTION=\d+x(\d+)")
 CACHE_TTL = 1800
+# A page that is not there yet may appear soon (a just-aired episode), so misses expire sooner.
+MISS_TTL = 120
 # Upper bound when MAL doesn't know the episode count (long-running shows).
 MAX_EPISODES = 2000
 # Embed pages fetched at once while counting episodes.
@@ -129,13 +131,35 @@ class ZokoSource:
         )
         # Every embed page read, misses included, so probing and playback share the work.
         self._configs: TTLCache[tuple, dict | None] = TTLCache(maxsize=16384, ttl=CACHE_TTL)
+        self._misses: TTLCache[tuple, None] = TTLCache(maxsize=16384, ttl=MISS_TTL)
+        # Pages being fetched, so concurrent callers (a title page, a fallback) share one request.
+        self._inflight: dict[tuple, asyncio.Task[dict | None]] = {}
         self._streams: TTLCache[tuple, Stream | None] = TTLCache(maxsize=4096, ttl=CACHE_TTL)
         self._episodes: TTLCache[tuple, EpisodeList | None] = TTLCache(maxsize=4096, ttl=CACHE_TTL)
+        # Results that may change soon (no episodes yet, a still-airing show) live here instead.
+        self._recent: TTLCache[tuple, object] = TTLCache(maxsize=4096, ttl=MISS_TTL)
 
     async def _config(self, mal_id: int, episode: int, lang: Lang) -> dict | None:
         key = (mal_id, episode, lang)
         if key in self._configs:
             return self._configs[key]
+        if key in self._misses:
+            return None
+        task = self._inflight.get(key)
+        if task is None:
+            task = asyncio.ensure_future(self._fetch_config(key))
+            self._inflight[key] = task
+            task.add_done_callback(lambda t: self._settle(key, t))
+        # Shielded: one caller giving up must not cancel the fetch the others wait on.
+        return await asyncio.shield(task)
+
+    def _settle(self, key: tuple, task: asyncio.Task[dict | None]) -> None:
+        self._inflight.pop(key, None)
+        if not task.cancelled():
+            task.exception()  # read it, so a fetch nobody waits on isn't left unretrieved
+
+    async def _fetch_config(self, key: tuple) -> dict | None:
+        mal_id, episode, lang = key
         response = await self._client.get(f"{EMBED}/stream/mal/{mal_id}/{episode}/{lang}")
         if response.status_code == 404:
             config = None
@@ -144,7 +168,10 @@ class ZokoSource:
             match = BLOB.search(response.text)
             # An unknown id or episode still answers 200, just without the config blob.
             config = decode_blob(match.group(1)) if match else None
-        self._configs[key] = config
+        if config is None:
+            self._misses[key] = None
+        else:
+            self._configs[key] = config
         return config
 
     async def _exists(self, mal_id: int, episode: int, lang: Lang) -> bool:
@@ -184,14 +211,23 @@ class ZokoSource:
 
     async def episodes(self, anime: dict, lang: Lang) -> EpisodeList | None:
         key = (anime["id"], lang)
-        if key not in self._episodes:
-            last = await self._last_episode(anime["id"], lang, anime.get("num_episodes") or 0)
-            self._episodes[key] = (
+        if key in self._episodes:
+            found = self._episodes[key]
+        elif ("episodes", *key) in self._recent:
+            found = cast(EpisodeList | None, self._recent[("episodes", *key)])
+        else:
+            known = anime.get("num_episodes") or 0
+            last = await self._last_episode(anime["id"], lang, known)
+            found = (
                 EpisodeList(episodes=list(range(1, last + 1)), source_title=anime["title"])
                 if last
                 else None
             )
-        found = self._episodes[key]
+            # A complete list stays; an empty or short one may grow when the next episode airs.
+            if found is not None and known and last >= known:
+                self._episodes[key] = found
+            else:
+                self._recent[("episodes", *key)] = found
         if found is None:
             return None
         # Art only exists for pages already read; probing and playback fill it in over time.
@@ -207,6 +243,8 @@ class ZokoSource:
         key = (anime["id"], episode, lang)
         if key in self._streams:
             return self._streams[key]
+        if ("stream", *key) in self._recent:
+            return cast(Stream | None, self._recent[("stream", *key)])
         config = await self._config(anime["id"], episode, lang)
         src = config.get("src") if config else None
         result = None
@@ -221,7 +259,10 @@ class ZokoSource:
                 skips=parse_skips(config.get("skip"), config.get("chapters")),
                 default_audio=audio if isinstance(audio, str) and audio else None,
             )
-        self._streams[key] = result
+        if result is None:
+            self._recent[("stream", *key)] = None
+        else:
+            self._streams[key] = result
         return result
 
     async def _top_resolution(self, master: str) -> int | None:

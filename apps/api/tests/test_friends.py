@@ -193,3 +193,28 @@ async def test_a_binge_does_not_crowd_out_the_feed(client, session):
     await watch(client, bob, 21, 1)
     feed = (await client.get("/friends/activity", params={"limit": 2}, headers=ana)).json()
     assert {i["anime"]["id"] for i in feed} == {20, 21}
+
+
+async def test_simultaneous_requests_end_as_friends(client, session, monkeypatch):
+    from app.models import Friendship
+    from app.routers import friends
+
+    ana_user, ana = await make_user(session, "ana")
+    bob_user, _ = await make_user(session, "bob")
+    real = friends._friendship
+    calls = 0
+
+    async def blind_first(db, a, b):
+        # Ana's first look misses a request from Bob that lands just before her insert.
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            session.add(Friendship(requester_id=bob_user.id, addressee_id=ana_user.id))
+            await session.commit()
+            return None
+        return await real(db, a, b)
+
+    monkeypatch.setattr(friends, "_friendship", blind_first)
+    r = await client.post("/friends/requests", json={"username": "bob"}, headers=ana)
+    assert r.status_code == 201
+    assert r.json()["relation"] == "friends"

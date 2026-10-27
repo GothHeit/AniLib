@@ -89,12 +89,19 @@ class MalClient:
         # Requests in flight, so concurrent cold callers for the same page share one call.
         self._inflight: dict[tuple, asyncio.Task[dict]] = {}
 
+    def _finish(self, key: tuple, task: asyncio.Task[dict]) -> None:
+        self._inflight.pop(key, None)
+        # Read the outcome, so a fetch that fails after every waiter gave up isn't reported
+        # as "exception was never retrieved".
+        if not task.cancelled():
+            task.exception()
+
     async def _single_flight(self, key: tuple, fetch: Callable[[], Awaitable[dict]]) -> dict:
         task = self._inflight.get(key)
         if task is None:
             task = asyncio.ensure_future(fetch())
             self._inflight[key] = task
-            task.add_done_callback(lambda _t: self._inflight.pop(key, None))
+            task.add_done_callback(lambda t: self._finish(key, t))
         # Shielded: one caller giving up must not cancel the fetch the others wait on.
         return await asyncio.shield(task)
 

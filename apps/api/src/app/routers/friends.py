@@ -18,7 +18,7 @@ from app.deps import CurrentUser, Session
 from app.errors import ApiError
 from app.mal.client import MalClient, is_safe
 from app.models import Friendship, MalLink, User, WatchProgress
-from app.notifications import notify, withdraw
+from app.notifications import forget_pair, notify, withdraw
 from app.routers.progress import latest_per_anime
 from app.schemas import AnimeCard
 
@@ -215,16 +215,7 @@ async def lookup(
     return LookupOut(user=user_summary(found, picture), relation=relation)
 
 
-@router.post("/friends/requests", response_model=LookupOut, status_code=201)
-async def send_request(body: RequestIn, user: CurrentUser, session: Session):
-    """Asks to be friends. If they already asked you, this accepts their request."""
-    target = await session.scalar(
-        select(User).where(User.username == body.username.strip().lower())
-    )
-    if target is None:
-        raise ApiError(404, "user_not_found", "No user with that name")
-    if target.id == user.id:
-        raise ApiError(422, "friend_self", "You can't add yourself")
+async def _ask(session: Session, user: User, target: User) -> None:
     existing = await _friendship(session, user.id, target.id)
     if existing is not None:
         if existing.accepted:
@@ -235,21 +226,41 @@ async def send_request(body: RequestIn, user: CurrentUser, session: Session):
         existing.accepted_at = utcnow()
         await withdraw(session, user.id, "friend_request", target.id)
         await notify(session, target.id, "friend_accepted", actor_id=user.id)
-    else:
-        pending = await session.scalar(
-            select(func.count())
-            .select_from(Friendship)
-            .where(Friendship.requester_id == user.id, Friendship.accepted.is_(False))
-        )
-        if (pending or 0) >= MAX_PENDING_SENT:
-            raise ApiError(429, "too_many_requests", "Too many pending requests")
-        session.add(Friendship(requester_id=user.id, addressee_id=target.id))
-        await notify(session, target.id, "friend_request", actor_id=user.id)
-    try:
-        await session.commit()
-    except IntegrityError:  # the other side asked at the same moment
-        await session.rollback()
-        raise ApiError(409, "already_requested", "A request already exists") from None
+        return
+    pending = await session.scalar(
+        select(func.count())
+        .select_from(Friendship)
+        .where(Friendship.requester_id == user.id, Friendship.accepted.is_(False))
+    )
+    if (pending or 0) >= MAX_PENDING_SENT:
+        raise ApiError(429, "too_many_requests", "Too many pending requests")
+    session.add(Friendship(requester_id=user.id, addressee_id=target.id))
+    await notify(session, target.id, "friend_request", actor_id=user.id)
+
+
+@router.post("/friends/requests", response_model=LookupOut, status_code=201)
+async def send_request(body: RequestIn, user: CurrentUser, session: Session):
+    """Asks to be friends. If they already asked you, this accepts their request."""
+    target = await session.scalar(
+        select(User).where(User.username == body.username.strip().lower())
+    )
+    if target is None:
+        raise ApiError(404, "user_not_found", "No user with that name")
+    if target.id == user.id:
+        raise ApiError(422, "friend_self", "You can't add yourself")
+    for attempt in range(2):
+        try:
+            await _ask(session, user, target)
+            await session.commit()
+            break
+        except IntegrityError:
+            # The other side asked at the same moment. Go again, so their request is accepted.
+            await session.rollback()
+            if attempt:
+                raise ApiError(409, "already_requested", "A request already exists") from None
+            # A rollback expires everything the session holds.
+            await session.refresh(user)
+            await session.refresh(target)
     row = await _friendship(session, user.id, target.id)
     picture = await session.scalar(select(MalLink.mal_picture).where(MalLink.user_id == target.id))
     return LookupOut(user=user_summary(target, picture), relation=_relation(user.id, row))
@@ -339,6 +350,7 @@ async def unfriend(user_id: uuid.UUID, user: CurrentUser, session: Session):
     if row is None or not row.accepted:
         raise ApiError(404, "friend_not_found", "Not your friend")
     await session.delete(row)
+    await forget_pair(session, user.id, user_id)
     await session.commit()
 
 

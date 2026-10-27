@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 
@@ -168,3 +169,34 @@ async def test_unknown_length_takes_few_rounds():
     assert result.episodes[-1] == 1500
     # Every page is fetched at most once; the search stays far below one call per episode.
     assert len(source._configs) < 60
+
+
+@respx.mock
+async def test_missing_pages_are_retried_soon_and_shared_while_fetching():
+    route = respx.get(url__regex=rf"{EMBED}/stream/mal/9253/\d+/sub")
+    route.mock(side_effect=lambda r: page(None))
+    source = ZokoSource()
+    await asyncio.gather(*(source.stream(ANIME, 9, "sub") for _ in range(5)))
+    assert route.call_count == 1
+    # A miss is remembered only briefly, so a just-aired episode shows up.
+    source._misses.clear()
+    source._recent.clear()
+    assert await source.stream(ANIME, 9, "sub") is None
+    assert route.call_count == 2
+
+
+@respx.mock
+async def test_a_short_episode_list_is_rechecked_soon():
+    mock_episodes(3)
+    source = ZokoSource()
+    airing = {**ANIME, "num_episodes": 12}
+    first = await source.episodes(airing, "sub")
+    assert first is not None and first.episodes == [1, 2, 3]
+    mock_episodes(4)
+    still = await source.episodes(airing, "sub")  # still remembered
+    assert still is not None and still.episodes == [1, 2, 3]
+    source._recent.clear()
+    source._configs.clear()
+    source._misses.clear()
+    later = await source.episodes(airing, "sub")
+    assert later is not None and later.episodes == [1, 2, 3, 4]
