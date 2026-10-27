@@ -43,6 +43,11 @@
       "loadFailed": "Couldn't load your friends.",
       "failed": "Couldn't send the invite."
     },
-    "waitingFor": "Waiting for {names}…"
+    "waitingFor": "Waiting for {names}…",
+    "haveCodeTitle": "I have a code",
+    "haveCodeBody": "Enter the code a friend shared.",
+    "createTitle": "Start a room",
+    "createBody": "Open any episode and choose Watch together. Then invite friends or share the code.",
+    "createCta": "Pick something to watch"
   }
 }

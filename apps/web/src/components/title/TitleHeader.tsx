@@ -38,9 +38,10 @@ export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
 
   return (
     <section className="bg-backdrop px-4 pb-10 pt-24 sm:px-8 sm:pt-28">
-      <div className="flex flex-col gap-6 sm:flex-row sm:gap-8">
+      {/* Phones: a small poster beside the title keeps the play button on the first screen. */}
+      <div className="grid grid-cols-[7.5rem_1fr] gap-x-4 gap-y-5 sm:grid-cols-[14rem_1fr] sm:gap-x-8 sm:gap-y-0">
         <div
-          className={`relative aspect-[2/3] w-40 shrink-0 overflow-hidden rounded-ui border border-line sm:w-56 ${gradientFor(anime.id)}`}
+          className={`relative aspect-[2/3] w-full overflow-hidden rounded-ui border border-line sm:row-span-2 ${gradientFor(anime.id)}`}
         >
           {poster && (
             // eslint-disable-next-line @next/next/no-img-element -- posters come from remote catalogs
@@ -54,9 +55,9 @@ export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
             />
           )}
         </div>
-        <div className="max-w-3xl">
+        <div className="min-w-0 max-w-3xl">
           {badge}
-          <h1 className="mt-3 text-3xl font-bold sm:text-4xl">{anime.title}</h1>
+          <h1 className="mt-2 text-2xl font-bold sm:mt-3 sm:text-4xl">{anime.title}</h1>
           {english && english !== anime.title && <p className="mt-1 text-muted">{english}</p>}
           {facts.length > 0 && (
             <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium">
@@ -65,7 +66,9 @@ export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
               ))}
             </ul>
           )}
-          <div className="mt-6 flex flex-wrap gap-3">
+        </div>
+        <div className="col-span-2 min-w-0 max-w-3xl sm:col-span-1">
+          <div className="flex flex-wrap gap-3 sm:mt-6">
             {play}
             <AddToList animeId={anime.id} state={list} />
           </div>

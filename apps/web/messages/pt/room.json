@@ -43,6 +43,11 @@
       "loadFailed": "Não deu para carregar seus amigos.",
       "failed": "Não deu para enviar o convite."
     },
-    "waitingFor": "Esperando {names}…"
+    "waitingFor": "Esperando {names}…",
+    "haveCodeTitle": "Tenho um código",
+    "haveCodeBody": "Digite o código que um amigo compartilhou.",
+    "createTitle": "Abrir uma sala",
+    "createBody": "Abra qualquer episódio e escolha Assistir juntos. Depois convide amigos ou compartilhe o código.",
+    "createCta": "Escolher o que assistir"
   }
 }

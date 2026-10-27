@@ -30,7 +30,8 @@
     "viewProfile": "Ver o perfil de {name}",
     "pending": "{count, plural, one {# pedido de amizade} other {# pedidos de amizade}}",
     "activity": "Atividade dos amigos",
-    "activityLine": "{name} · episódio {n}"
+    "activityLine": "{name} · episódio {n}",
+    "yourName": "Seus amigos te encontram pelo nome de usuário: <b>{name}</b>"
   },
   "profile": {
     "joined": "Entrou em {date}",

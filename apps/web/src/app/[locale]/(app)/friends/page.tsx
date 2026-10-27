@@ -16,7 +16,8 @@ export default async function FriendsPage({ params }: PageProps<"/[locale]/frien
   setRequestLocale(locale);
   const t = await getTranslations("friends");
   const api = await serverApi();
-  const [friends, requests] = await Promise.all([
+  const [me, friends, requests] = await Promise.all([
+    unwrap(api.GET("/me"), locale),
     unwrap(api.GET("/friends"), locale),
     unwrap(api.GET("/friends/requests"), locale),
   ]);
@@ -25,6 +26,9 @@ export default async function FriendsPage({ params }: PageProps<"/[locale]/frien
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 pb-8 pt-24 sm:px-8">
       <h1 className="text-3xl font-bold">{t("title")}</h1>
       <p className="text-muted">{t("intro")}</p>
+      <p className="rounded-ui border border-line bg-surface px-4 py-3 text-sm text-muted">
+        {t.rich("yourName", { name: me.username, b: (chunks) => <strong className="text-fg">{chunks}</strong> })}
+      </p>
       <FriendsPanel friends={friends} requests={requests} />
     </div>
   );
