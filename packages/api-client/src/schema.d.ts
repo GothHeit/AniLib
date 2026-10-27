@@ -195,6 +195,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/friends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Friends */
+        get: operations["list_friends_friends_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/friends/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Friends Activity
+         * @description What friends finished watching lately; friends who keep it private are left out.
+         */
+        get: operations["friends_activity_friends_activity_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/friends/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Requests */
+        get: operations["list_requests_friends_requests_get"];
+        put?: never;
+        /**
+         * Send Request
+         * @description Asks to be friends. If they already asked you, this accepts their request.
+         */
+        post: operations["send_request_friends_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/friends/requests/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove Request
+         * @description Declines a request sent to you, or takes back one you sent.
+         */
+        delete: operations["remove_request_friends_requests__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/friends/requests/{user_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept Request */
+        post: operations["accept_request_friends_requests__user_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/friends/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unfriend */
+        delete: operations["unfriend_friends__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -504,6 +616,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lookup
+         * @description Finds someone by exact username. Name and picture are public to members, so a request can
+         *     go to the right person.
+         */
+        get: operations["lookup_users_lookup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{user_id}/avatar": {
         parameters: {
             query?: never;
@@ -513,6 +646,26 @@ export interface paths {
         };
         /** Get Avatar */
         get: operations["get_avatar_users__user_id__avatar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Profile
+         * @description A profile is for the person and their friends only; anyone else gets a 403.
+         */
+        get: operations["profile_users__user_id__profile_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -774,6 +927,21 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * ActivityOut
+         * @description A friend's latest finished episode of one title.
+         */
+        ActivityOut: {
+            anime: components["schemas"]["AnimeCard"];
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Episode */
+            episode: number;
+            user: components["schemas"]["UserSummary"];
+        };
         /** AlternativeTitles */
         AlternativeTitles: {
             /** En */
@@ -925,6 +1093,15 @@ export interface components {
             thumbnails: {
                 [key: string]: string;
             };
+        };
+        /** FriendOut */
+        FriendOut: {
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            user: components["schemas"]["UserSummary"];
         };
         /** Genre */
         Genre: {
@@ -1084,6 +1261,15 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** LookupOut */
+        LookupOut: {
+            /**
+             * Relation
+             * @enum {string}
+             */
+            relation: "self" | "none" | "friends" | "outgoing" | "incoming";
+            user: components["schemas"]["UserSummary"];
+        };
         /** MalStatistics */
         MalStatistics: {
             /** Num Items Completed */
@@ -1119,6 +1305,8 @@ export interface components {
              * @enum {string}
              */
             locale: "pt" | "en";
+            /** Share Activity */
+            share_activity: boolean;
             /** Show Nsfw */
             show_nsfw: boolean;
             /** Subtitle Lang */
@@ -1130,6 +1318,8 @@ export interface components {
         MeUpdate: {
             /** Locale */
             locale?: ("pt" | "en") | null;
+            /** Share Activity */
+            share_activity?: boolean | null;
             /** Show Nsfw */
             show_nsfw?: boolean | null;
             /** Subtitle Lang */
@@ -1187,6 +1377,48 @@ export interface components {
         PresetIn: {
             /** Preset */
             preset: string;
+        };
+        /** ProfileOut */
+        ProfileOut: {
+            /** Activity Shared */
+            activity_shared: boolean;
+            /** Friends */
+            friends: number | null;
+            /** Friends Since */
+            friends_since: string | null;
+            /**
+             * Joined At
+             * Format: date-time
+             */
+            joined_at: string;
+            /** Recent */
+            recent: components["schemas"]["ActivityOut"][] | null;
+            /**
+             * Relation
+             * @enum {string}
+             */
+            relation: "self" | "friends";
+            stats: components["schemas"]["ProfileStats"] | null;
+            user: components["schemas"]["UserSummary"];
+            /** Watching */
+            watching: components["schemas"]["ProfileTitle"][] | null;
+        };
+        /** ProfileStats */
+        ProfileStats: {
+            /** Episodes */
+            episodes: number;
+            /** Friends */
+            friends: number;
+            /** Titles */
+            titles: number;
+        };
+        /** ProfileTitle */
+        ProfileTitle: {
+            anime: components["schemas"]["AnimeCard"];
+            /** Completed */
+            completed: boolean;
+            /** Episode */
+            episode: number;
         };
         /** ProgressIn */
         ProgressIn: {
@@ -1259,6 +1491,27 @@ export interface components {
             relation_type: string;
             /** Relation Type Formatted */
             relation_type_formatted: string;
+        };
+        /** RequestIn */
+        RequestIn: {
+            /** Username */
+            username: string;
+        };
+        /** RequestOut */
+        RequestOut: {
+            /**
+             * Sent At
+             * Format: date-time
+             */
+            sent_at: string;
+            user: components["schemas"]["UserSummary"];
+        };
+        /** RequestsOut */
+        RequestsOut: {
+            /** Incoming */
+            incoming: components["schemas"]["RequestOut"][];
+            /** Outgoing */
+            outgoing: components["schemas"]["RequestOut"][];
         };
         /** RoomCreate */
         RoomCreate: {
@@ -1392,6 +1645,17 @@ export interface components {
              * @constant
              */
             token_type: "bearer";
+        };
+        /**
+         * UserSummary
+         * @description Enough to tell who someone is: shown to anyone signed in, friend or not.
+         */
+        UserSummary: {
+            avatar: components["schemas"]["AvatarOut"];
+            /** Id */
+            id: string;
+            /** Username */
+            username: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -1774,6 +2038,199 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["TokensOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_friends_friends_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendOut"][];
+                };
+            };
+        };
+    };
+    friends_activity_friends_activity_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_requests_friends_requests_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RequestsOut"];
+                };
+            };
+        };
+    };
+    send_request_friends_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LookupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_request_friends_requests__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_request_friends_requests__user_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unfriend_friends__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -2414,6 +2871,37 @@ export interface operations {
             };
         };
     };
+    lookup_users_lookup_get: {
+        parameters: {
+            query: {
+                username: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LookupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_avatar_users__user_id__avatar_get: {
         parameters: {
             query?: never;
@@ -2432,6 +2920,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    profile_users__user_id__profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileOut"];
                 };
             };
             /** @description Validation Error */

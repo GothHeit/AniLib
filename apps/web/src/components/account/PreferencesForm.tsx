@@ -10,7 +10,7 @@ import { routing } from "@/i18n/routing";
 import { api } from "@/lib/api";
 
 /** Saves each change right away (a switch has no submit button) and tells the user it worked. */
-export function PreferencesForm({ showNsfw }: { showNsfw: boolean }) {
+export function PreferencesForm({ showNsfw, shareActivity }: { showNsfw: boolean; shareActivity: boolean }) {
   const t = useTranslations("account.settings");
   const tLocale = useTranslations("locale");
   const locale = useLocale();
@@ -18,9 +18,10 @@ export function PreferencesForm({ showNsfw }: { showNsfw: boolean }) {
   const pathname = usePathname();
   const toast = useToast();
   const [nsfw, setNsfw] = useState(showNsfw);
+  const [share, setShare] = useState(shareActivity);
   const [busy, setBusy] = useState(false);
 
-  async function save(body: { locale?: "pt" | "en"; show_nsfw?: boolean }) {
+  async function save(body: { locale?: "pt" | "en"; show_nsfw?: boolean; share_activity?: boolean }) {
     setBusy(true);
     const { response } = await api.PATCH("/me", { body }).catch(() => ({ response: null }));
     setBusy(false);
@@ -36,6 +37,11 @@ export function PreferencesForm({ showNsfw }: { showNsfw: boolean }) {
     setNsfw(next);
     if (await save({ show_nsfw: next })) router.refresh();
     else setNsfw(!next);
+  }
+
+  async function onShare(next: boolean) {
+    setShare(next);
+    if (!(await save({ share_activity: next }))) setShare(!next);
   }
 
   async function onLocale(next: "pt" | "en") {
@@ -67,6 +73,14 @@ export function PreferencesForm({ showNsfw }: { showNsfw: boolean }) {
           <p className="mt-1 text-sm text-muted">{t("contentFilterHint")}</p>
         </div>
         <Switch checked={nsfw} onChange={onNsfw} label={t("contentFilterLabel")} disabled={busy} />
+      </div>
+
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-medium">{t("shareActivity")}</p>
+          <p className="mt-1 text-sm text-muted">{t("shareActivityHint")}</p>
+        </div>
+        <Switch checked={share} onChange={onShare} label={t("shareActivityLabel")} disabled={busy} />
       </div>
     </div>
   );

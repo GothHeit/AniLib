@@ -7,21 +7,25 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { Avatar } from "@/components/ui/Avatar";
 import { postAuth } from "@/lib/bff";
 import type { AvatarInfo } from "@/lib/avatar";
+import { profileHref } from "@/lib/friends";
 
 type Props = {
   userId: string;
   username: string;
   avatar: AvatarInfo;
   isAdmin?: boolean;
+  /** Friend requests waiting for an answer. */
+  pending?: number;
   /** "tab" opens upward from the phone tab bar. */
   variant?: "nav" | "tab";
   trigger?: ReactNode;
   triggerClassName?: string;
 };
 
-export function UserMenu({ userId, username, avatar, isAdmin = false, variant = "nav", trigger, triggerClassName }: Props) {
+export function UserMenu({ userId, username, avatar, isAdmin = false, pending = 0, variant = "nav", trigger, triggerClassName }: Props) {
   const t = useTranslations("nav");
   const tAccount = useTranslations("account");
+  const tFriends = useTranslations("friends");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -55,9 +59,16 @@ export function UserMenu({ userId, username, avatar, isAdmin = false, variant = 
         onClick={() => setOpen((v) => !v)}
         className={triggerClassName}
       >
-        {trigger ?? (
-          <Avatar userId={userId} username={username} avatar={avatar} />
-        )}
+        <span className="relative flex flex-col items-center gap-1">
+          {trigger ?? <Avatar userId={userId} username={username} avatar={avatar} />}
+          {pending > 0 && (
+            <span
+              title={tFriends("pending", { count: pending })}
+              aria-hidden="true"
+              className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-bg"
+            />
+          )}
+        </span>
       </button>
       {open && (
         <div
@@ -67,6 +78,23 @@ export function UserMenu({ userId, username, avatar, isAdmin = false, variant = 
           }`}
         >
           <p className="px-3 py-2 text-sm text-muted">{t("signedInAs", { name: username })}</p>
+          <Link
+            href={profileHref(userId)}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line"
+          >
+            {t("profile")}
+          </Link>
+          <Link
+            href="/friends"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center justify-between rounded-ui px-3 py-2 text-left text-sm hover:bg-line"
+          >
+            {t("friends")}
+            {pending > 0 && <span className="rounded-full bg-accent px-2 text-xs font-bold text-on-accent">{pending}</span>}
+          </Link>
           <Link
             href="/room"
             role="menuitem"

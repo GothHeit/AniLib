@@ -13,7 +13,10 @@
       "contentFilterLabel": "Show +18 titles",
       "contentFilterHint": "On by default. Turn it off to hide adult titles from browse, search and your lists.",
       "saved": "Settings saved.",
-      "saveFailed": "Couldn't save your settings."
+      "saveFailed": "Couldn't save your settings.",
+      "shareActivityLabel": "Share my activity with friends",
+      "shareActivityHint": "On by default. Turn it off and friends can still open your profile, but not see your stats, what you are watching or your activity.",
+      "shareActivity": "Show what I watch"
     },
     "mal": {
       "title": "MyAnimeList",

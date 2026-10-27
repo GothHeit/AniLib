@@ -11,6 +11,8 @@
     "account": "Menu da conta",
     "signedInAs": "Conectado como {name}",
     "signOut": "Sair",
-    "joinRoom": "Entrar em uma sala"
+    "joinRoom": "Entrar em uma sala",
+    "friends": "Amigos",
+    "profile": "Perfil"
   }
 }

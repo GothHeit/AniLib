@@ -60,12 +60,14 @@ class MeOut(BaseModel):
     subtitle_lang: str | None
     is_admin: bool
     avatar: AvatarOut
+    share_activity: bool
 
 
 class MeUpdate(BaseModel):
     locale: Locale | None = None
     show_nsfw: bool | None = None
     subtitle_lang: SubtitleLang | None = None
+    share_activity: bool | None = None
 
 
 class PasswordIn(BaseModel):
@@ -125,6 +127,7 @@ async def build_me(user: User, session: Session) -> MeOut:
         subtitle_lang=user.subtitle_lang,
         is_admin=user.is_admin,
         avatar=avatar_out(user, link.mal_picture if link else None),
+        share_activity=user.share_activity,
     )
 
 

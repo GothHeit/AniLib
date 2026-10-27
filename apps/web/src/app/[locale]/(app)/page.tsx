@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 
+import { FriendsActivity } from "@/components/rows/FriendsActivity";
 import { HomeRows } from "@/components/rows/HomeRows";
 import { HomeSkeleton } from "@/components/rows/HomeSkeleton";
 import { ButtonLink } from "@/components/ui/Button";
@@ -10,7 +11,12 @@ import { serverApi, unwrap } from "@/lib/server-api";
 
 async function HomeContent({ locale }: { locale: string }) {
   const t = await getTranslations("home");
-  const home = await unwrap((await serverApi()).GET("/home"), locale);
+  const api = await serverApi();
+  const [home, activity] = await Promise.all([
+    unwrap(api.GET("/home"), locale),
+    // The feed is a bonus: the home page works without it.
+    api.GET("/friends/activity", { params: { query: { limit: 20 } } }).then((r) => r.data ?? [], () => []),
+  ]);
   const hero = home.hero;
 
   return (
@@ -30,6 +36,7 @@ async function HomeContent({ locale }: { locale: string }) {
       ) : (
         <p className="px-4 pb-24 pt-28 text-muted sm:px-8">{t("empty")}</p>
       )}
+      <FriendsActivity items={activity} />
     </>
   );
 }

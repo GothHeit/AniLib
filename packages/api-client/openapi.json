@@ -1,6 +1,34 @@
 {
   "components": {
     "schemas": {
+      "ActivityOut": {
+        "description": "A friend's latest finished episode of one title.",
+        "properties": {
+          "anime": {
+            "$ref": "#/components/schemas/AnimeCard"
+          },
+          "at": {
+            "format": "date-time",
+            "title": "At",
+            "type": "string"
+          },
+          "episode": {
+            "title": "Episode",
+            "type": "integer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          }
+        },
+        "required": [
+          "user",
+          "anime",
+          "episode",
+          "at"
+        ],
+        "title": "ActivityOut",
+        "type": "object"
+      },
       "AlternativeTitles": {
         "properties": {
           "en": {
@@ -589,6 +617,24 @@
         "title": "EpisodesOut",
         "type": "object"
       },
+      "FriendOut": {
+        "properties": {
+          "since": {
+            "format": "date-time",
+            "title": "Since",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          }
+        },
+        "required": [
+          "user",
+          "since"
+        ],
+        "title": "FriendOut",
+        "type": "object"
+      },
       "Genre": {
         "properties": {
           "id": {
@@ -1028,6 +1074,30 @@
         "title": "LoginIn",
         "type": "object"
       },
+      "LookupOut": {
+        "properties": {
+          "relation": {
+            "enum": [
+              "self",
+              "none",
+              "friends",
+              "outgoing",
+              "incoming"
+            ],
+            "title": "Relation",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          }
+        },
+        "required": [
+          "user",
+          "relation"
+        ],
+        "title": "LookupOut",
+        "type": "object"
+      },
       "MalStatistics": {
         "properties": {
           "num_items_completed": {
@@ -1155,6 +1225,10 @@
             "title": "Locale",
             "type": "string"
           },
+          "share_activity": {
+            "title": "Share Activity",
+            "type": "boolean"
+          },
           "show_nsfw": {
             "title": "Show Nsfw",
             "type": "boolean"
@@ -1182,7 +1256,8 @@
           "show_nsfw",
           "subtitle_lang",
           "is_admin",
-          "avatar"
+          "avatar",
+          "share_activity"
         ],
         "title": "MeOut",
         "type": "object"
@@ -1203,6 +1278,17 @@
               }
             ],
             "title": "Locale"
+          },
+          "share_activity": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Activity"
           },
           "show_nsfw": {
             "anyOf": [
@@ -1359,6 +1445,149 @@
           "preset"
         ],
         "title": "PresetIn",
+        "type": "object"
+      },
+      "ProfileOut": {
+        "properties": {
+          "activity_shared": {
+            "title": "Activity Shared",
+            "type": "boolean"
+          },
+          "friends": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Friends"
+          },
+          "friends_since": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Friends Since"
+          },
+          "joined_at": {
+            "format": "date-time",
+            "title": "Joined At",
+            "type": "string"
+          },
+          "recent": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ActivityOut"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recent"
+          },
+          "relation": {
+            "enum": [
+              "self",
+              "friends"
+            ],
+            "title": "Relation",
+            "type": "string"
+          },
+          "stats": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProfileStats"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "watching": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ProfileTitle"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Watching"
+          }
+        },
+        "required": [
+          "user",
+          "relation",
+          "joined_at",
+          "friends_since",
+          "friends",
+          "activity_shared",
+          "stats",
+          "watching",
+          "recent"
+        ],
+        "title": "ProfileOut",
+        "type": "object"
+      },
+      "ProfileStats": {
+        "properties": {
+          "episodes": {
+            "title": "Episodes",
+            "type": "integer"
+          },
+          "friends": {
+            "title": "Friends",
+            "type": "integer"
+          },
+          "titles": {
+            "title": "Titles",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "titles",
+          "episodes",
+          "friends"
+        ],
+        "title": "ProfileStats",
+        "type": "object"
+      },
+      "ProfileTitle": {
+        "properties": {
+          "anime": {
+            "$ref": "#/components/schemas/AnimeCard"
+          },
+          "completed": {
+            "title": "Completed",
+            "type": "boolean"
+          },
+          "episode": {
+            "title": "Episode",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "anime",
+          "episode",
+          "completed"
+        ],
+        "title": "ProfileTitle",
         "type": "object"
       },
       "ProgressIn": {
@@ -1542,6 +1771,63 @@
           "anime"
         ],
         "title": "RelatedAnime",
+        "type": "object"
+      },
+      "RequestIn": {
+        "properties": {
+          "username": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
+        ],
+        "title": "RequestIn",
+        "type": "object"
+      },
+      "RequestOut": {
+        "properties": {
+          "sent_at": {
+            "format": "date-time",
+            "title": "Sent At",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserSummary"
+          }
+        },
+        "required": [
+          "user",
+          "sent_at"
+        ],
+        "title": "RequestOut",
+        "type": "object"
+      },
+      "RequestsOut": {
+        "properties": {
+          "incoming": {
+            "items": {
+              "$ref": "#/components/schemas/RequestOut"
+            },
+            "title": "Incoming",
+            "type": "array"
+          },
+          "outgoing": {
+            "items": {
+              "$ref": "#/components/schemas/RequestOut"
+            },
+            "title": "Outgoing",
+            "type": "array"
+          }
+        },
+        "required": [
+          "incoming",
+          "outgoing"
+        ],
+        "title": "RequestsOut",
         "type": "object"
       },
       "RoomCreate": {
@@ -1874,6 +2160,29 @@
           "expires_in"
         ],
         "title": "TokensOut",
+        "type": "object"
+      },
+      "UserSummary": {
+        "description": "Enough to tell who someone is: shown to anyone signed in, friend or not.",
+        "properties": {
+          "avatar": {
+            "$ref": "#/components/schemas/AvatarOut"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "avatar"
+        ],
+        "title": "UserSummary",
         "type": "object"
       },
       "ValidationError": {
@@ -2564,6 +2873,293 @@
         "summary": "Register",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/friends": {
+      "get": {
+        "operationId": "list_friends_friends_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FriendOut"
+                  },
+                  "title": "Response List Friends Friends Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Friends",
+        "tags": [
+          "friends"
+        ]
+      }
+    },
+    "/friends/activity": {
+      "get": {
+        "description": "What friends finished watching lately; friends who keep it private are left out.",
+        "operationId": "friends_activity_friends_activity_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 40,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityOut"
+                  },
+                  "title": "Response Friends Activity Friends Activity Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Friends Activity",
+        "tags": [
+          "friends"
+        ]
+      }
+    },
+    "/friends/requests": {
+      "get": {
+        "operationId": "list_requests_friends_requests_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Requests",
+        "tags": [
+          "friends"
+        ]
+      },
+      "post": {
+        "description": "Asks to be friends. If they already asked you, this accepts their request.",
+        "operationId": "send_request_friends_requests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LookupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Send Request",
+        "tags": [
+          "friends"
+        ]
+      }
+    },
+    "/friends/requests/{user_id}": {
+      "delete": {
+        "description": "Declines a request sent to you, or takes back one you sent.",
+        "operationId": "remove_request_friends_requests__user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Request",
+        "tags": [
+          "friends"
+        ]
+      }
+    },
+    "/friends/requests/{user_id}/accept": {
+      "post": {
+        "operationId": "accept_request_friends_requests__user_id__accept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Accept Request",
+        "tags": [
+          "friends"
+        ]
+      }
+    },
+    "/friends/{user_id}": {
+      "delete": {
+        "operationId": "unfriend_friends__user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Unfriend",
+        "tags": [
+          "friends"
         ]
       }
     },
@@ -3467,6 +4063,56 @@
         ]
       }
     },
+    "/users/lookup": {
+      "get": {
+        "description": "Finds someone by exact username. Name and picture are public to members, so a request can\ngo to the right person.",
+        "operationId": "lookup_users_lookup_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "username",
+            "required": true,
+            "schema": {
+              "maxLength": 32,
+              "minLength": 1,
+              "title": "Username",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LookupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Lookup",
+        "tags": [
+          "friends"
+        ]
+      }
+    },
     "/users/{user_id}/avatar": {
       "get": {
         "operationId": "get_avatar_users__user_id__avatar_get",
@@ -3510,6 +4156,55 @@
         "summary": "Get Avatar",
         "tags": [
           "avatars"
+        ]
+      }
+    },
+    "/users/{user_id}/profile": {
+      "get": {
+        "description": "A profile is for the person and their friends only; anyone else gets a 403.",
+        "operationId": "profile_users__user_id__profile_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Profile",
+        "tags": [
+          "friends"
         ]
       }
     },

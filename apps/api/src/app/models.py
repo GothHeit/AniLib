@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Float, ForeignKey, Index, String
+from sqlalchemy import Float, ForeignKey, Index, String, column, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.crypto import EncryptedString
@@ -28,6 +28,8 @@ class User(TimestampMixin, Base):
     # Counts uploads and never goes down, so a new picture always gets a new URL and a cache
     # can't serve an old one.
     avatar_version: Mapped[int] = mapped_column(default=0, server_default="0")
+    # False hides what the user is watching from their friends' view of their profile and feed.
+    share_activity: Mapped[bool] = mapped_column(default=True, server_default="true")
 
 
 class Invite(TimestampMixin, Base):
@@ -128,3 +130,29 @@ class PlayerPreferences(Base):
     subtitle_color: Mapped[str] = mapped_column(String(16), default="white")
     subtitle_background: Mapped[str] = mapped_column(String(16), default="outline")
     subtitle_position: Mapped[str] = mapped_column(String(16), default="bottom")
+
+
+class Friendship(Base):
+    """A friend request, which becomes a friendship once the addressee accepts it.
+
+    One row per pair: the unique index below treats (a, b) and (b, a) as the same pair."""
+
+    __tablename__ = "friendships"
+    __table_args__ = (
+        Index(
+            "ix_friendships_pair",
+            func.least(column("requester_id"), column("addressee_id")),
+            func.greatest(column("requester_id"), column("addressee_id")),
+            unique=True,
+        ),
+    )
+
+    requester_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    addressee_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    accepted: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    accepted_at: Mapped[datetime | None]

@@ -53,7 +53,7 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
       </Section>
 
       <Section title={t("settings.preferences")}>
-        <PreferencesForm showNsfw={me.show_nsfw} />
+        <PreferencesForm showNsfw={me.show_nsfw} shareActivity={me.share_activity} />
       </Section>
 
       <Section title={t("mal.title")}>

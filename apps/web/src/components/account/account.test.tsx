@@ -32,7 +32,7 @@ afterEach(() => {
 describe("PreferencesForm", () => {
   it("saves the +18 switch and refreshes", async () => {
     client.PATCH.mockResolvedValue(ok());
-    renderAccount(<PreferencesForm showNsfw />);
+    renderAccount(<PreferencesForm showNsfw shareActivity />);
     const toggle = screen.getByRole("switch", { name: "Show +18 titles" });
     expect(toggle).toHaveAttribute("aria-checked", "true");
     fireEvent.click(toggle);
@@ -43,8 +43,8 @@ describe("PreferencesForm", () => {
 
   it("puts the switch back when saving fails", async () => {
     client.PATCH.mockResolvedValue(failed);
-    renderAccount(<PreferencesForm showNsfw />);
-    const toggle = screen.getByRole("switch");
+    renderAccount(<PreferencesForm showNsfw shareActivity />);
+    const toggle = screen.getByRole("switch", { name: "Show +18 titles" });
     fireEvent.click(toggle);
     expect(await screen.findByText("Couldn't save your settings.")).toBeInTheDocument();
     expect(toggle).toHaveAttribute("aria-checked", "true");
@@ -53,7 +53,7 @@ describe("PreferencesForm", () => {
 
   it("saves the language, then moves to that language's page", async () => {
     client.PATCH.mockResolvedValue(ok());
-    renderAccount(<PreferencesForm showNsfw />);
+    renderAccount(<PreferencesForm showNsfw shareActivity />);
     fireEvent.change(screen.getByLabelText(/Language/), { target: { value: "pt" } });
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/settings", { locale: "pt" }));
   });

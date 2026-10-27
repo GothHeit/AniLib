@@ -12,7 +12,7 @@ from app.mal.account import MalAccounts
 from app.mal.client import MalClient
 from app.ratelimit import AuthLimits
 from app.rooms import Rooms
-from app.routers import anime, auth, avatars, home, invites, mal, progress, rooms, watch
+from app.routers import anime, auth, avatars, friends, home, invites, mal, progress, rooms, watch
 from app.sources import load_sources
 
 SWEEP_INTERVAL_SECONDS = 300
@@ -62,7 +62,7 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     # rooms before watch: /watch/rooms/... must not be read as /watch/{source}/....
-    for module in (auth, avatars, invites, anime, mal, rooms, watch, progress, home):
+    for module in (auth, avatars, friends, invites, anime, mal, rooms, watch, progress, home):
         app.include_router(module.router)
     return app
 

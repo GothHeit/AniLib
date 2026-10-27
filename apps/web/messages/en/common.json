@@ -42,7 +42,15 @@
     "avatar_type": "Use a PNG, JPEG or WebP image.",
     "avatar_too_large": "That image is larger than 2 MB.",
     "avatar_dimensions": "That image has too many pixels. Use a smaller one.",
-    "avatar_preset": "That avatar isn't available."
+    "avatar_preset": "That avatar isn't available.",
+    "user_not_found": "No one with that name.",
+    "friend_self": "You can't add yourself.",
+    "already_friends": "You are already friends.",
+    "already_requested": "A request is already waiting.",
+    "too_many_requests": "Too many pending requests. Wait for some to be answered.",
+    "request_not_found": "That request is gone.",
+    "friend_not_found": "That person is not in your friends.",
+    "not_friends": "Only friends can see this profile."
   },
   "row": {
     "previous": "Scroll left",

@@ -153,6 +153,8 @@ createServer(async (req, res) => {
       show_nsfw: false,
       subtitle_lang: subtitleLang,
       is_admin: false,
+      avatar: { kind: "none", version: 0 },
+      share_activity: true,
     });
   }
   if (url.pathname === "/me/sessions" || url.pathname.startsWith("/me/sessions/")) {

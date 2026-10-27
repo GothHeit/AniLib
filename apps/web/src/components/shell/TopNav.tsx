@@ -15,7 +15,7 @@ import type { AvatarInfo } from "@/lib/avatar";
 import { UserMenu } from "./UserMenu";
 
 /** Transparent over the hero, solid once the page scrolls. */
-export function TopNav({ userId, username, avatar, isAdmin }: { userId: string; username: string; avatar: AvatarInfo; isAdmin: boolean }) {
+export function TopNav({ userId, username, avatar, isAdmin, pending = 0 }: { userId: string; username: string; avatar: AvatarInfo; isAdmin: boolean; pending?: number }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -58,7 +58,7 @@ export function TopNav({ userId, username, avatar, isAdmin }: { userId: string; 
           </div>
           <LocaleSwitcher />
           <div className="hidden md:block">
-            <UserMenu userId={userId} username={username} avatar={avatar} isAdmin={isAdmin} />
+            <UserMenu userId={userId} username={username} avatar={avatar} isAdmin={isAdmin} pending={pending} />
           </div>
         </div>
       </nav>

@@ -11,6 +11,8 @@
     "account": "Account menu",
     "signedInAs": "Signed in as {name}",
     "signOut": "Sign out",
-    "joinRoom": "Join a room"
+    "joinRoom": "Join a room",
+    "friends": "Friends",
+    "profile": "Profile"
   }
 }

@@ -13,7 +13,7 @@ import { UserMenu } from "./UserMenu";
 const item = "flex flex-1 flex-col items-center gap-1 py-2 text-xs";
 
 /** Phone navigation: Home, Browse, My list, Search, You. */
-export function TabBar({ userId, username, avatar, isAdmin }: { userId: string; username: string; avatar: AvatarInfo; isAdmin: boolean }) {
+export function TabBar({ userId, username, avatar, isAdmin, pending = 0 }: { userId: string; username: string; avatar: AvatarInfo; isAdmin: boolean; pending?: number }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const tabs = [...NAV_ITEMS, { href: "/search" as const, key: "search" as const, icon: "search" as const }];
@@ -42,7 +42,7 @@ export function TabBar({ userId, username, avatar, isAdmin }: { userId: string; 
           userId={userId}
           username={username}
           avatar={avatar}
-          isAdmin={isAdmin}
+          isAdmin={isAdmin} pending={pending}
           variant="tab"
           triggerClassName={`${item} h-full w-full text-muted`}
           trigger={

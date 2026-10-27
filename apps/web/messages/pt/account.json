@@ -13,7 +13,10 @@
       "contentFilterLabel": "Mostrar títulos +18",
       "contentFilterHint": "Ativado por padrão. Desative para ocultar títulos adultos na busca, na navegação e nas suas listas.",
       "saved": "Configurações salvas.",
-      "saveFailed": "Não foi possível salvar suas configurações."
+      "saveFailed": "Não foi possível salvar suas configurações.",
+      "shareActivityLabel": "Compartilhar minha atividade com amigos",
+      "shareActivityHint": "Ligado por padrão. Desligado, seus amigos ainda abrem seu perfil, mas não veem suas estatísticas, o que você assiste nem sua atividade.",
+      "shareActivity": "Mostrar o que eu assisto"
     },
     "mal": {
       "title": "MyAnimeList",

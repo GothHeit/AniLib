@@ -10,6 +10,9 @@ export default async function AppLayout({ children, params }: LayoutProps<"/[loc
   const t = await getTranslations("nav");
   const api = await serverApi();
   const me = await unwrap(api.GET("/me"), locale);
+  // Only for the badge on the account menu, so a failure just hides it.
+  const requests = await api.GET("/friends/requests").then((r) => r.data, () => undefined);
+  const pending = requests?.incoming.length ?? 0;
 
   return (
     <>
@@ -19,9 +22,9 @@ export default async function AppLayout({ children, params }: LayoutProps<"/[loc
       >
         {t("skip")}
       </a>
-      <TopNav userId={me.id} username={me.username} avatar={me.avatar} isAdmin={me.is_admin} />
+      <TopNav userId={me.id} username={me.username} avatar={me.avatar} isAdmin={me.is_admin} pending={pending} />
       <main id="main" tabIndex={-1} className="pb-24 md:pb-16">{children}</main>
-      <TabBar userId={me.id} username={me.username} avatar={me.avatar} isAdmin={me.is_admin} />
+      <TabBar userId={me.id} username={me.username} avatar={me.avatar} isAdmin={me.is_admin} pending={pending} />
     </>
   );
 }

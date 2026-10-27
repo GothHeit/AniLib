@@ -42,7 +42,15 @@
     "avatar_type": "Use uma imagem PNG, JPEG ou WebP.",
     "avatar_too_large": "Essa imagem tem mais de 2 MB.",
     "avatar_dimensions": "Essa imagem tem pixels demais. Use uma menor.",
-    "avatar_preset": "Esse avatar não está disponível."
+    "avatar_preset": "Esse avatar não está disponível.",
+    "user_not_found": "Ninguém com esse nome.",
+    "friend_self": "Você não pode adicionar a si mesmo.",
+    "already_friends": "Vocês já são amigos.",
+    "already_requested": "Já existe um pedido aguardando.",
+    "too_many_requests": "Pedidos demais pendentes. Espere alguns serem respondidos.",
+    "request_not_found": "Esse pedido não existe mais.",
+    "friend_not_found": "Essa pessoa não está nos seus amigos.",
+    "not_friends": "Só amigos podem ver este perfil."
   },
   "row": {
     "previous": "Rolar para a esquerda",
