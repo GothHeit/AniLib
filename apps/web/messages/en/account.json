@@ -99,10 +99,14 @@
       "cancel": "Cancel",
       "remove": "Remove",
       "saved": "Profile picture updated.",
-      "previewAlt": "Preview of the new picture",
-      "hint": "PNG, JPEG or WebP, up to 2 MB. It is cropped to a square. Without one, your linked MyAnimeList picture or your initial is shown.",
+      "hint": "PNG, JPEG or WebP, up to 10 MB. You can crop it before saving. Without one, your linked MyAnimeList picture or your initial is shown.",
       "presets": "Or pick one of ours",
-      "presetLabel": "Avatar {number}"
+      "presetLabel": "Avatar {number}",
+      "cropTitle": "Adjust your picture",
+      "cropFrame": "Picture frame. Drag or use the arrow keys to move the picture, plus and minus to zoom.",
+      "zoom": "Zoom",
+      "cropHint": "Drag the picture to position it. Everything inside the frame is kept.",
+      "cropFailed": "Couldn't read that image. Try another one."
     }
   }
 }

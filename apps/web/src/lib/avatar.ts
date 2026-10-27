@@ -3,7 +3,8 @@ import type { components } from "@app/api-client";
 export type AvatarInfo = components["schemas"]["AvatarOut"];
 
 export const PRESET_AVATARS = Array.from({ length: 8 }, (_, i) => `moon-${i + 1}`);
-export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+/** The picture you pick may be big: it is cropped and shrunk in the browser before it is sent. */
+export const AVATAR_SOURCE_MAX_BYTES = 10 * 1024 * 1024;
 export const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 /** The image to show, or null when the user's initial should be drawn instead. */

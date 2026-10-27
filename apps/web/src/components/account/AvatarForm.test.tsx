@@ -16,6 +16,7 @@ const none = { kind: "none", version: 0 } as const;
 afterEach(() => {
   for (const fn of Object.values(client)) fn.mockReset();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   refresh.mockClear();
 });
 
@@ -33,19 +34,50 @@ describe("AvatarForm", () => {
     expect(client.PUT).toHaveBeenCalledWith("/me/avatar/preset", { body: { preset: "moon-3" } });
   });
 
-  it("sends the chosen file as the raw body", async () => {
+  it("opens the cropper and uploads the cropped picture", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: () => "blob:x", revokeObjectURL: () => {} }));
+    const drawImage = vi.fn();
+    const cropped = new Blob(["c"], { type: "image/webp" });
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ drawImage } as never);
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((cb) => cb(cropped));
     renderAccount(<AvatarForm userId="u1" username="kafka" avatar={none} />);
-    const file = new File(["x"], "me.png", { type: "image/png" });
-    pick(file);
-    fireEvent.click(await screen.findByRole("button", { name: "Save picture" }));
+
+    pick(new File(["x"], "me.png", { type: "image/png" }));
+    const frame = await screen.findByRole("group", { name: /Picture frame/ });
+    const img = frame.querySelector("img")!;
+    Object.defineProperty(img, "naturalWidth", { value: 800 });
+    Object.defineProperty(img, "naturalHeight", { value: 400 });
+    fireEvent.load(img);
+
+    fireEvent.click(screen.getByRole("button", { name: "Save picture" }));
     await waitFor(() => expect(refresh).toHaveBeenCalled());
+    // The middle square of a landscape picture, at zoom 1.
+    expect(drawImage).toHaveBeenCalledWith(img, 200, 0, 400, 400, 0, 0, 512, 512);
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/proxy/me/avatar",
-      expect.objectContaining({ method: "PUT", body: file, headers: { "Content-Type": "image/png" } }),
+      expect.objectContaining({ method: "PUT", body: cropped, headers: { "Content-Type": "image/webp" } }),
     );
+  });
+
+  it("falls back to JPEG when the browser can't encode WebP", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: () => "blob:x", revokeObjectURL: () => {} }));
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ drawImage: vi.fn() } as never);
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((cb, type) =>
+      cb(new Blob(["c"], { type: type === "image/webp" ? "image/png" : (type as string) })),
+    );
+    renderAccount(<AvatarForm userId="u1" username="kafka" avatar={none} />);
+    pick(new File(["x"], "me.png", { type: "image/png" }));
+    const img = (await screen.findByRole("group", { name: /Picture frame/ })).querySelector("img")!;
+    Object.defineProperty(img, "naturalWidth", { value: 100 });
+    Object.defineProperty(img, "naturalHeight", { value: 100 });
+    fireEvent.load(img);
+    fireEvent.click(screen.getByRole("button", { name: "Save picture" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][1].headers).toEqual({ "Content-Type": "image/jpeg" });
   });
 
   it("refuses a file of the wrong type without calling the server", async () => {
@@ -54,7 +86,7 @@ describe("AvatarForm", () => {
     renderAccount(<AvatarForm userId="u1" username="kafka" avatar={none} />);
     pick(new File(["x"], "me.gif", { type: "image/gif" }));
     expect(await screen.findByText("Use a PNG, JPEG or WebP image.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Save picture" })).toBeNull();
+    expect(screen.queryByRole("group", { name: /Picture frame/ })).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
