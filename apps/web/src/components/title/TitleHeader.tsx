@@ -6,6 +6,7 @@ import { gradientFor } from "@/components/ui/PosterCard";
 import { genreName } from "@/lib/genres";
 
 import { AddToList, type ListState } from "./AddToList";
+import { cleanSynopsis } from "@/lib/synopsis";
 
 type Details = components["schemas"]["AnimeDetailsOut"];
 
@@ -71,7 +72,7 @@ export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
           {hint}
 
           <h2 className="sr-only">{t("synopsis")}</h2>
-          <p className="mt-6 whitespace-pre-line text-muted">{anime.synopsis || t("noSynopsis")}</p>
+          <p className="mt-6 whitespace-pre-line text-muted">{cleanSynopsis(anime.synopsis) || t("noSynopsis")}</p>
           <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
             {!!anime.studios?.length && (
               <>

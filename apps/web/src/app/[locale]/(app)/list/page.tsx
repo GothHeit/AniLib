@@ -1,4 +1,5 @@
 import { errorCode } from "@app/api-client";
+import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 
@@ -9,6 +10,7 @@ import { redirect } from "@/i18n/navigation";
 import { toApiError } from "@/lib/errors";
 import { LIST_STATUSES, type ListStatus } from "@/lib/catalog";
 import { serverApi, unwrap } from "@/lib/server-api";
+import { titled } from "@/lib/page-title";
 
 async function Entries({ active, locale }: { active: ListStatus; locale: string }) {
   const api = await serverApi();
@@ -22,6 +24,12 @@ async function Entries({ active, locale }: { active: ListStatus; locale: string 
   if (code === "mal_session_expired" || code === "mal_not_linked") return <LinkMalCard expired={code === "mal_session_expired"} />;
   if (response.status === 401) redirect({ href: "/login", locale });
   throw toApiError(response.status, error);
+}
+
+export async function generateMetadata({ params }: PageProps<"/[locale]/list">): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "list" });
+  return titled(t("title"));
 }
 
 export default async function ListPage({ params, searchParams }: PageProps<"/[locale]/list">) {

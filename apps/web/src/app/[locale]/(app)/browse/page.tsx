@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 
@@ -8,6 +9,7 @@ import { PosterCard } from "@/components/ui/PosterCard";
 import { parseBrowse, yearOptions, type BrowseFilters } from "@/lib/browse";
 import { animeHref, captionOf, posterOf } from "@/lib/catalog";
 import { serverApi, unwrap } from "@/lib/server-api";
+import { titled } from "@/lib/page-title";
 
 async function Results({ filters, page, locale }: { filters: BrowseFilters; page: number; locale: string }) {
   const t = await getTranslations("browse");
@@ -36,6 +38,12 @@ async function Results({ filters, page, locale }: { filters: BrowseFilters; page
       />
     </>
   );
+}
+
+export async function generateMetadata({ params }: PageProps<"/[locale]/browse">): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "browse" });
+  return titled(t("title"));
 }
 
 export default async function BrowsePage({ params, searchParams }: PageProps<"/[locale]/browse">) {

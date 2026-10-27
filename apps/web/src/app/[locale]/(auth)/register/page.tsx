@@ -1,8 +1,16 @@
+import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { AuthCard } from "@/components/auth/AuthCard";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import { Link } from "@/i18n/navigation";
+import { titled } from "@/lib/page-title";
+
+export async function generateMetadata({ params }: PageProps<"/[locale]/register">): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "register" });
+  return titled(t("title"));
+}
 
 export default async function RegisterPage({ params, searchParams }: PageProps<"/[locale]/register">) {
   const { locale } = await params;

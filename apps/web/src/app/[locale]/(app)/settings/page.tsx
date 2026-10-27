@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 
@@ -9,6 +10,7 @@ import { PreferencesForm } from "@/components/account/PreferencesForm";
 import { SessionsPanel } from "@/components/account/SessionsPanel";
 import { ButtonLink } from "@/components/ui/Button";
 import { serverApi, unwrap } from "@/lib/server-api";
+import { titled } from "@/lib/page-title";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -17,6 +19,12 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       {children}
     </section>
   );
+}
+
+export async function generateMetadata({ params }: PageProps<"/[locale]/settings">): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "account" });
+  return titled(t("settings.title"));
 }
 
 export default async function SettingsPage({ params, searchParams }: PageProps<"/[locale]/settings">) {

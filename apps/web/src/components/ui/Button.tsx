@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 type Variant = "primary" | "secondary" | "ghost";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-ui px-4 py-2 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-ui px-4 py-2 text-sm pointer-coarse:min-h-11 font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-50";
 const variants: Record<Variant, string> = {
   primary: "bg-accent text-on-accent hover:bg-accent/85",
   secondary: "border border-line bg-surface text-fg hover:border-accent",

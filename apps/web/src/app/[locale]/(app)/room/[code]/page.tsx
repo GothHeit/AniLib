@@ -4,10 +4,14 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { DEFAULT_STYLE } from "@/components/player/subtitleStyle";
 import { RoomClient } from "@/components/room/RoomClient";
-import { APP_NAME } from "@/lib/brand";
+import { titled } from "@/lib/page-title";
 import { serverApi, unwrap } from "@/lib/server-api";
 
-export const metadata: Metadata = { title: `${APP_NAME}` };
+export async function generateMetadata({ params }: PageProps<"/[locale]/room/[code]">): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "room" });
+  return titled(t("panel"));
+}
 
 export default async function RoomPage({ params }: PageProps<"/[locale]/room/[code]">) {
   const { locale, code } = await params;

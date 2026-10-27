@@ -134,7 +134,7 @@ export function NotificationBell() {
           if (!open) void load();
           setOpen((v) => !v);
         }}
-        className="relative flex h-9 w-9 items-center justify-center rounded-ui text-muted hover:text-fg"
+        className="relative flex h-11 w-11 items-center justify-center rounded-ui text-muted hover:text-fg"
       >
         <Icon name="bell" />
         {unread > 0 && (

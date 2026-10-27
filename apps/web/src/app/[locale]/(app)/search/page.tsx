@@ -1,9 +1,11 @@
+import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Suspense } from "react";
 
 import { GridSkeleton, PosterGrid } from "@/components/grid/PosterGrid";
 import { PosterCard } from "@/components/ui/PosterCard";
 import { animeHref, captionOf, posterOf } from "@/lib/catalog";
+import { titled } from "@/lib/page-title";
 import { serverApi, unwrap } from "@/lib/server-api";
 
 async function Results({ q, locale }: { q: string; locale: string }) {
@@ -17,6 +19,14 @@ async function Results({ q, locale }: { q: string; locale: string }) {
       ))}
     </PosterGrid>
   );
+}
+
+export async function generateMetadata({ params, searchParams }: PageProps<"/[locale]/search">): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "search" });
+  const raw = (await searchParams).q;
+  const q = (Array.isArray(raw) ? raw[0] : raw)?.trim().slice(0, 100) ?? "";
+  return titled(q ? t("resultsFor", { q }) : t("title"));
 }
 
 export default async function SearchPage({ params, searchParams }: PageProps<"/[locale]/search">) {

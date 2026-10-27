@@ -58,7 +58,9 @@ export function TopNav({ userId, username, avatar, isAdmin, pending = 0 }: { use
             <SearchBox />
           </div>
           <NotificationBell />
-          <LocaleSwitcher />
+          <div className="hidden md:block">
+            <LocaleSwitcher />
+          </div>
           <div className="hidden md:block">
             <UserMenu userId={userId} username={username} avatar={avatar} isAdmin={isAdmin} pending={pending} />
           </div>

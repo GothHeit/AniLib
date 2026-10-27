@@ -8,6 +8,7 @@ import { ButtonLink } from "@/components/ui/Button";
 import { Hero } from "@/components/ui/Hero";
 import { animeHref } from "@/lib/catalog";
 import { serverApi, unwrap } from "@/lib/server-api";
+import { cleanSynopsis } from "@/lib/synopsis";
 
 async function HomeContent({ locale }: { locale: string }) {
   const t = await getTranslations("home");
@@ -25,7 +26,7 @@ async function HomeContent({ locale }: { locale: string }) {
         <Hero
           title={hero.anime.title}
           meta={hero.anime.mean ? t("score", { score: hero.anime.mean.toFixed(1) }) : undefined}
-          synopsis={hero.synopsis ?? undefined}
+          synopsis={cleanSynopsis(hero.synopsis) || undefined}
           image={hero.backdrop}
         >
           <ButtonLink href={animeHref(hero.anime.id)}>{t("play")}</ButtonLink>

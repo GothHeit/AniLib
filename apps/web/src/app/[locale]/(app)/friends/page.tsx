@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { FriendsPanel } from "@/components/friends/FriendsPanel";
 import { serverApi, unwrap } from "@/lib/server-api";
+import { titled } from "@/lib/page-title";
+
+export async function generateMetadata({ params }: PageProps<"/[locale]/friends">): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "friends" });
+  return titled(t("title"));
+}
 
 export default async function FriendsPage({ params }: PageProps<"/[locale]/friends">) {
   const { locale } = await params;
