@@ -43,6 +43,29 @@ cd deploy && docker compose up -d --build
 The API applies pending migrations when it starts. Roll back by checking out the previous commit and
 running the same command (migrations are not undone automatically).
 
+## Automatic deploys
+
+A systemd timer checks `origin/main` every minute and rebuilds production when it changes. It works
+in its own clone, `~/moonroom-prod`, so it never touches your dev checkout or uncommitted work. Run
+once in WSL (systemd must be on: `/etc/wsl.conf` with `[boot]` / `systemd=true`, then `wsl --shutdown`
+from Windows):
+
+```bash
+git clone https://github.com/GothHeit/AniLib ~/moonroom-prod
+cp ~/projetos/AniLib/deploy/.env ~/moonroom-prod/deploy/.env
+mkdir -p ~/.config/systemd/user
+cp ~/moonroom-prod/deploy/systemd/moonroom-deploy.* ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now moonroom-deploy.timer
+loginctl enable-linger "$USER"    # keep it running when no terminal is open
+```
+
+The compose project is named `moonroom`, so the new clone takes over the existing containers and
+volumes (database included). Watch it with `journalctl --user -u moonroom-deploy -f`, run it now
+with `systemctl --user start moonroom-deploy`. A failed build is retried every minute and the old
+version keeps running. Stop it with `systemctl --user disable --now moonroom-deploy.timer`. The
+script lives in the clone, so it updates itself with each deploy.
+
 ## Backups
 
 `deploy/backup.sh` writes a compressed dump to `deploy/backups/` and keeps the last 14. Schedule it

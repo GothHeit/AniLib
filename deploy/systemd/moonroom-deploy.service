@@ -1,0 +1,6 @@
+[Unit]
+Description=Deploy MoonRoom when main changes
+
+[Service]
+Type=oneshot
+ExecStart=%h/moonroom-prod/deploy/auto-deploy.sh
