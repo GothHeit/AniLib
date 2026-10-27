@@ -46,7 +46,10 @@ const GENRES = [
   { id: 2, name: "Fantasy", kind: "genre", nsfw: false },
 ];
 const HOME = {
-  hero: { anime: CATALOG[0], synopsis: "A mage walks on.", backdrop: null },
+  heroes: [
+    { anime: CATALOG[0], synopsis: "A mage walks on.", backdrop: null },
+    { anime: CATALOG[1], synopsis: "Dinner is dungeon.", backdrop: null },
+  ],
   rows: [
     {
       id: "continue_watching",
@@ -59,6 +62,7 @@ const HOME = {
       ],
     },
     { id: "seasonal", items: CATALOG.map((anime) => ({ anime })) },
+    { id: "genre", genre: GENRES[1], items: [{ anime: CATALOG[1] }] },
   ],
 };
 

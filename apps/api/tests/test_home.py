@@ -30,14 +30,16 @@ async def test_home_has_hero_and_rows_in_order(client, session):
         node(3, "No art", mean=9.5, main_picture=None),
     )
     mock_ranking(node(10, "Classic"))
+    mock_details(1)
     mock_details(2, synopsis="Why it is best", pictures=[{"large": "https://img/back.jpg"}])
     await watch(client, headers, 20, 3)
     mock_details(20, num_episodes=12)
 
     body = (await client.get("/home", headers=headers)).json()
-    assert body["hero"]["anime"]["title"] == "Best"
-    assert body["hero"]["synopsis"] == "Why it is best"
-    assert body["hero"]["backdrop"] == "https://img/back.jpg"
+    # Best scores first; the title without art is skipped.
+    assert [h["anime"]["title"] for h in body["heroes"]] == ["Best", "Popular"]
+    assert body["heroes"][0]["synopsis"] == "Why it is best"
+    assert body["heroes"][0]["backdrop"] == "https://img/back.jpg"
     # No MAL link, so there is no "my list" row.
     assert [r["id"] for r in body["rows"]] == ["continue_watching", "seasonal", "top"]
     first = body["rows"][0]["items"][0]
@@ -72,7 +74,7 @@ async def test_home_survives_a_failing_section_but_not_total_mal_failure(client,
     mock_ranking(node(10, "Classic"))
     body = (await client.get("/home", headers=headers)).json()
     assert [r["id"] for r in body["rows"]] == ["top"]
-    assert body["hero"] is None
+    assert body["heroes"] == []
 
     respx.get(f"{API_BASE}/anime/ranking").mock(return_value=httpx.Response(500))
     fastapi_app.state.mal._pages.clear()
@@ -147,3 +149,50 @@ async def test_home_skips_my_list_when_the_stored_token_cannot_be_decrypted(clie
     r = await client.get("/home", headers=headers)
     assert r.status_code == 200
     assert "my_list" not in [row["id"] for row in r.json()["rows"]]
+
+
+@respx.mock
+async def test_genre_rows_show_only_genres_with_enough_titles(client, session, monkeypatch):
+    from app.routers import home
+
+    monkeypatch.setattr(home, "todays_genres", lambda today, count=4: [1, 4])
+    _, headers = await make_user(session, "kafka")
+    mock_season(node(1))
+    mock_ranking(
+        *(node(100 + i, genres=(1,)) for i in range(9)),
+        *(node(200 + i, genres=(4,)) for i in range(3)),
+    )
+    mock_details(1)
+    body = (await client.get("/home", headers=headers)).json()
+    genre_rows = [r for r in body["rows"] if r["id"] == "genre"]
+    assert [r["genre"]["name"] for r in genre_rows] == ["Action"]
+    assert len(genre_rows[0]["items"]) == 9
+
+
+@respx.mock
+async def test_popular_with_friends_needs_enough_titles_and_respects_adult_filter(client, session):
+    from tests.test_friends import befriend
+
+    _, kafka = await make_user(session, "kafka")
+    _, ana = await make_user(session, "ana")
+    await befriend(client, kafka, ana, "ana")
+    mock_season(node(1))
+    mock_ranking(node(10))
+    mock_details(1)
+    for i in range(7):
+        mock_details(300 + i)
+        await watch(client, ana, 300 + i, 1)
+
+    def ids(body):
+        return [r["id"] for r in body["rows"]]
+
+    assert "friends_popular" not in ids((await client.get("/home", headers=kafka)).json())
+
+    mock_details(307, rating="rx")
+    await watch(client, ana, 307, 1)
+    mock_details(308)
+    await watch(client, ana, 308, 1)
+    body = (await client.get("/home", headers=kafka)).json()
+    row = next(r for r in body["rows"] if r["id"] == "friends_popular")
+    assert 307 not in {i["anime"]["id"] for i in row["items"]}
+    assert len(row["items"]) == 8

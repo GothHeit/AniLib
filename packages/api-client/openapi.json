@@ -780,15 +780,12 @@
       },
       "HomeOut": {
         "properties": {
-          "hero": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/HomeHero"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "heroes": {
+            "items": {
+              "$ref": "#/components/schemas/HomeHero"
+            },
+            "title": "Heroes",
+            "type": "array"
           },
           "rows": {
             "items": {
@@ -799,7 +796,7 @@
           }
         },
         "required": [
-          "hero",
+          "heroes",
           "rows"
         ],
         "title": "HomeOut",
@@ -807,12 +804,24 @@
       },
       "HomeRow": {
         "properties": {
+          "genre": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GenreOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "enum": [
               "continue_watching",
               "my_list",
+              "friends_popular",
               "seasonal",
-              "top"
+              "top",
+              "genre"
             ],
             "title": "Id",
             "type": "string"

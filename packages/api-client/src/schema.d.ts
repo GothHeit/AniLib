@@ -1277,17 +1277,19 @@ export interface components {
         };
         /** HomeOut */
         HomeOut: {
-            hero: components["schemas"]["HomeHero"] | null;
+            /** Heroes */
+            heroes: components["schemas"]["HomeHero"][];
             /** Rows */
             rows: components["schemas"]["HomeRow"][];
         };
         /** HomeRow */
         HomeRow: {
+            genre?: components["schemas"]["GenreOut"] | null;
             /**
              * Id
              * @enum {string}
              */
-            id: "continue_watching" | "my_list" | "seasonal" | "top";
+            id: "continue_watching" | "my_list" | "friends_popular" | "seasonal" | "top" | "genre";
             /** Items */
             items: components["schemas"]["HomeItem"][];
         };

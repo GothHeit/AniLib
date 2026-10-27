@@ -8,8 +8,13 @@
       "continue_watching": "Continuar assistindo",
       "my_list": "Minha lista",
       "seasonal": "Nesta temporada",
-      "top": "Mais bem avaliados"
+      "top": "Mais bem avaliados",
+      "friends_popular": "Popular entre amigos",
+      "genre": "Em alta em {genre}"
     },
-    "empty": "Nada para mostrar ainda. Tente de novo em instantes."
+    "empty": "Nada para mostrar ainda. Tente de novo em instantes.",
+    "featured": "Destaques",
+    "slide": "Destaque {n} de {total}",
+    "goToSlide": "Mostrar destaque {n}"
   }
 }

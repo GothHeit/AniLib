@@ -129,6 +129,18 @@ async def friend_ids(session: Session, user_id: uuid.UUID) -> list[uuid.UUID]:
     return [b if a == user_id else a for a, b in rows]
 
 
+async def sharing_friend_ids(session: Session, user_id: uuid.UUID) -> list[uuid.UUID]:
+    """Friends who let others see what they watch."""
+    ids = await friend_ids(session, user_id)
+    if not ids:
+        return []
+    return list(
+        await session.scalars(
+            select(User.id).where(User.id.in_(ids), User.share_activity.is_(True))
+        )
+    )
+
+
 async def summaries(session: Session, ids: list[uuid.UUID]) -> dict[uuid.UUID, UserSummary]:
     if not ids:
         return {}
@@ -362,16 +374,7 @@ async def friends_activity(
     limit: Annotated[int, Query(ge=1, le=MAX_FEED)] = 20,
 ):
     """What friends finished watching lately; friends who keep it private are left out."""
-    ids = await friend_ids(session, user.id)
-    sharing = (
-        list(
-            await session.scalars(
-                select(User.id).where(User.id.in_(ids), User.share_activity.is_(True))
-            )
-        )
-        if ids
-        else []
-    )
+    sharing = await sharing_friend_ids(session, user.id)
     return await _activity(request, user, session, sharing, limit)
 
 

@@ -4,8 +4,7 @@ import { Suspense } from "react";
 import { FriendsActivity } from "@/components/rows/FriendsActivity";
 import { HomeRows } from "@/components/rows/HomeRows";
 import { HomeSkeleton } from "@/components/rows/HomeSkeleton";
-import { ButtonLink } from "@/components/ui/Button";
-import { Hero } from "@/components/ui/Hero";
+import { HeroCarousel } from "@/components/ui/HeroCarousel";
 import { animeHref } from "@/lib/catalog";
 import { serverApi, unwrap } from "@/lib/server-api";
 import { cleanSynopsis } from "@/lib/synopsis";
@@ -18,20 +17,18 @@ async function HomeContent({ locale }: { locale: string }) {
     // The feed is a bonus: the home page works without it.
     api.GET("/friends/activity", { params: { query: { limit: 20 } } }).then((r) => r.data ?? [], () => []),
   ]);
-  const hero = home.hero;
+  const slides = home.heroes.map(({ anime, synopsis, backdrop }) => ({
+    id: anime.id,
+    title: anime.title,
+    href: animeHref(anime.id),
+    meta: anime.mean ? t("score", { score: anime.mean.toFixed(1) }) : undefined,
+    synopsis: cleanSynopsis(synopsis) || undefined,
+    image: backdrop,
+  }));
 
   return (
     <>
-      {hero && (
-        <Hero
-          title={hero.anime.title}
-          meta={hero.anime.mean ? t("score", { score: hero.anime.mean.toFixed(1) }) : undefined}
-          synopsis={cleanSynopsis(hero.synopsis) || undefined}
-          image={hero.backdrop}
-        >
-          <ButtonLink href={animeHref(hero.anime.id)}>{t("play")}</ButtonLink>
-        </Hero>
-      )}
+      {slides.length > 0 && <HeroCarousel slides={slides} cta={t("play")} />}
       {home.rows.length > 0 ? (
         <HomeRows rows={home.rows} />
       ) : (

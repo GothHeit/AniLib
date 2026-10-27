@@ -4,11 +4,12 @@ import type { ReactElement, ReactNode } from "react";
 
 import auth from "../../messages/en/auth.json";
 import common from "../../messages/en/common.json";
+import home from "../../messages/en/home.json";
 import nav from "../../messages/en/nav.json";
 
 function Providers({ children }: { children: ReactNode }) {
   return (
-    <NextIntlClientProvider locale="en" messages={{ ...common, ...nav, ...auth }}>
+    <NextIntlClientProvider locale="en" messages={{ ...common, ...nav, ...auth, ...home }}>
       {children}
     </NextIntlClientProvider>
   );

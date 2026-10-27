@@ -8,8 +8,13 @@
       "continue_watching": "Continue watching",
       "my_list": "My list",
       "seasonal": "This season",
-      "top": "Top rated"
+      "top": "Top rated",
+      "friends_popular": "Popular with friends",
+      "genre": "Popular in {genre}"
     },
-    "empty": "Nothing to show yet. Try again in a moment."
+    "empty": "Nothing to show yet. Try again in a moment.",
+    "featured": "Featured",
+    "slide": "Slide {n} of {total}",
+    "goToSlide": "Show featured title {n}"
   }
 }

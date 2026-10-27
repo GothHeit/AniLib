@@ -141,7 +141,9 @@ class HomeItem(BaseModel):
 
 
 class HomeRow(BaseModel):
-    id: Literal["continue_watching", "my_list", "seasonal", "top"]
+    id: Literal["continue_watching", "my_list", "friends_popular", "seasonal", "top", "genre"]
+    # Set on genre rows only: the MAL genre, named in English (the web translates it).
+    genre: GenreOut | None = None
     items: list[HomeItem]
 
 
@@ -152,5 +154,5 @@ class HomeHero(BaseModel):
 
 
 class HomeOut(BaseModel):
-    hero: HomeHero | None
+    heroes: list[HomeHero]
     rows: list[HomeRow]
