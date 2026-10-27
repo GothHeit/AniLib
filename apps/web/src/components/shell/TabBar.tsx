@@ -21,7 +21,7 @@ export function TabBar({ userId, username, avatar, isAdmin, pending = 0 }: { use
   return (
     <nav
       aria-label={t("main")}
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-bg md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:hidden"
     >
       {tabs.map(({ href, key, icon }) => {
         const active = isActive(pathname, href);

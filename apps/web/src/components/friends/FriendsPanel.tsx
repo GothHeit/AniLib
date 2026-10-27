@@ -118,7 +118,7 @@ export function FriendsPanel({ friends, requests }: Props) {
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
         <form onSubmit={find} className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1">
+          <label className="flex w-full flex-col gap-1 sm:w-auto">
             <span className="text-sm text-muted">{t("addLabel")}</span>
             <input
               value={name}
@@ -127,7 +127,7 @@ export function FriendsPanel({ friends, requests }: Props) {
               autoComplete="off"
               autoCapitalize="none"
               placeholder={t("addPlaceholder")}
-              className="w-64 rounded-ui border border-line bg-bg px-3 py-2 text-fg"
+              className="w-full rounded-ui border border-line bg-bg px-3 py-2 text-fg sm:w-64"
             />
           </label>
           <Button type="submit" variant="secondary" disabled={busy || !name.trim()}>

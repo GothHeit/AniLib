@@ -10,7 +10,7 @@ export default function ErrorPage({ error, reset }: { error: Error; reset: () =>
   const key = `errors.${error.message}`;
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
       <h1 className="text-3xl font-bold">{t("states.errorTitle")}</h1>
       <p role="alert" className="text-muted">
         {t.has(key) ? t(key) : t("errors.unknown")}

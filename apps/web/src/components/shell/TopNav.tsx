@@ -31,7 +31,7 @@ export function TopNav({ userId, username, avatar, isAdmin, pending = 0 }: { use
   return (
     <header
       data-scrolled={scrolled}
-      className={`fixed inset-x-0 top-0 z-40 transition-colors ${scrolled ? "bg-bg shadow-lg shadow-black/40" : "bg-gradient-to-b from-bg/80 to-transparent"}`}
+      className={`fixed inset-x-0 top-0 z-40 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] transition-colors ${scrolled ? "bg-bg shadow-lg shadow-black/40" : "bg-gradient-to-b from-bg/80 to-transparent"}`}
     >
       <nav aria-label={t("main")} className="flex items-center gap-6 px-4 py-3 sm:px-8">
         <Link href="/" aria-label={APP_NAME}>

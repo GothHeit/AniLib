@@ -152,7 +152,7 @@ export function NotificationBell() {
           role="dialog"
           tabIndex={-1}
           aria-label={t("title")}
-          className="fixed inset-x-4 top-16 z-50 flex max-h-[70vh] flex-col rounded-ui border border-line bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 focus:outline-none"
+          className="fixed inset-x-4 top-16 z-50 flex max-h-[70dvh] flex-col rounded-ui border border-line bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 focus:outline-none"
         >
           <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
             <h2 className="font-bold">{t("title")}</h2>

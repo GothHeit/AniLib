@@ -4,6 +4,9 @@ import { useEffect, useState, type RefObject } from "react";
 
 import { blockPosition, cueStyle, cueText, type SubtitleStyle } from "./subtitleStyle";
 
+/** Safari's own full screen for a <video>; the only kind iPhone has. */
+export type WebkitVideo = HTMLVideoElement & { webkitEnterFullscreen?: () => void };
+
 type Props = {
   video: RefObject<HTMLVideoElement | null>;
   /** Index of the <track> element to show, or -1 for none. */
@@ -17,7 +20,8 @@ type Props = {
 /**
  * Draws the chosen subtitle track ourselves instead of the browser's cue box, so size,
  * colour, background and position look the same everywhere. The track stays "hidden" (cues
- * load, nothing is drawn natively) and every other track is disabled.
+ * load, nothing is drawn natively) and every other track is disabled. In Safari's native
+ * full screen our overlay is not shown, so the track is switched to "showing" until it ends.
  */
 export function SubtitleOverlay({ video, selected, tracksKey, style, controlsShown }: Props) {
   const [lines, setLines] = useState<string[]>([]);
@@ -26,13 +30,22 @@ export function SubtitleOverlay({ video, selected, tracksKey, style, controlsSho
     const v = video.current;
     if (!v) return;
     const elements = [...v.querySelectorAll("track")];
+    let native = false;
     const apply = () =>
       elements.forEach((el, i) => {
-        el.track.mode = i === selected ? "hidden" : "disabled";
+        el.track.mode = i === selected ? (native ? "showing" : "hidden") : "disabled";
       });
+    const toggleNative = (on: boolean) => () => {
+      native = on;
+      apply();
+    };
+    const begin = toggleNative(true);
+    const end = toggleNative(false);
     apply();
     // hls.js may add text tracks of its own; keep ours in the state we chose.
     v.textTracks.addEventListener("addtrack", apply);
+    v.addEventListener("webkitbeginfullscreen", begin);
+    v.addEventListener("webkitendfullscreen", end);
     const track = elements[selected]?.track;
     const update = () => {
       const cues = track?.activeCues ? [...track.activeCues] : [];
@@ -42,6 +55,8 @@ export function SubtitleOverlay({ video, selected, tracksKey, style, controlsSho
     track?.addEventListener("cuechange", update);
     return () => {
       v.textTracks.removeEventListener("addtrack", apply);
+      v.removeEventListener("webkitbeginfullscreen", begin);
+      v.removeEventListener("webkitendfullscreen", end);
       track?.removeEventListener("cuechange", update);
     };
   }, [video, selected, tracksKey]);

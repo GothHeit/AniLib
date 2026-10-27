@@ -12,6 +12,7 @@ import { useRoomSync, type RoomBinding } from "@/components/room/useRoomSync";
 
 import { setAutoNext, useAutoNext } from "./autoNext";
 import { stageOf } from "./FullscreenStage";
+import type { WebkitVideo } from "./SubtitleOverlay";
 import { PlayerIcon } from "./icons";
 import { formatTime } from "./progress";
 import { SettingsMenu, type AudioTrack, type Quality } from "./SettingsMenu";
@@ -298,8 +299,14 @@ export function Player(props: Props) {
   }, []);
 
   const toggleFullscreen = useCallback(() => {
-    if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
-    else void stageOf(stage.current)?.requestFullscreen().catch(() => undefined);
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => undefined);
+      return;
+    }
+    const el = stageOf(stage.current);
+    if (el?.requestFullscreen) void el.requestFullscreen().catch(() => undefined);
+    // iPhone Safari can only full-screen a <video>, with its own controls and subtitles.
+    else (video.current as WebkitVideo | null)?.webkitEnterFullscreen?.();
   }, []);
 
   const skip = activeSkip(skips, current);
@@ -516,7 +523,7 @@ export function Player(props: Props) {
       )}
 
       <div
-        className={`pointer-events-none absolute inset-0 flex flex-col justify-between transition-opacity duration-300 ${shown ? "opacity-100" : "opacity-0"}`}
+        className={`pointer-events-none absolute inset-0 flex flex-col justify-between pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)] transition-opacity duration-300 ${shown ? "opacity-100" : "opacity-0"}`}
       >
         <div className="pointer-events-auto flex items-center gap-3 bg-gradient-to-b from-black/80 to-transparent px-4 pb-10 pt-4 sm:px-8">
           <Link href={backHref} aria-label={t("back")} className={iconButton}>
