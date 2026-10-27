@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Sequence
 from typing import Annotated, Literal
 
 from cachetools import TLRUCache
@@ -28,6 +29,11 @@ SOURCE_FAILURE_TTL = 60
 # Related and recommended nodes carry no rating or genres: with NSFW off, this many of each are
 # checked against their (cached) details before being shown.
 SAFE_CHECK_LIMIT = 12
+# At most this many details are fetched at once for those checks, and the page waits at most
+# SAFE_CHECK_BUDGET seconds for them. Checks still running then keep warming the cache for the
+# next visit, but their entries are left out of this response.
+SAFE_CHECK_CONCURRENCY = 6
+SAFE_CHECK_BUDGET = 4.0
 
 
 # Values are (found, ttl): failures are remembered too, but only briefly.
@@ -106,9 +112,7 @@ async def details(request: Request, anime_id: int, user: CurrentUser):
     related = raw.get("related_anime") or []
     recommended = raw.get("recommendations") or []
     if not user.show_nsfw:
-        related, recommended = await asyncio.gather(
-            _only_safe(mal, related), _only_safe(mal, recommended)
-        )
+        related, recommended = await _only_safe(mal, related, recommended)
     return AnimeDetailsOut.model_validate(
         {
             **raw,
@@ -126,19 +130,28 @@ async def sources(request: Request, anime_id: int, user: CurrentUser):
     return SourcesOut(sources=await _available_sources(request, raw))
 
 
-async def _only_safe(mal: MalClient, entries: list[dict]) -> list[dict]:
-    """Keeps the entries whose details say they are safe. A title that can't be checked is
-    dropped rather than shown."""
+async def _only_safe(mal: MalClient, *groups: list[dict]) -> tuple[list[dict], ...]:
+    """Keeps the entries whose details say they are safe. A title that can't be checked, or
+    isn't checked within the budget, is dropped rather than shown."""
+    gate = asyncio.Semaphore(SAFE_CHECK_CONCURRENCY)
 
     async def check(entry: dict) -> bool:
-        try:
-            return is_safe(await mal.details(entry["node"]["id"]))
-        except ApiError:
-            return False
+        async with gate:
+            try:
+                return is_safe(await mal.details(entry["node"]["id"]))
+            except ApiError:
+                return False
 
-    head = entries[:SAFE_CHECK_LIMIT]
-    verdicts = await asyncio.gather(*(check(e) for e in head))
-    return [e for e, ok in zip(head, verdicts, strict=True) if ok]
+    heads = [group[:SAFE_CHECK_LIMIT] for group in groups]
+    tasks = [[asyncio.ensure_future(check(e)) for e in head] for head in heads]
+    pending = [t for group in tasks for t in group]
+    if pending:
+        await asyncio.wait(pending, timeout=SAFE_CHECK_BUDGET)
+
+    def kept(head: list[dict], group: Sequence[asyncio.Future[bool]]) -> list[dict]:
+        return [e for e, t in zip(head, group, strict=True) if t.done() and t.result()]
+
+    return tuple(kept(head, group) for head, group in zip(heads, tasks, strict=True))
 
 
 async def _has_episodes(request: Request, name: str, anime: dict) -> bool:

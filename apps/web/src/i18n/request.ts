@@ -17,5 +17,6 @@ async function loadMessages(locale: string) {
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
   const locale = hasLocale(routing.locales, requested) ? requested : routing.defaultLocale;
-  return { locale, messages: await loadMessages(locale) };
+  // A fixed zone and a shared "now" keep server and browser renderings of dates identical.
+  return { locale, messages: await loadMessages(locale), timeZone: "UTC", now: new Date() };
 });

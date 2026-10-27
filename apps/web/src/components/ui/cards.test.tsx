@@ -23,6 +23,13 @@ describe("cards", () => {
     expect(screen.getByRole("link", { name: /Frieren/ })).toHaveAttribute("href", "/anime/1");
   });
 
+  it("loads poster images lazily and off the main thread", () => {
+    const { container } = renderIntl(<PosterCard href="/anime/1" title="Frieren" image="/p.jpg" />);
+    const img = container.querySelector("img");
+    expect(img).toHaveAttribute("loading", "lazy");
+    expect(img).toHaveAttribute("decoding", "async");
+  });
+
   it("clamps the progress bar to 0-100%", () => {
     renderIntl(<WideCard href="/watch" title="Frieren" progress={1.7} />);
     expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100");

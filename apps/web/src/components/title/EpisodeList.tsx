@@ -80,6 +80,7 @@ export function EpisodeList({ source, animeId, episodes, progress, current, thum
                       src={image}
                       alt=""
                       loading="lazy"
+                      decoding="async"
                       className={`absolute inset-0 h-full w-full object-cover ${still ? "" : "scale-110 opacity-40 blur-[2px]"}`}
                     />
                   )}

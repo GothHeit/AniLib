@@ -201,6 +201,26 @@ async def test_related_and_recommended_nsfw_titles_are_hidden_unless_enabled(cli
     assert len(body["recommendations"]) == 1
 
 
+async def test_safe_check_leaves_out_slow_titles_after_the_budget(monkeypatch):
+    import asyncio
+    from typing import cast
+
+    from app.mal.client import MalClient
+    from app.routers import anime as router
+
+    monkeypatch.setattr(router, "SAFE_CHECK_BUDGET", 0.05)
+
+    class Mal:
+        async def details(self, anime_id):
+            if anime_id == 2:
+                await asyncio.sleep(1)
+            return {"id": anime_id, "rating": "pg_13"}
+
+    entries = [{"node": {"id": 1}}, {"node": {"id": 2}}]
+    (kept,) = await router._only_safe(cast(MalClient, Mal()), entries)
+    assert [e["node"]["id"] for e in kept] == [1]
+
+
 @respx.mock
 async def test_concurrent_cold_requests_share_one_mal_call(client, session):
     fastapi_app.state.sources = {}

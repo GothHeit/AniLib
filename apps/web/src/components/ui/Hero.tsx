@@ -14,7 +14,7 @@ export function Hero({ title, meta, synopsis, image, children }: Props) {
     <section className="relative flex min-h-[26rem] items-end bg-hero px-4 pb-12 pt-28 sm:min-h-[32rem] sm:px-8">
       {image && (
         // eslint-disable-next-line @next/next/no-img-element -- banners come from remote catalogs
-        <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-50" />
+        <img src={image} alt="" fetchPriority="high" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-50" />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent" />
       <div className="relative max-w-2xl">

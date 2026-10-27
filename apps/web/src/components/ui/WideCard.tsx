@@ -22,7 +22,7 @@ export function WideCard({ href, title, image, caption, progress, seed = title }
       >
         {image && (
           // eslint-disable-next-line @next/next/no-img-element -- thumbnails come from remote catalogs
-          <img src={image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={image} alt="" width={320} height={180} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
         )}
         {pct !== undefined && (
           <div

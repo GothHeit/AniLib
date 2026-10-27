@@ -45,6 +45,9 @@ export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
             // eslint-disable-next-line @next/next/no-img-element -- posters come from remote catalogs
             <img
               src={poster}
+              width={224}
+              height={336}
+              decoding="async"
               alt={t("posterAlt", { title: anime.title })}
               className="absolute inset-0 h-full w-full object-cover"
             />

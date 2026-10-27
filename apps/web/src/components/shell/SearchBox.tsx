@@ -117,7 +117,7 @@ export function SearchBox() {
               className={`flex items-center gap-3 px-3 py-2 hover:bg-bg ${i === active ? "bg-bg" : ""}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- posters come from remote catalogs */}
-              {posterOf(a) && <img src={posterOf(a)!} alt="" className="h-12 w-8 shrink-0 rounded-ui object-cover" />}
+              {posterOf(a) && <img src={posterOf(a)!} alt="" width={32} height={48} loading="lazy" decoding="async" className="h-12 w-8 shrink-0 rounded-ui object-cover" />}
               <span className="min-w-0">
                 <span className="block truncate text-sm font-medium">{a.title}</span>
                 <span className="block text-xs text-muted">{captionOf(a)}</span>
