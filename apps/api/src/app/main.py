@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 import httpx
@@ -10,12 +11,28 @@ from app.config import get_settings
 from app.errors import install_error_handlers
 from app.mal.account import MalAccounts
 from app.mal.client import MalClient
+from app.notifications import check_new_episodes
 from app.ratelimit import AuthLimits
 from app.rooms import Rooms
-from app.routers import anime, auth, avatars, friends, home, invites, mal, progress, rooms, watch
+from app.routers import (
+    anime,
+    auth,
+    avatars,
+    friends,
+    home,
+    invites,
+    mal,
+    notifications,
+    progress,
+    rooms,
+    watch,
+)
 from app.sources import load_sources
 
+log = logging.getLogger(__name__)
+
 SWEEP_INTERVAL_SECONDS = 300
+EPISODE_CHECK_FIRST_RUN_SECONDS = 120
 
 
 async def _sweep(limits: AuthLimits, rooms: Rooms) -> None:
@@ -24,6 +41,17 @@ async def _sweep(limits: AuthLimits, rooms: Rooms) -> None:
         await asyncio.sleep(SWEEP_INTERVAL_SECONDS)
         limits.sweep()
         rooms.sweep()
+
+
+async def _episode_checks(app: FastAPI, hours: int) -> None:
+    # Let the app settle after a start before the first round of lookups.
+    await asyncio.sleep(EPISODE_CHECK_FIRST_RUN_SECONDS)
+    while True:
+        try:
+            await check_new_episodes(app.state.mal, app.state.sources)
+        except Exception:
+            log.exception("new-episode check failed")
+        await asyncio.sleep(hours * 3600)
 
 
 @asynccontextmanager
@@ -39,10 +67,17 @@ async def lifespan(app: FastAPI):
         app.state.source_hints = anime.new_source_hints()
         app.state.sources = load_sources(settings.video_source_names)
         sweeper = asyncio.create_task(_sweep(app.state.auth_limits, app.state.rooms))
+        checker = (
+            asyncio.create_task(_episode_checks(app, settings.episode_check_hours))
+            if settings.episode_check_hours > 0
+            else None
+        )
         try:
             yield
         finally:
             sweeper.cancel()
+            if checker is not None:
+                checker.cancel()
     await db.dispose_engine()
 
 
@@ -62,7 +97,19 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     # rooms before watch: /watch/rooms/... must not be read as /watch/{source}/....
-    for module in (auth, avatars, friends, invites, anime, mal, rooms, watch, progress, home):
+    for module in (
+        auth,
+        avatars,
+        friends,
+        invites,
+        anime,
+        mal,
+        rooms,
+        watch,
+        progress,
+        home,
+        notifications,
+    ):
         app.include_router(module.router)
     return app
 

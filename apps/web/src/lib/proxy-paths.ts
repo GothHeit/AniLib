@@ -1,6 +1,6 @@
 // The API paths the browser may reach through /api/proxy. Everything else (above all /auth/*,
 // which the web server calls itself so it can manage the cookies) is refused.
-const PREFIXES = ["anime", "home", "invites", "watch", "me", "friends"];
+const PREFIXES = ["anime", "home", "invites", "watch", "me", "friends", "notifications"];
 
 export function isProxyPathAllowed(path: string[]): boolean {
   const [first, second] = path;

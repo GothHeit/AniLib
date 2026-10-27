@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { AvatarForm } from "@/components/account/AvatarForm";
+import { NotificationsForm } from "@/components/account/NotificationsForm";
 import { MalSection } from "@/components/account/MalSection";
 import { PasswordForm } from "@/components/account/PasswordForm";
 import { PreferencesForm } from "@/components/account/PreferencesForm";
@@ -22,13 +23,15 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("account");
+  const tNotifications = await getTranslations("notifications.settings");
   const { mal } = await searchParams;
 
   const api = await serverApi();
-  const [me, malStatus, sessions] = await Promise.all([
+  const [me, malStatus, sessions, notifications] = await Promise.all([
     unwrap(api.GET("/me"), locale),
     unwrap(api.GET("/me/mal"), locale),
     unwrap(api.GET("/me/sessions"), locale),
+    unwrap(api.GET("/notifications/settings"), locale),
   ]);
 
   return (
@@ -54,6 +57,10 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
 
       <Section title={t("settings.preferences")}>
         <PreferencesForm showNsfw={me.show_nsfw} shareActivity={me.share_activity} />
+      </Section>
+
+      <Section title={tNotifications("title")}>
+        <NotificationsForm muted={notifications.muted} />
       </Section>
 
       <Section title={t("mal.title")}>

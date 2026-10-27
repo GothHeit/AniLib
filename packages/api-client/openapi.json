@@ -1322,6 +1322,127 @@
         "title": "MemberOut",
         "type": "object"
       },
+      "NotificationOut": {
+        "properties": {
+          "actor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "anime_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anime Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "episode": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "read": {
+            "title": "Read",
+            "type": "boolean"
+          },
+          "room_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Active"
+          },
+          "room_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Room Code"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "created_at",
+          "read",
+          "actor",
+          "anime_id",
+          "episode",
+          "title",
+          "room_code",
+          "room_active"
+        ],
+        "title": "NotificationOut",
+        "type": "object"
+      },
+      "NotificationsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "unread": {
+            "title": "Unread",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "unread"
+        ],
+        "title": "NotificationsOut",
+        "type": "object"
+      },
       "PasswordIn": {
         "properties": {
           "current_password": {
@@ -1861,38 +1982,6 @@
         "title": "RoomCreate",
         "type": "object"
       },
-      "RoomInviteOut": {
-        "properties": {
-          "anime_id": {
-            "title": "Anime Id",
-            "type": "integer"
-          },
-          "code": {
-            "title": "Code",
-            "type": "string"
-          },
-          "episode": {
-            "title": "Episode",
-            "type": "integer"
-          },
-          "inviter": {
-            "$ref": "#/components/schemas/UserSummary"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          }
-        },
-        "required": [
-          "code",
-          "title",
-          "episode",
-          "anime_id",
-          "inviter"
-        ],
-        "title": "RoomInviteOut",
-        "type": "object"
-      },
       "RoomOut": {
         "properties": {
           "anime_id": {
@@ -2048,6 +2137,38 @@
           "current"
         ],
         "title": "SessionOut",
+        "type": "object"
+      },
+      "SettingsIn": {
+        "properties": {
+          "muted": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Muted",
+            "type": "array"
+          }
+        },
+        "required": [
+          "muted"
+        ],
+        "title": "SettingsIn",
+        "type": "object"
+      },
+      "SettingsOut": {
+        "properties": {
+          "muted": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Muted",
+            "type": "array"
+          }
+        },
+        "required": [
+          "muted"
+        ],
+        "title": "SettingsOut",
         "type": "object"
       },
       "SkipOut": {
@@ -4109,6 +4230,228 @@
         ]
       }
     },
+    "/notifications": {
+      "get": {
+        "operationId": "list_notifications_notifications_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Notifications",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/notifications/read": {
+      "post": {
+        "operationId": "read_all_notifications_read_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read All",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/notifications/settings": {
+      "get": {
+        "operationId": "get_settings_notifications_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Settings",
+        "tags": [
+          "notifications"
+        ]
+      },
+      "put": {
+        "description": "Replaces the list of kinds the user does not want.",
+        "operationId": "put_settings_notifications_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Settings",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/notifications/{notification_id}": {
+      "delete": {
+        "operationId": "dismiss_notifications__notification_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Notification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Dismiss",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/notifications/{notification_id}/read": {
+      "post": {
+        "operationId": "read_one_notifications__notification_id__read_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Notification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Read One",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
     "/users/lookup": {
       "get": {
         "description": "Finds someone by exact username. Name and picture are public to members, so a request can\ngo to the right person.",
@@ -4479,77 +4822,6 @@
         ]
       }
     },
-    "/watch/rooms/invites": {
-      "get": {
-        "description": "Rooms friends invited you to. Declared before /{code} so \"invites\" is not read as a code.",
-        "operationId": "my_invites_watch_rooms_invites_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/RoomInviteOut"
-                  },
-                  "title": "Response My Invites Watch Rooms Invites Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "My Invites",
-        "tags": [
-          "rooms"
-        ]
-      }
-    },
-    "/watch/rooms/invites/{code}": {
-      "delete": {
-        "operationId": "dismiss_invite_watch_rooms_invites__code__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "code",
-            "required": true,
-            "schema": {
-              "title": "Code",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Dismiss Invite",
-        "tags": [
-          "rooms"
-        ]
-      }
-    },
     "/watch/rooms/{code}": {
       "get": {
         "operationId": "get_room_watch_rooms__code__get",
@@ -4828,7 +5100,7 @@
     },
     "/watch/rooms/{code}/invite": {
       "post": {
-        "description": "Invites a friend to a room you are in. They see it next to their other notices.",
+        "description": "Invites a friend to a room you are in. They get a notification.",
         "operationId": "invite_friend_watch_rooms__code__invite_post",
         "parameters": [
           {

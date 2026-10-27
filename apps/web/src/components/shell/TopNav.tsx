@@ -8,6 +8,7 @@ import { APP_NAME } from "@/lib/brand";
 
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { Logo } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 import { isActive, NAV_ITEMS } from "./nav-items";
 import { SearchBox } from "./SearchBox";
 import type { AvatarInfo } from "@/lib/avatar";
@@ -56,6 +57,7 @@ export function TopNav({ userId, username, avatar, isAdmin, pending = 0 }: { use
           <div className="hidden md:block">
             <SearchBox />
           </div>
+          <NotificationBell />
           <LocaleSwitcher />
           <div className="hidden md:block">
             <UserMenu userId={userId} username={username} avatar={avatar} isAdmin={isAdmin} pending={pending} />

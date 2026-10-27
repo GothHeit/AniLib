@@ -156,3 +156,44 @@ class Friendship(Base):
     accepted: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     accepted_at: Mapped[datetime | None]
+
+
+class Notification(Base):
+    """One entry in a user's bell. Only the facts needed to show it are kept, so it still reads
+    right after the thing it was about is gone."""
+
+    __tablename__ = "notifications"
+    __table_args__ = (Index("ix_notifications_user_created", "user_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    # friend_request, friend_accepted, room_invite or new_episode.
+    kind: Mapped[str] = mapped_column(String(24))
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    anime_id: Mapped[int | None]
+    episode: Mapped[int | None]
+    title: Mapped[str | None] = mapped_column(String(300))
+    room_code: Mapped[str | None] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    read_at: Mapped[datetime | None]
+
+
+class NotificationMute(Base):
+    """A kind of notification the user turned off."""
+
+    __tablename__ = "notification_mutes"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    kind: Mapped[str] = mapped_column(String(24), primary_key=True)
+
+
+class EpisodeSeen(Base):
+    """The newest episode a video source had for an airing title when it was last checked."""
+
+    __tablename__ = "episode_seen"
+
+    anime_id: Mapped[int] = mapped_column(primary_key=True)
+    latest_episode: Mapped[int]
+    checked_at: Mapped[datetime] = mapped_column(default=utcnow)

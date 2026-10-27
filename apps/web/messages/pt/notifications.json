@@ -1,0 +1,28 @@
+{
+  "notifications": {
+    "title": "Notificações",
+    "open": "Notificações",
+    "openUnread": "Notificações, {count} não lidas",
+    "empty": "Você está em dia.",
+    "markAll": "Marcar todas como lidas",
+    "dismiss": "Dispensar",
+    "loadFailed": "Não deu para carregar as notificações.",
+    "friend_request": "{name} quer ser seu amigo",
+    "friend_accepted": "{name} aceitou seu pedido de amizade",
+    "room_invite": "{name} convidou você para assistir junto",
+    "new_episode": "Novo episódio de {title}",
+    "roomWhat": "{title}, episódio {episode}",
+    "roomEnded": "Esta sala foi encerrada.",
+    "episode": "Episódio {episode}",
+    "settings": {
+      "title": "Notificações",
+      "hint": "Escolha o que aparece no sino.",
+      "friend_request": "Pedidos de amizade",
+      "friend_accepted": "Pedidos aceitos",
+      "room_invite": "Convites para assistir junto",
+      "new_episode": "Novos episódios do que você está assistindo",
+      "saved": "Salvo.",
+      "saveFailed": "Não deu para salvar sua escolha."
+    }
+  }
+}

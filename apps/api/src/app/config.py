@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     # Where uploaded profile pictures are stored. Mount a volume here to keep them.
     avatar_dir: str = "data/avatars"
 
+    # How often to look for new episodes of airing titles people are watching. 0 turns it off.
+    episode_check_hours: int = 6
+
     # Video sources to enable, by name. Empty in a public deployment.
     video_sources: str = ""
 

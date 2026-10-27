@@ -41,11 +41,7 @@
       "send": "Convidar",
       "sent": "Convidado",
       "loadFailed": "Não deu para carregar seus amigos.",
-      "failed": "Não deu para enviar o convite.",
-      "from": "{name} convidou você",
-      "what": "{title}, episódio {episode}",
-      "join": "Entrar",
-      "dismiss": "Dispensar convite"
+      "failed": "Não deu para enviar o convite."
     }
   }
 }

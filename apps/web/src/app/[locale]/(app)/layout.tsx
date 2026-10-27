@@ -1,6 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
-import { RoomInvites } from "@/components/room/RoomInvites";
 import { TabBar } from "@/components/shell/TabBar";
 import { TopNav } from "@/components/shell/TopNav";
 import { serverApi, unwrap } from "@/lib/server-api";
@@ -25,7 +24,6 @@ export default async function AppLayout({ children, params }: LayoutProps<"/[loc
       </a>
       <TopNav userId={me.id} username={me.username} avatar={me.avatar} isAdmin={me.is_admin} pending={pending} />
       <main id="main" tabIndex={-1} className="pb-24 md:pb-16">{children}</main>
-      <RoomInvites />
       <TabBar userId={me.id} username={me.username} avatar={me.avatar} isAdmin={me.is_admin} pending={pending} />
     </>
   );

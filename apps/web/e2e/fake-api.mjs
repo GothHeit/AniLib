@@ -84,6 +84,8 @@ createServer(async (req, res) => {
   const url = new URL(req.url, "http://x");
 
   if (url.pathname === "/health") return send(200, { status: "ok" });
+  if (url.pathname === "/notifications") return send(200, { items: [], unread: 0 });
+  if (url.pathname === "/notifications/settings") return send(200, { muted: [] });
   if (url.pathname === "/__stats") return send(200, { refreshCalls });
 
   if (url.pathname === "/auth/login") {

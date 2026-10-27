@@ -616,6 +616,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Notifications */
+        get: operations["list_notifications_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read All */
+        post: operations["read_all_notifications_read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Settings */
+        get: operations["get_settings_notifications_settings_get"];
+        /**
+         * Put Settings
+         * @description Replaces the list of kinds the user does not want.
+         */
+        put: operations["put_settings_notifications_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/{notification_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Dismiss */
+        delete: operations["dismiss_notifications__notification_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read One */
+        post: operations["read_one_notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/lookup": {
         parameters: {
             query?: never;
@@ -731,43 +820,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/watch/rooms/invites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * My Invites
-         * @description Rooms friends invited you to. Declared before /{code} so "invites" is not read as a code.
-         */
-        get: operations["my_invites_watch_rooms_invites_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/watch/rooms/invites/{code}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Dismiss Invite */
-        delete: operations["dismiss_invite_watch_rooms_invites__code__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/watch/rooms/{code}": {
         parameters: {
             query?: never;
@@ -869,7 +921,7 @@ export interface paths {
         put?: never;
         /**
          * Invite Friend
-         * @description Invites a friend to a room you are in. They see it next to their other notices.
+         * @description Invites a friend to a room you are in. They get a notification.
          */
         post: operations["invite_friend_watch_rooms__code__invite_post"];
         delete?: never;
@@ -1381,6 +1433,38 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** NotificationOut */
+        NotificationOut: {
+            actor: components["schemas"]["UserSummary"] | null;
+            /** Anime Id */
+            anime_id: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Episode */
+            episode: number | null;
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /** Read */
+            read: boolean;
+            /** Room Active */
+            room_active: boolean | null;
+            /** Room Code */
+            room_code: string | null;
+            /** Title */
+            title: string | null;
+        };
+        /** NotificationsOut */
+        NotificationsOut: {
+            /** Items */
+            items: components["schemas"]["NotificationOut"][];
+            /** Unread */
+            unread: number;
+        };
         /** PasswordIn */
         PasswordIn: {
             /** Current Password */
@@ -1579,18 +1663,6 @@ export interface components {
             /** Title */
             title: string;
         };
-        /** RoomInviteOut */
-        RoomInviteOut: {
-            /** Anime Id */
-            anime_id: number;
-            /** Code */
-            code: string;
-            /** Episode */
-            episode: number;
-            inviter: components["schemas"]["UserSummary"];
-            /** Title */
-            title: string;
-        };
         /** RoomOut */
         RoomOut: {
             /** Anime Id */
@@ -1651,6 +1723,16 @@ export interface components {
             started_at: string;
             /** User Agent */
             user_agent: string | null;
+        };
+        /** SettingsIn */
+        SettingsIn: {
+            /** Muted */
+            muted: string[];
+        };
+        /** SettingsOut */
+        SettingsOut: {
+            /** Muted */
+            muted: string[];
         };
         /** SkipOut */
         SkipOut: {
@@ -2948,6 +3030,166 @@ export interface operations {
             };
         };
     };
+    list_notifications_notifications_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_all_notifications_read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_settings_notifications_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+        };
+    };
+    put_settings_notifications_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dismiss_notifications__notification_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_one_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     lookup_users_lookup_get: {
         parameters: {
             query: {
@@ -3151,55 +3393,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RoomOut"];
                 };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    my_invites_watch_rooms_invites_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoomInviteOut"][];
-                };
-            };
-        };
-    };
-    dismiss_invite_watch_rooms_invites__code__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                code: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Validation Error */
             422: {

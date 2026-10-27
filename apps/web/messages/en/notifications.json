@@ -1,0 +1,28 @@
+{
+  "notifications": {
+    "title": "Notifications",
+    "open": "Notifications",
+    "openUnread": "Notifications, {count} unread",
+    "empty": "You're all caught up.",
+    "markAll": "Mark all as read",
+    "dismiss": "Dismiss",
+    "loadFailed": "Couldn't load notifications.",
+    "friend_request": "{name} wants to be your friend",
+    "friend_accepted": "{name} accepted your friend request",
+    "room_invite": "{name} invited you to watch together",
+    "new_episode": "New episode of {title}",
+    "roomWhat": "{title}, episode {episode}",
+    "roomEnded": "This room has closed.",
+    "episode": "Episode {episode}",
+    "settings": {
+      "title": "Notifications",
+      "hint": "Choose what shows up in the bell.",
+      "friend_request": "Friend requests",
+      "friend_accepted": "Accepted requests",
+      "room_invite": "Watch-together invites",
+      "new_episode": "New episodes of shows you're watching",
+      "saved": "Saved.",
+      "saveFailed": "Couldn't save your choice."
+    }
+  }
+}

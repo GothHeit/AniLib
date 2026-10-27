@@ -18,6 +18,7 @@ from app.deps import CurrentUser, Session
 from app.errors import ApiError
 from app.mal.client import MalClient, is_safe
 from app.models import Friendship, MalLink, User, WatchProgress
+from app.notifications import notify, withdraw
 from app.routers.progress import latest_per_anime
 from app.schemas import AnimeCard
 
@@ -232,6 +233,8 @@ async def send_request(body: RequestIn, user: CurrentUser, session: Session):
             raise ApiError(409, "already_requested", "You already asked this person")
         existing.accepted = True
         existing.accepted_at = utcnow()
+        await withdraw(session, user.id, "friend_request", target.id)
+        await notify(session, target.id, "friend_accepted", actor_id=user.id)
     else:
         pending = await session.scalar(
             select(func.count())
@@ -241,6 +244,7 @@ async def send_request(body: RequestIn, user: CurrentUser, session: Session):
         if (pending or 0) >= MAX_PENDING_SENT:
             raise ApiError(429, "too_many_requests", "Too many pending requests")
         session.add(Friendship(requester_id=user.id, addressee_id=target.id))
+        await notify(session, target.id, "friend_request", actor_id=user.id)
     try:
         await session.commit()
     except IntegrityError:  # the other side asked at the same moment
@@ -287,6 +291,8 @@ async def accept_request(user_id: uuid.UUID, user: CurrentUser, session: Session
     if not row.accepted:
         row.accepted = True
         row.accepted_at = utcnow()
+        await withdraw(session, user.id, "friend_request", user_id)
+        await notify(session, user_id, "friend_accepted", actor_id=user.id)
         await session.commit()
     people = await summaries(session, [user_id])
     return FriendOut(user=people[user_id], since=row.accepted_at or row.created_at)
@@ -298,6 +304,8 @@ async def remove_request(user_id: uuid.UUID, user: CurrentUser, session: Session
     row = await _friendship(session, user.id, user_id)
     if row is None or row.accepted:
         raise ApiError(404, "request_not_found", "No pending request")
+    # Whoever the request was for no longer needs to hear about it.
+    await withdraw(session, row.addressee_id, "friend_request", row.requester_id)
     await session.delete(row)
     await session.commit()
 

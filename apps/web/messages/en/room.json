@@ -41,11 +41,7 @@
       "send": "Invite",
       "sent": "Invited",
       "loadFailed": "Couldn't load your friends.",
-      "failed": "Couldn't send the invite.",
-      "from": "{name} invited you",
-      "what": "{title}, episode {episode}",
-      "join": "Join",
-      "dismiss": "Dismiss invite"
+      "failed": "Couldn't send the invite."
     }
   }
 }

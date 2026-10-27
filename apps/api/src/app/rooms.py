@@ -218,14 +218,6 @@ class Room:
             raise ApiError(429, "too_many_invites", "Too many invites for this room")
         self.invited[target_id] = (inviter_id, now)
 
-    def live_invite(self, user_id: uuid.UUID) -> uuid.UUID | None:
-        """Who invited the user, if the invite is still good."""
-        entry = self.invited.get(user_id)
-        if entry is None or user_id in self.members:
-            return None
-        by, at = entry
-        return by if time.monotonic() - at < INVITE_TTL_SECONDS else None
-
     def say(self, user_id: uuid.UUID, text: str) -> None:
         self._require_member(user_id)
         text = text.strip()[:CHAT_MAX_LENGTH]
@@ -280,10 +272,6 @@ class Rooms:
         room = Room(code, host_id, source, anime_id, title, episode, lang)
         self._rooms[code] = room
         return room
-
-    def invites_for(self, user_id: uuid.UUID) -> list[tuple[Room, uuid.UUID]]:
-        found = [(room, by) for room in self._rooms.values() if (by := room.live_invite(user_id))]
-        return sorted(found, key=lambda pair: -pair[0].invited[user_id][1])
 
     def sweep(self) -> None:
         """Drops rooms that have been empty past the grace period."""
