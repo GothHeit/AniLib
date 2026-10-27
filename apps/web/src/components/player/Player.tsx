@@ -1,7 +1,7 @@
 "use client";
 
 import { errorCode } from "@app/api-client";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useToast } from "@/components/ui/Toast";
@@ -14,6 +14,7 @@ import { setAutoNext, useAutoNext } from "./autoNext";
 import { stageOf } from "./FullscreenStage";
 import type { WebkitVideo } from "./SubtitleOverlay";
 import { PlayerIcon } from "./icons";
+import { languageName, trackNames } from "./languages";
 import { formatTime } from "./progress";
 import { SettingsMenu, type AudioTrack, type Quality } from "./SettingsMenu";
 import { activeSkip, type Skip } from "./skips";
@@ -78,6 +79,7 @@ export function watchHref(source: string, animeId: number, episode: number, lang
 export function Player(props: Props) {
   const { source, animeId, episode, title, episodes, lang, startAt, subtitleLang } = props;
   const t = useTranslations("player");
+  const locale = useLocale();
   const router = useRouter();
   const toast = useToast();
   // Full screen goes to the watch layout's stage around this, which outlives the episode,
@@ -117,6 +119,9 @@ export function Player(props: Props) {
   const [ended, setEnded] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const autoNext = useAutoNext();
+
+  const subtitleNames = trackNames(tracks, locale);
+  const audioNames = audioTracks.map((a) => ({ ...a, label: languageName(a.lang, locale) ?? a.label }));
 
   const next = episodes.find((e) => e > episode);
   const backHref = `/anime/${animeId}`;
@@ -210,7 +215,7 @@ export function Player(props: Props) {
         });
         hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_event, data) => {
           const found = data.audioTracks.map((a) => ({ id: a.id, name: a.name, lang: a.lang }));
-          setAudioTracks(found.map((a) => ({ id: a.id, label: a.name || a.lang || String(a.id + 1) })));
+          setAudioTracks(found.map((a) => ({ id: a.id, label: a.name || a.lang || String(a.id + 1), lang: a.lang })));
           const id = pickAudio(found, defaultAudio);
           if (hls && id >= 0 && hls.audioTrack !== id) hls.audioTrack = id;
           setAudioTrack(id);
@@ -546,7 +551,7 @@ export function Player(props: Props) {
               className="ml-auto flex h-10 items-center gap-2 rounded-ui px-3 text-fg hover:bg-white/10"
             >
               <PlayerIcon name="people" />
-              <span className="hidden text-sm font-bold sm:inline">{t("watchTogether")}</span>
+              <span className="text-sm font-bold">{t("watchTogether")}</span>
             </button>
           )}
         </div>
@@ -606,68 +611,24 @@ export function Player(props: Props) {
                 className="hidden w-24 cursor-pointer accent-accent sm:block"
               />
               <span className="flex-1" />
-              {!room && (
-                <div role="group" aria-label={t("audio")} className="flex rounded-ui border border-line text-xs font-bold">
-                  {(["sub", "dub"] as const).map((l) => (
-                    <button
-                      key={l}
-                      type="button"
-                      aria-pressed={lang === l}
-                      onClick={() => void switchLang(l)}
-                      className={`px-3 py-1.5 ${lang === l ? "bg-accent text-on-accent" : "text-muted hover:text-fg"}`}
-                    >
-                      {t(l)}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {tracks.length > 0 && (
-                <label className="text-xs">
-                  <span className="sr-only">{t("subtitles")}</span>
-                  <select
-                    value={selected}
-                    onChange={(e) => chooseTrack(Number(e.target.value))}
-                    className="max-w-32 rounded-ui border border-line bg-black/60 px-2 py-1.5 text-fg"
-                  >
-                    <option value={-1}>{t("subtitles")}: {t("subtitlesOff")}</option>
-                    {tracks.map((track, i) => (
-                      <option key={track.url} value={i}>
-                        {track.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <label className="text-xs">
-                <span className="sr-only">{t("speed")}</span>
-                <select
-                  value={rate}
-                  onChange={(e) => {
-                    if (video.current) video.current.playbackRate = Number(e.target.value);
-                  }}
-                  className="rounded-ui border border-line bg-black/60 px-2 py-1.5 text-fg"
-                >
-                  {SPEEDS.map((s) => (
-                    <option key={s} value={s}>
-                      {t("speedValue", { rate: s })}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {(qualities.length > 1 || audioTracks.length > 1 || tracks.length > 0) && (
+              <button
+                type="button"
+                onClick={() => setSettingsOpen((o) => !o)}
+                aria-label={t("settings.title")}
+                aria-expanded={settingsOpen}
+                className={iconButton}
+              >
+                <PlayerIcon name="settings" />
+              </button>
+              {next !== undefined && (
                 <button
                   type="button"
-                  onClick={() => setSettingsOpen((o) => !o)}
-                  aria-label={t("settings.title")}
-                  aria-expanded={settingsOpen}
-                  className={iconButton}
+                  onClick={goNext}
+                  aria-label={t("next")}
+                  className="flex h-10 items-center gap-2 rounded-ui px-2 text-fg hover:bg-white/10 sm:px-3"
                 >
-                  <PlayerIcon name="settings" />
-                </button>
-              )}
-              {next !== undefined && (
-                <button type="button" onClick={goNext} aria-label={t("next")} className={iconButton}>
                   <PlayerIcon name="next" />
+                  <span className="hidden text-sm font-bold sm:inline">{t("nextShort")}</span>
                 </button>
               )}
               <button
@@ -687,19 +648,37 @@ export function Player(props: Props) {
       {room?.overlay}
 
       {settingsOpen && !error && (
-        <div className="absolute bottom-28 right-4 sm:right-8">
+        <>
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-hidden="true"
+            onClick={() => setSettingsOpen(false)}
+            className="absolute inset-0 cursor-default"
+          />
           <SettingsMenu
             qualities={qualities}
             quality={quality}
             onQuality={chooseQuality}
-            audioTracks={audioTracks}
+            audioTracks={audioNames}
             audioTrack={audioTrack}
             onAudioTrack={chooseAudio}
+            lang={lang}
+            onLang={(to) => void switchLang(to)}
+            canSwitchLang={!room}
+            subtitleNames={subtitleNames}
+            subtitle={selected}
+            onSubtitle={chooseTrack}
+            speeds={SPEEDS}
+            rate={rate}
+            onRate={(r) => {
+              if (video.current) video.current.playbackRate = r;
+            }}
             style={style}
             onStyle={changeStyle}
-            hasSubtitles={tracks.length > 0}
+            onClose={() => setSettingsOpen(false)}
           />
-        </div>
+        </>
       )}
 
       {skip && !error && !ended && !settingsOpen && (

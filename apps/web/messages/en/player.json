@@ -75,8 +75,11 @@
         "bottom": "Bottom",
         "raised": "Raised",
         "top": "Top"
-      }
+      },
+      "back": "Back",
+      "close": "Close settings"
     },
-    "watchTogether": "Watch together"
+    "watchTogether": "Watch together",
+    "nextShort": "Next"
   }
 }

@@ -75,8 +75,11 @@
         "bottom": "Embaixo",
         "raised": "Mais alto",
         "top": "Em cima"
-      }
+      },
+      "back": "Voltar",
+      "close": "Fechar configurações"
     },
-    "watchTogether": "Assistir juntos"
+    "watchTogether": "Assistir juntos",
+    "nextShort": "Próximo"
   }
 }

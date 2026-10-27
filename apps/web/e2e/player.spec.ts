@@ -54,22 +54,24 @@ test("cancels the countdown", async ({ page }) => {
 test("offers subtitles, defaulting to Portuguese, and remembers Off", async ({ page }) => {
   await signIn(page);
   await page.goto("/en/watch/stub/4/1");
-  const picker = page.getByRole("combobox", { name: "Subtitles" });
-  await expect(picker).toBeVisible();
-  await expect(picker.locator("option:checked")).toHaveText("Portuguese");
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(page.getByRole("button", { name: /^Subtitles/ })).toContainText("Brazilian Portuguese");
   await expect(video(page).locator("track")).toHaveCount(2);
 
-  await picker.selectOption({ label: "Subtitles: Off" });
+  await page.getByRole("button", { name: /^Subtitles/ }).click();
+  await page.getByRole("radio", { name: "Off" }).click();
   await page.reload();
-  await expect(page.getByRole("combobox", { name: "Subtitles" }).locator("option:checked")).toHaveText(/Off/);
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(page.getByRole("button", { name: /^Subtitles/ })).toContainText("Off");
 });
 
 test("hides the subtitle picker when the episode has no subtitles", async ({ page }) => {
   await signIn(page);
   await page.goto("/en/watch/stub/4/3");
   await expect(page.getByText("Episode 3", { exact: true })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "Playback speed" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "Subtitles" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(page.getByRole("button", { name: /^Speed|^Playback speed/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Subtitles/ })).toHaveCount(0);
 });
 
 test("explains a disabled source", async ({ page }) => {
@@ -81,7 +83,9 @@ test("explains a disabled source", async ({ page }) => {
 test("keeps sub when the episode has no dub", async ({ page }) => {
   await signIn(page);
   await page.goto("/en/watch/stub/4/2");
-  await page.getByRole("button", { name: "Dub" }).click();
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: /^Audio/ }).click();
+  await page.getByRole("radio", { name: "Dub" }).click();
   await expect(page.getByText("No dub for this episode.")).toBeVisible();
   await expect(page).toHaveURL(/\/watch\/stub\/4\/2$/);
 });
@@ -98,20 +102,27 @@ test("draws subtitles in the saved style and remembers a new one", async ({ page
   await signIn(page);
   await page.goto("/en/watch/stub/4/1");
   // An earlier test may have saved "Off".
-  await page.getByRole("combobox", { name: "Subtitles" }).selectOption({ label: "Portuguese" });
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: /^Subtitles/ }).click();
+  await page.getByRole("radio", { name: "Brazilian Portuguese" }).click();
+  await page.getByRole("button", { name: "Close settings" }).click();
   const subtitles = page.getByTestId("subtitles");
   await expect(subtitles).toHaveText("Hello moon");
   await expect(subtitles.locator("span")).toHaveCSS("color", "rgb(255, 255, 255)");
 
   await page.getByRole("button", { name: "Settings" }).click();
-  await page.getByRole("combobox", { name: "Color" }).selectOption({ label: "Yellow" });
+  await page.getByRole("button", { name: /^Subtitles/ }).click();
+  await page.getByRole("button", { name: "Subtitle style" }).click();
+  await page.getByRole("radiogroup", { name: "Color" }).getByRole("radio", { name: "Yellow" }).click();
   await expect(subtitles.locator("span")).toHaveCSS("color", "rgb(255, 233, 77)");
   await page.reload();
   await expect(page.getByTestId("subtitles").locator("span")).toHaveCSS("color", "rgb(255, 233, 77)");
 
   // Put it back for the other tests.
   await page.getByRole("button", { name: "Settings" }).click();
-  await page.getByRole("combobox", { name: "Color" }).selectOption({ label: "White" });
+  await page.getByRole("button", { name: /^Subtitles/ }).click();
+  await page.getByRole("button", { name: "Subtitle style" }).click();
+  await page.getByRole("radiogroup", { name: "Color" }).getByRole("radio", { name: "White" }).click();
   await expect(page.getByTestId("subtitles").locator("span")).toHaveCSS("color", "rgb(255, 255, 255)");
 });
 
