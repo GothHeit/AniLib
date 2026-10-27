@@ -1,0 +1,39 @@
+{
+  "room": {
+    "panel": "Assistir juntos",
+    "code": "Código da sala",
+    "copyLink": "Copiar link",
+    "copied": "Copiado",
+    "members": "Na sala ({count})",
+    "host": "anfitrião",
+    "lockControls": "Só o anfitrião controla a reprodução",
+    "lockedByHost": "O anfitrião bloqueou os controles.",
+    "locked": "Só o anfitrião pode controlar a reprodução nesta sala.",
+    "episode": "Episódio {episode}",
+    "pickEpisode": "Escolha um episódio",
+    "switchNow": "Trocar agora",
+    "propose": "Propor",
+    "votes": "Episódio {episode}: {count} de {needed} votos",
+    "voteFor": "Votar",
+    "withdraw": "Retirar",
+    "voteHint": "A sala troca quando a maioria vota no mesmo episódio. O anfitrião pode trocar na hora.",
+    "chat": "Chat",
+    "noMessages": "Nenhuma mensagem ainda.",
+    "message": "Mensagem",
+    "send": "Enviar",
+    "reactions": "Reações",
+    "togglePanel": "Painel da sala, {count} assistindo",
+    "back": "Entrar em outra sala",
+    "closed": {
+      "room_not_found": "Esta sala acabou ou o código está errado.",
+      "room_full": "Esta sala está cheia (10 pessoas).",
+      "not_authenticated": "Sua sessão expirou. Entre de novo.",
+      "network": "A conexão com a sala caiu."
+    },
+    "joinTitle": "Entrar em uma sala",
+    "joinIntro": "Digite o código que um amigo compartilhou para assistir juntos. Para abrir uma sala, abra um episódio e escolha Assistir juntos.",
+    "codeLabel": "Código da sala",
+    "invalidCode": "Isso não parece um código de sala.",
+    "join": "Entrar"
+  }
+}

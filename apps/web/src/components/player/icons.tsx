@@ -9,6 +9,7 @@ const PATHS = {
   exitFullscreen: "M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5",
   next: "M5 5l10 7-10 7zM18 5v14",
   back: "M15 5l-7 7 7 7",
+  people: "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 19a6 6 0 0 1 12 0M16 5.5a3 3 0 0 1 0 5.5M18 14a6 6 0 0 1 3 5",
   settings: "M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4",
 } as const;
 

@@ -41,6 +41,12 @@ async def dispose_engine() -> None:
     _engine, _sessionmaker = None, None
 
 
+def new_session() -> AsyncSession:
+    """A session the caller closes itself, for work that outlives the request's dependencies."""
+    assert _sessionmaker is not None, "database engine not initialised"
+    return _sessionmaker()
+
+
 async def get_session() -> AsyncIterator[AsyncSession]:
     assert _sessionmaker is not None, "database engine not initialised"
     async with _sessionmaker() as session:

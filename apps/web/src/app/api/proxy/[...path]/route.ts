@@ -37,7 +37,15 @@ async function forward(request: NextRequest, path: string[]) {
       if (value) headers.set(name, value);
     }
     if (token) headers.set("Authorization", `Bearer ${token}`);
-    return fetch(url, { method: request.method, headers, body, cache: "no-store", redirect: "manual" });
+    return fetch(url, {
+      method: request.method,
+      headers,
+      body,
+      cache: "no-store",
+      redirect: "manual",
+      // Ends a long-lived stream (a watch-together room) when the browser goes away.
+      signal: request.signal,
+    });
   };
 
   let setCookies: CookieSpec[] = [];

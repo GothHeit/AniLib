@@ -66,6 +66,14 @@ export function UserMenu({ username, isAdmin = false, variant = "nav", trigger, 
         >
           <p className="px-3 py-2 text-sm text-muted">{t("signedInAs", { name: username })}</p>
           <Link
+            href="/room"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line"
+          >
+            {t("joinRoom")}
+          </Link>
+          <Link
             href="/settings"
             role="menuitem"
             onClick={() => setOpen(false)}

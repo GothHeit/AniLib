@@ -448,6 +448,67 @@
         "title": "BrowseOut",
         "type": "object"
       },
+      "ChatIn": {
+        "properties": {
+          "text": {
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "ChatIn",
+        "type": "object"
+      },
+      "ControlIn": {
+        "properties": {
+          "action": {
+            "enum": [
+              "play",
+              "pause",
+              "seek"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "maximum": 86400.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "ControlIn",
+        "type": "object"
+      },
+      "EpisodeIn": {
+        "properties": {
+          "episode": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Episode",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "episode"
+        ],
+        "title": "EpisodeIn",
+        "type": "object"
+      },
       "EpisodesOut": {
         "properties": {
           "episodes": {
@@ -886,6 +947,19 @@
         "title": "ListUpdated",
         "type": "object"
       },
+      "LockIn": {
+        "properties": {
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "locked"
+        ],
+        "title": "LockIn",
+        "type": "object"
+      },
       "LoginIn": {
         "properties": {
           "password": {
@@ -1107,6 +1181,24 @@
         "title": "MeUpdate",
         "type": "object"
       },
+      "MemberOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username"
+        ],
+        "title": "MemberOut",
+        "type": "object"
+      },
       "PasswordIn": {
         "properties": {
           "current_password": {
@@ -1155,68 +1247,6 @@
           }
         },
         "title": "Picture",
-        "type": "object"
-      },
-      "PlaybackOut": {
-        "properties": {
-          "default_audio": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Default Audio"
-          },
-          "kind": {
-            "title": "Kind",
-            "type": "string"
-          },
-          "resolution": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Resolution"
-          },
-          "skips": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/SkipOut"
-            },
-            "title": "Skips",
-            "type": "array"
-          },
-          "source": {
-            "title": "Source",
-            "type": "string"
-          },
-          "subtitles": {
-            "default": [],
-            "items": {
-              "$ref": "#/components/schemas/SubtitleOut"
-            },
-            "title": "Subtitles",
-            "type": "array"
-          },
-          "url": {
-            "title": "Url",
-            "type": "string"
-          }
-        },
-        "required": [
-          "source",
-          "kind",
-          "resolution",
-          "url"
-        ],
-        "title": "PlaybackOut",
         "type": "object"
       },
       "PlayerPreferencesIO": {
@@ -1347,6 +1377,21 @@
         "title": "ProgressOut",
         "type": "object"
       },
+      "ReactionIn": {
+        "properties": {
+          "emoji": {
+            "description": "One of \ud83d\udc4d \u2764\ufe0f \ud83d\ude02 \ud83d\ude2e \ud83d\ude22 \ud83d\udd25",
+            "maxLength": 16,
+            "title": "Emoji",
+            "type": "string"
+          }
+        },
+        "required": [
+          "emoji"
+        ],
+        "title": "ReactionIn",
+        "type": "object"
+      },
       "Recommendation": {
         "properties": {
           "anime": {
@@ -1434,6 +1479,122 @@
           "anime"
         ],
         "title": "RelatedAnime",
+        "type": "object"
+      },
+      "RoomCreate": {
+        "properties": {
+          "anime_id": {
+            "minimum": 1.0,
+            "title": "Anime Id",
+            "type": "integer"
+          },
+          "episode": {
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Episode",
+            "type": "integer"
+          },
+          "lang": {
+            "default": "sub",
+            "enum": [
+              "sub",
+              "dub"
+            ],
+            "title": "Lang",
+            "type": "string"
+          },
+          "source": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Source",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "anime_id",
+          "title",
+          "episode"
+        ],
+        "title": "RoomCreate",
+        "type": "object"
+      },
+      "RoomOut": {
+        "properties": {
+          "anime_id": {
+            "title": "Anime Id",
+            "type": "integer"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "episode": {
+            "title": "Episode",
+            "type": "integer"
+          },
+          "host_id": {
+            "title": "Host Id",
+            "type": "string"
+          },
+          "lang": {
+            "enum": [
+              "sub",
+              "dub"
+            ],
+            "title": "Lang",
+            "type": "string"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberOut"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "playback": {
+            "$ref": "#/components/schemas/app__routers__rooms__PlaybackOut"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "votes": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Votes",
+            "type": "object"
+          }
+        },
+        "required": [
+          "code",
+          "host_id",
+          "source",
+          "anime_id",
+          "title",
+          "episode",
+          "lang",
+          "locked",
+          "members",
+          "votes",
+          "playback"
+        ],
+        "title": "RoomOut",
         "type": "object"
       },
       "SeasonalOut": {
@@ -1706,6 +1867,97 @@
           "data"
         ],
         "title": "AnimeListOut",
+        "type": "object"
+      },
+      "app__routers__rooms__PlaybackOut": {
+        "properties": {
+          "by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "By"
+          },
+          "playing": {
+            "title": "Playing",
+            "type": "boolean"
+          },
+          "position": {
+            "title": "Position",
+            "type": "number"
+          }
+        },
+        "required": [
+          "playing",
+          "position"
+        ],
+        "title": "PlaybackOut",
+        "type": "object"
+      },
+      "app__routers__watch__PlaybackOut": {
+        "properties": {
+          "default_audio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Audio"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution"
+          },
+          "skips": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SkipOut"
+            },
+            "title": "Skips",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "subtitles": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SubtitleOut"
+            },
+            "title": "Subtitles",
+            "type": "array"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "kind",
+          "resolution",
+          "url"
+        ],
+        "title": "PlaybackOut",
         "type": "object"
       },
       "app__schemas__AnimeListOut": {
@@ -2857,7 +3109,7 @@
     },
     "/me/progress/{anime_id}/continue": {
       "delete": {
-        "description": "Hide a title from Keep watching. Progress is kept; watching it again brings it back.",
+        "description": "Hide a title from Continue watching. Progress is kept; watching it again brings it back.",
         "operationId": "remove_from_continue_watching_me_progress__anime_id__continue_delete",
         "parameters": [
           {
@@ -3233,6 +3485,428 @@
         ]
       }
     },
+    "/watch/rooms": {
+      "post": {
+        "operationId": "create_room_watch_rooms_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Room",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/watch/rooms/{code}": {
+      "get": {
+        "operationId": "get_room_watch_rooms__code__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Room",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/watch/rooms/{code}/chat": {
+      "post": {
+        "operationId": "chat_watch_rooms__code__chat_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Chat",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/watch/rooms/{code}/control": {
+      "post": {
+        "operationId": "control_watch_rooms__code__control_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ControlIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Control",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/watch/rooms/{code}/episode": {
+      "delete": {
+        "operationId": "withdraw_vote_watch_rooms__code__episode_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Withdraw Vote",
+        "tags": [
+          "rooms"
+        ]
+      },
+      "post": {
+        "operationId": "vote_episode_watch_rooms__code__episode_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EpisodeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Vote Episode",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/watch/rooms/{code}/events": {
+      "get": {
+        "description": "Server-sent events: `state` (the whole room), `playback`, `chat`. Opening this joins the\nroom; closing it leaves.",
+        "operationId": "events_watch_rooms__code__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Events",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/watch/rooms/{code}/lock": {
+      "put": {
+        "operationId": "lock_watch_rooms__code__lock_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LockIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Lock",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/watch/rooms/{code}/reaction": {
+      "post": {
+        "operationId": "reaction_watch_rooms__code__reaction_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Reaction",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
     "/watch/sources": {
       "get": {
         "operationId": "sources_watch_sources_get",
@@ -3424,7 +4098,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PlaybackOut"
+                  "$ref": "#/components/schemas/app__routers__watch__PlaybackOut"
                 }
               }
             },

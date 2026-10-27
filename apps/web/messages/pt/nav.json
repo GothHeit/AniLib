@@ -10,6 +10,7 @@
     "you": "Você",
     "account": "Menu da conta",
     "signedInAs": "Conectado como {name}",
-    "signOut": "Sair"
+    "signOut": "Sair",
+    "joinRoom": "Entrar em uma sala"
   }
 }

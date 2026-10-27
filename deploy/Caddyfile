@@ -8,7 +8,9 @@
 
 # SITE_ADDRESS is ":80" behind the tunnel; set it to the domain name on a VPS to get automatic HTTPS.
 {$SITE_ADDRESS::80} {
-	encode zstd gzip
+	# Live streams (watch-together rooms) must not wait to fill a compression buffer.
+	@compressible not path_regexp ^/api/proxy/watch/rooms/[^/]+/events$
+	encode @compressible zstd gzip
 
 	# MyAnimeList sends the browser here after the user approves the link.
 	@mal path /mal/callback

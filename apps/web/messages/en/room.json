@@ -1,0 +1,39 @@
+{
+  "room": {
+    "panel": "Watch together",
+    "code": "Room code",
+    "copyLink": "Copy link",
+    "copied": "Copied",
+    "members": "In the room ({count})",
+    "host": "host",
+    "lockControls": "Only the host controls playback",
+    "lockedByHost": "The host locked the controls.",
+    "locked": "Only the host can control playback in this room.",
+    "episode": "Episode {episode}",
+    "pickEpisode": "Choose an episode",
+    "switchNow": "Switch now",
+    "propose": "Propose",
+    "votes": "Episode {episode}: {count} of {needed} votes",
+    "voteFor": "Vote",
+    "withdraw": "Withdraw",
+    "voteHint": "The room switches when most people vote for the same episode. The host can switch right away.",
+    "chat": "Chat",
+    "noMessages": "No messages yet.",
+    "message": "Message",
+    "send": "Send",
+    "reactions": "Reactions",
+    "togglePanel": "Room panel, {count} watching",
+    "back": "Join another room",
+    "closed": {
+      "room_not_found": "This room has ended or the code is wrong.",
+      "room_full": "This room is full (10 people).",
+      "not_authenticated": "Your session expired. Sign in again.",
+      "network": "Lost the connection to the room."
+    },
+    "joinTitle": "Join a room",
+    "joinIntro": "Enter the code a friend shared to watch together. To start a room yourself, open an episode and choose Watch together.",
+    "codeLabel": "Room code",
+    "invalidCode": "That doesn't look like a room code.",
+    "join": "Join"
+  }
+}

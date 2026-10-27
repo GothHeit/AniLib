@@ -399,7 +399,7 @@ export interface paths {
         post?: never;
         /**
          * Remove From Continue Watching
-         * @description Hide a title from Keep watching. Progress is kept; watching it again brings it back.
+         * @description Hide a title from Continue watching. Progress is kept; watching it again brings it back.
          */
         delete: operations["remove_from_continue_watching_me_progress__anime_id__continue_delete"];
         options?: never;
@@ -496,6 +496,147 @@ export interface paths {
         /** Put Preferences */
         put: operations["put_preferences_watch_preferences_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Room */
+        post: operations["create_room_watch_rooms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/rooms/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Room */
+        get: operations["get_room_watch_rooms__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/rooms/{code}/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Chat */
+        post: operations["chat_watch_rooms__code__chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/rooms/{code}/control": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Control */
+        post: operations["control_watch_rooms__code__control_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/rooms/{code}/episode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Vote Episode */
+        post: operations["vote_episode_watch_rooms__code__episode_post"];
+        /** Withdraw Vote */
+        delete: operations["withdraw_vote_watch_rooms__code__episode_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/rooms/{code}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Events
+         * @description Server-sent events: `state` (the whole room), `playback`, `chat`. Opening this joins the
+         *     room; closing it leaves.
+         */
+        get: operations["events_watch_rooms__code__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/rooms/{code}/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Lock */
+        put: operations["lock_watch_rooms__code__lock_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/rooms/{code}/reaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reaction */
+        post: operations["reaction_watch_rooms__code__reaction_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -673,6 +814,26 @@ export interface components {
             /** Page */
             page: number;
         };
+        /** ChatIn */
+        ChatIn: {
+            /** Text */
+            text: string;
+        };
+        /** ControlIn */
+        ControlIn: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "play" | "pause" | "seek";
+            /** Position */
+            position?: number | null;
+        };
+        /** EpisodeIn */
+        EpisodeIn: {
+            /** Episode */
+            episode: number;
+        };
         /** EpisodesOut */
         EpisodesOut: {
             /** Episodes */
@@ -835,6 +996,11 @@ export interface components {
             /** Status */
             status?: ("watching" | "completed" | "on_hold" | "dropped" | "plan_to_watch") | null;
         };
+        /** LockIn */
+        LockIn: {
+            /** Locked */
+            locked: boolean;
+        };
         /** LoginIn */
         LoginIn: {
             /** Password */
@@ -892,6 +1058,13 @@ export interface components {
             /** Subtitle Lang */
             subtitle_lang?: string | null;
         };
+        /** MemberOut */
+        MemberOut: {
+            /** Id */
+            id: string;
+            /** Username */
+            username: string;
+        };
         /** PasswordIn */
         PasswordIn: {
             /** Current Password */
@@ -905,29 +1078,6 @@ export interface components {
             large?: string | null;
             /** Medium */
             medium?: string | null;
-        };
-        /** PlaybackOut */
-        PlaybackOut: {
-            /** Default Audio */
-            default_audio?: string | null;
-            /** Kind */
-            kind: string;
-            /** Resolution */
-            resolution: number | null;
-            /**
-             * Skips
-             * @default []
-             */
-            skips: components["schemas"]["SkipOut"][];
-            /** Source */
-            source: string;
-            /**
-             * Subtitles
-             * @default []
-             */
-            subtitles: components["schemas"]["SubtitleOut"][];
-            /** Url */
-            url: string;
         };
         /** PlayerPreferencesIO */
         PlayerPreferencesIO: {
@@ -986,6 +1136,14 @@ export interface components {
              */
             updated_at: string;
         };
+        /** ReactionIn */
+        ReactionIn: {
+            /**
+             * Emoji
+             * @description One of 👍 ❤️ 😂 😮 😢 🔥
+             */
+            emoji: string;
+        };
         /** Recommendation */
         Recommendation: {
             anime: components["schemas"]["AnimeCard"];
@@ -1019,6 +1177,52 @@ export interface components {
             relation_type: string;
             /** Relation Type Formatted */
             relation_type_formatted: string;
+        };
+        /** RoomCreate */
+        RoomCreate: {
+            /** Anime Id */
+            anime_id: number;
+            /** Episode */
+            episode: number;
+            /**
+             * Lang
+             * @default sub
+             * @enum {string}
+             */
+            lang: "sub" | "dub";
+            /** Source */
+            source: string;
+            /** Title */
+            title: string;
+        };
+        /** RoomOut */
+        RoomOut: {
+            /** Anime Id */
+            anime_id: number;
+            /** Code */
+            code: string;
+            /** Episode */
+            episode: number;
+            /** Host Id */
+            host_id: string;
+            /**
+             * Lang
+             * @enum {string}
+             */
+            lang: "sub" | "dub";
+            /** Locked */
+            locked: boolean;
+            /** Members */
+            members: components["schemas"]["MemberOut"][];
+            playback: components["schemas"]["app__routers__rooms__PlaybackOut"];
+            /** Source */
+            source: string;
+            /** Title */
+            title: string;
+            /** Votes */
+            votes: {
+                [key: string]: number;
+            };
         };
         /** SeasonalOut */
         SeasonalOut: {
@@ -1124,6 +1328,38 @@ export interface components {
         app__routers__mal__AnimeListOut: {
             /** Data */
             data: components["schemas"]["ListItemOut"][];
+        };
+        /** PlaybackOut */
+        app__routers__rooms__PlaybackOut: {
+            /** By */
+            by?: string | null;
+            /** Playing */
+            playing: boolean;
+            /** Position */
+            position: number;
+        };
+        /** PlaybackOut */
+        app__routers__watch__PlaybackOut: {
+            /** Default Audio */
+            default_audio?: string | null;
+            /** Kind */
+            kind: string;
+            /** Resolution */
+            resolution: number | null;
+            /**
+             * Skips
+             * @default []
+             */
+            skips: components["schemas"]["SkipOut"][];
+            /** Source */
+            source: string;
+            /**
+             * Subtitles
+             * @default []
+             */
+            subtitles: components["schemas"]["SubtitleOut"][];
+            /** Url */
+            url: string;
         };
         /** AnimeListOut */
         app__schemas__AnimeListOut: {
@@ -2112,6 +2348,293 @@ export interface operations {
             };
         };
     };
+    create_room_watch_rooms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_room_watch_rooms__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_watch_rooms__code__chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    control_watch_rooms__code__control_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControlIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    vote_episode_watch_rooms__code__episode_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EpisodeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_vote_watch_rooms__code__episode_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    events_watch_rooms__code__events_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lock_watch_rooms__code__lock_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LockIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reaction_watch_rooms__code__reaction_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReactionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     sources_watch_sources_get: {
         parameters: {
             query?: never;
@@ -2218,7 +2741,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlaybackOut"];
+                    "application/json": components["schemas"]["app__routers__watch__PlaybackOut"];
                 };
             };
             /** @description Validation Error */

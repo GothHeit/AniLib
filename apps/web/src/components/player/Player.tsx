@@ -8,6 +8,8 @@ import { useToast } from "@/components/ui/Toast";
 import { Link, useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 
+import { useRoomSync, type RoomBinding } from "@/components/room/useRoomSync";
+
 import { setAutoNext, useAutoNext } from "./autoNext";
 import { stageOf } from "./FullscreenStage";
 import { PlayerIcon } from "./icons";
@@ -34,6 +36,8 @@ type Props = {
   subtitleLang: string | null;
   /** Saved look of the subtitles. */
   subtitleStyle: SubtitleStyle;
+  /** Set when watching together: the room drives playback and picks the next episode. */
+  room?: RoomBinding;
 };
 
 type Track = { lang: string; label: string; url: string };
@@ -116,6 +120,18 @@ export function Player(props: Props) {
   const next = episodes.find((e) => e > episode);
   const backHref = `/anime/${animeId}`;
   const { save, onTime } = useProgressSaver(video, animeId, episode);
+  const { room } = props;
+  const sync = useRoomSync(
+    {
+      read: () => (video.current && video.current.readyState >= 1 ? video.current : null),
+      seek: (seconds) => {
+        if (video.current) video.current.currentTime = seconds;
+      },
+      play: () => void video.current?.play().catch(() => undefined),
+      pause: () => video.current?.pause(),
+    },
+    room,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -224,8 +240,11 @@ export function Player(props: Props) {
   }, [url, kind]);
 
   const goNext = useCallback(() => {
-    if (next !== undefined) router.push(watchHref(source, animeId, next, lang));
-  }, [next, router, source, animeId, lang]);
+    if (next === undefined) return;
+    // In a room the next episode is a vote, and the room moves everyone together.
+    if (room) void room.pickEpisode(next);
+    else router.push(watchHref(source, animeId, next, lang));
+  }, [next, router, source, animeId, lang, room]);
 
   useEffect(() => {
     if (countdown === null) return;
@@ -362,6 +381,14 @@ export function Player(props: Props) {
     router.replace(watchHref(source, animeId, episode, to, position));
   }
 
+  async function startRoom() {
+    const { data, error: body } = await api
+      .POST("/watch/rooms", { body: { source, anime_id: animeId, title, episode, lang } })
+      .catch(() => ({ data: undefined, error: { error: { code: "network" } } }));
+    if (data) router.push(`/room/${data.code}`);
+    else toast(t(`errors.${ERRORS.includes(errorCode(body)) ? errorCode(body) : "unknown"}`), "error");
+  }
+
   function retry() {
     setError(null);
     setUrl(null);
@@ -373,6 +400,7 @@ export function Player(props: Props) {
     const v = video.current;
     if (!v) return;
     setDuration(v.duration);
+    sync.onLoadedMetadata();
     if (!started.current) {
       started.current = true;
       const from = attempt > 0 ? current : startAt;
@@ -403,7 +431,7 @@ export function Player(props: Props) {
       <video
         ref={video}
         src={kind === "mp4" ? (url ?? undefined) : undefined}
-        autoPlay
+        autoPlay={!room}
         playsInline
         onClick={togglePlay}
         onDoubleClick={toggleFullscreen}
@@ -418,11 +446,15 @@ export function Player(props: Props) {
           setEnded(false);
           setCountdown(null);
           poke();
+          sync.onPlay();
         }}
         onPause={(e) => {
           setPlaying(false);
           save(e.currentTarget);
+          // The pause at the end of an episode is the video finishing, not someone pausing.
+          if (!e.currentTarget.ended) sync.onPause();
         }}
+        onSeeked={sync.onSeeked}
         onEnded={onEnded}
         onWaiting={() => setWaiting(true)}
         onCanPlay={() => setWaiting(false)}
@@ -488,6 +520,19 @@ export function Player(props: Props) {
               {answered !== source && <span className="ml-2">· {t("fallbackSource", { source: answered })}</span>}
             </p>
           </div>
+          {room ? (
+            room.topBar
+          ) : (
+            <button
+              type="button"
+              onClick={() => void startRoom()}
+              aria-label={t("watchTogether")}
+              className="ml-auto flex h-10 items-center gap-2 rounded-ui px-3 text-fg hover:bg-white/10"
+            >
+              <PlayerIcon name="people" />
+              <span className="hidden text-sm font-bold sm:inline">{t("watchTogether")}</span>
+            </button>
+          )}
         </div>
 
         {!error && (
@@ -545,19 +590,21 @@ export function Player(props: Props) {
                 className="hidden w-24 cursor-pointer accent-accent sm:block"
               />
               <span className="flex-1" />
-              <div role="group" aria-label={t("audio")} className="flex rounded-ui border border-line text-xs font-bold">
-                {(["sub", "dub"] as const).map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    aria-pressed={lang === l}
-                    onClick={() => void switchLang(l)}
-                    className={`px-3 py-1.5 ${lang === l ? "bg-accent text-on-accent" : "text-muted hover:text-fg"}`}
-                  >
-                    {t(l)}
-                  </button>
-                ))}
-              </div>
+              {!room && (
+                <div role="group" aria-label={t("audio")} className="flex rounded-ui border border-line text-xs font-bold">
+                  {(["sub", "dub"] as const).map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      aria-pressed={lang === l}
+                      onClick={() => void switchLang(l)}
+                      className={`px-3 py-1.5 ${lang === l ? "bg-accent text-on-accent" : "text-muted hover:text-fg"}`}
+                    >
+                      {t(l)}
+                    </button>
+                  ))}
+                </div>
+              )}
               {tracks.length > 0 && (
                 <label className="text-xs">
                   <span className="sr-only">{t("subtitles")}</span>
@@ -620,6 +667,8 @@ export function Player(props: Props) {
           </div>
         )}
       </div>
+
+      {room?.overlay}
 
       {settingsOpen && !error && (
         <div className="absolute bottom-28 right-4 sm:right-8">

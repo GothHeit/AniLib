@@ -11,17 +11,19 @@ from app.errors import install_error_handlers
 from app.mal.account import MalAccounts
 from app.mal.client import MalClient
 from app.ratelimit import AuthLimits
-from app.routers import anime, auth, home, invites, mal, progress, watch
+from app.rooms import Rooms
+from app.routers import anime, auth, home, invites, mal, progress, rooms, watch
 from app.sources import load_sources
 
 SWEEP_INTERVAL_SECONDS = 300
 
 
-async def _sweep_limits(limits: AuthLimits) -> None:
+async def _sweep(limits: AuthLimits, rooms: Rooms) -> None:
     # Idle rate-limit keys are otherwise only dropped when the same key is seen again.
     while True:
         await asyncio.sleep(SWEEP_INTERVAL_SECONDS)
         limits.sweep()
+        rooms.sweep()
 
 
 @asynccontextmanager
@@ -33,9 +35,10 @@ async def lifespan(app: FastAPI):
         app.state.mal = MalClient(settings.mal_client_id, http)
         app.state.mal_accounts = MalAccounts(settings, http)
         app.state.auth_limits = AuthLimits(settings)
+        app.state.rooms = Rooms()
         app.state.source_hints = anime.new_source_hints()
         app.state.sources = load_sources(settings.video_source_names)
-        sweeper = asyncio.create_task(_sweep_limits(app.state.auth_limits))
+        sweeper = asyncio.create_task(_sweep(app.state.auth_limits, app.state.rooms))
         try:
             yield
         finally:
@@ -58,7 +61,8 @@ def create_app() -> FastAPI:
     async def health():
         return {"status": "ok"}
 
-    for module in (auth, invites, anime, mal, watch, progress, home):
+    # rooms before watch: /watch/rooms/... must not be read as /watch/{source}/....
+    for module in (auth, invites, anime, mal, rooms, watch, progress, home):
         app.include_router(module.router)
     return app
 
