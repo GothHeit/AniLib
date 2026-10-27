@@ -42,7 +42,7 @@ export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string
     <section
       aria-roledescription="carousel"
       aria-label={t("featured")}
-      className="relative min-h-[26rem] bg-hero sm:min-h-[32rem]"
+      className="relative min-h-[26rem] overflow-hidden bg-hero sm:min-h-[32rem]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
