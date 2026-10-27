@@ -1,0 +1,90 @@
+# Production stack. Run from this folder: docker compose up -d --build
+# Settings come from deploy/.env (copy .env.example). Nothing here is published on the host:
+# the tunnel reaches Caddy over the private network. For a VPS, add compose.vps.yaml (see README).
+name: moonroom
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: app
+    volumes: [db-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      retries: 20
+
+  api:
+    build:
+      context: ../apps/api
+      args:
+        EXTRAS: ${API_EXTRAS:-}
+    restart: unless-stopped
+    environment:
+      APP_NAME: ${APP_NAME:-MoonRoom}
+      DATABASE_URL: postgresql+asyncpg://app:${POSTGRES_PASSWORD}@db:5432/app
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in deploy/.env}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:?set TOKEN_ENCRYPTION_KEY in deploy/.env}
+      CORS_ORIGINS: ${PUBLIC_URL:?set PUBLIC_URL in deploy/.env}
+      WEB_URL: ${PUBLIC_URL}
+      MAL_CLIENT_ID: ${MAL_CLIENT_ID:-}
+      MAL_CLIENT_SECRET: ${MAL_CLIENT_SECRET:-}
+      MAL_REDIRECT_URI: ${PUBLIC_URL}/mal/callback
+      VIDEO_SOURCES: ${VIDEO_SOURCES:-}
+      # Only Caddy can reach the API, and it writes the real client address.
+      TRUST_PROXY_HEADERS: "true"
+    depends_on:
+      db: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 10s
+      start_period: 30s
+      retries: 5
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_APP_NAME: ${APP_NAME:-MoonRoom}
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:8000
+      # Behind the tunnel the browser speaks https even though Caddy speaks http.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/pt/login').then(r => process.exit(r.status < 500 ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      start_period: 30s
+      retries: 5
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      web: {condition: service_healthy}
+      api: {condition: service_healthy}
+
+  # Opt-in with COMPOSE_PROFILES=tunnel (set in .env.example). Leave it out on a VPS.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: [tunnel]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on: [caddy]
+
+volumes:
+  db-data:
+  caddy-data:

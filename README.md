@@ -44,6 +44,10 @@ Depois de criar sua conta com o convite / After registering with the invite:
 `uv run python -m app.cli promote <username>` makes you an admin, so you can create invites for
 friends through `POST /invites`.
 
+## Publicando / Deploying
+
+Production stack (Docker Compose, Cloudflare Tunnel, backups): see [deploy/README.md](deploy/README.md).
+
 ## Fontes de vídeo / Video sources
 
 Video comes through a `VideoSource` plug-in (`apps/api/src/app/sources/`). The only one today is

@@ -10,5 +10,7 @@ COPY . .
 RUN uv sync --frozen --no-dev ${EXTRAS:+--extra $EXTRAS}
 
 ENV PATH="/srv/.venv/bin:$PATH"
+RUN useradd --system --no-create-home app
+USER app
 EXPOSE 8000
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

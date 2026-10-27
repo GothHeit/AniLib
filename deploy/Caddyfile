@@ -1,0 +1,27 @@
+{
+	# Cloudflare Tunnel (or any private-network proxy) sits in front: believe its client address.
+	servers {
+		trusted_proxies static private_ranges
+		client_ip_headers Cf-Connecting-Ip X-Forwarded-For
+	}
+}
+
+# SITE_ADDRESS is ":80" behind the tunnel; set it to the domain name on a VPS to get automatic HTTPS.
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	# MyAnimeList sends the browser here after the user approves the link.
+	@mal path /mal/callback
+	handle @mal {
+		reverse_proxy api:8000 {
+			header_up X-Forwarded-For {client_ip}
+		}
+	}
+
+	# Everything else is the web app, which talks to the API on the private network.
+	handle {
+		reverse_proxy web:3000 {
+			header_up X-Forwarded-For {client_ip}
+		}
+	}
+}

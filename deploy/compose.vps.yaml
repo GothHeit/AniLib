@@ -1,0 +1,6 @@
+# Add on a VPS with a public IP, instead of the tunnel:
+#   docker compose -f compose.yaml -f compose.vps.yaml up -d --build
+# and set SITE_ADDRESS to your domain in .env so Caddy fetches the HTTPS certificate itself.
+services:
+  caddy:
+    ports: ["80:80", "443:443"]
