@@ -10,7 +10,9 @@
   "actions": {
     "retry": "Try again",
     "close": "Close",
-    "goHome": "Back to home"
+    "goHome": "Back to home",
+    "showPassword": "Show",
+    "hidePassword": "Hide"
   },
   "states": {
     "notFoundTitle": "Page not found",

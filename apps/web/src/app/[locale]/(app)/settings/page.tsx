@@ -15,11 +15,25 @@ import { titled } from "@/lib/page-title";
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-ui border border-line bg-surface p-6">
-      <h2 className="mb-4 text-lg font-bold">{title}</h2>
+      <h3 className="mb-4 text-lg font-bold">{title}</h3>
       {children}
     </section>
   );
 }
+
+/** One anchor target per group; the offset clears the fixed top bar. */
+function Group({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section id={id} aria-labelledby={`${id}-heading`} className="flex scroll-mt-24 flex-col gap-4">
+      <h2 id={`${id}-heading`} className="font-display text-xl font-bold">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+const GROUPS = ["account", "preferences", "connections", "security"] as const;
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/settings">): Promise<Metadata> {
   const { locale } = await params;
@@ -46,6 +60,19 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 pb-8 pt-24 sm:px-8">
       <h1 className="text-3xl font-bold">{t("settings.title")}</h1>
 
+      <nav aria-label={t("settings.groups.nav")} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        {GROUPS.map((id) => (
+          <a
+            key={id}
+            href={`#${id}`}
+            className="shrink-0 rounded-ui border border-line px-4 py-2 text-sm font-medium text-muted hover:border-accent hover:text-fg pointer-coarse:min-h-11 pointer-coarse:leading-7"
+          >
+            {t(`settings.groups.${id}`)}
+          </a>
+        ))}
+      </nav>
+
+      <Group id="account" title={t("settings.groups.account")}>
       <Section title={t("settings.profile")}>
         <p className="text-sm text-muted">{t("settings.username")}</p>
         <p className="font-medium">
@@ -62,7 +89,9 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
       <Section title={t("avatar.title")}>
         <AvatarForm userId={me.id} username={me.username} avatar={me.avatar} />
       </Section>
+      </Group>
 
+      <Group id="preferences" title={t("settings.groups.preferences")}>
       <Section title={t("settings.preferences")}>
         <PreferencesForm showNsfw={me.show_nsfw} shareActivity={me.share_activity} />
       </Section>
@@ -70,11 +99,15 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
       <Section title={tNotifications("title")}>
         <NotificationsForm muted={notifications.muted} />
       </Section>
+      </Group>
 
+      <Group id="connections" title={t("settings.groups.connections")}>
       <Section title={t("mal.title")}>
         <MalSection status={malStatus} returned={typeof mal === "string" ? mal : undefined} />
       </Section>
+      </Group>
 
+      <Group id="security" title={t("settings.groups.security")}>
       <Section title={t("password.title")}>
         <PasswordForm />
       </Section>
@@ -82,6 +115,7 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
       <Section title={t("sessions.title")}>
         <SessionsPanel sessions={sessions} />
       </Section>
+      </Group>
     </div>
   );
 }

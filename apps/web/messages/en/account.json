@@ -16,7 +16,14 @@
       "saveFailed": "Couldn't save your settings.",
       "shareActivityLabel": "Share my activity with friends",
       "shareActivityHint": "On by default. Turn it off and friends can still open your profile, but not see your stats, what you are watching or your activity.",
-      "shareActivity": "Show what I watch"
+      "shareActivity": "Show what I watch",
+      "groups": {
+        "account": "Account",
+        "preferences": "Preferences",
+        "connections": "Connections",
+        "security": "Security",
+        "nav": "Settings sections"
+      }
     },
     "mal": {
       "title": "MyAnimeList",

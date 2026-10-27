@@ -10,7 +10,9 @@
   "actions": {
     "retry": "Tentar de novo",
     "close": "Fechar",
-    "goHome": "Voltar ao início"
+    "goHome": "Voltar ao início",
+    "showPassword": "Mostrar",
+    "hidePassword": "Ocultar"
   },
   "states": {
     "notFoundTitle": "Página não encontrada",
