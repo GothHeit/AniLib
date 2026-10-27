@@ -10,7 +10,7 @@ describe("isProxyPathAllowed", () => {
   });
 
   it("refuses auth routes, the MAL callback, unknown areas and traversal", () => {
-    for (const path of [["auth", "login"], ["mal", "callback"], ["mal"], ["health"], ["users"], ["users", "x"], ["users", "lookup", "x"], ["users", "..", "profile"], ["users", "x", "other"], ["users", "..", "avatar"], ["me", "..", "auth"], []]) {
+    for (const path of [["auth", "login"], ["mal", "callback"], ["mal"], ["health"], ["users"], ["users", "x"], ["users", "lookup", "x"], ["users", "..", "profile"], ["users", "x", "other"], ["users", "..", "avatar"], ["me", "..", "auth"], ["me", "a/b"], ["me", "a\\b"], ["me", "..x"], []]) {
       expect(isProxyPathAllowed(path)).toBe(false);
     }
   });

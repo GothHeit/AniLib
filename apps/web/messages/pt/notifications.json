@@ -5,7 +5,7 @@
     "openUnread": "Notificações, {count} não lidas",
     "empty": "Você está em dia.",
     "markAll": "Marcar todas como lidas",
-    "dismiss": "Dispensar",
+    "dismissItem": "Dispensar: {text}",
     "loadFailed": "Não deu para carregar as notificações.",
     "friend_request": "{name} quer ser seu amigo",
     "friend_accepted": "{name} aceitou seu pedido de amizade",

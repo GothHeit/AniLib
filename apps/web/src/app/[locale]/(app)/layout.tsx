@@ -9,9 +9,11 @@ export default async function AppLayout({ children, params }: LayoutProps<"/[loc
   setRequestLocale(locale);
   const t = await getTranslations("nav");
   const api = await serverApi();
-  const me = await unwrap(api.GET("/me"), locale);
-  // Only for the badge on the account menu, so a failure just hides it.
-  const requests = await api.GET("/friends/requests").then((r) => r.data, () => undefined);
+  // Both at once; the second is only for the badge on the account menu, so a failure just hides it.
+  const [me, requests] = await Promise.all([
+    unwrap(api.GET("/me"), locale),
+    api.GET("/friends/requests").then((r) => r.data, () => undefined),
+  ]);
   const pending = requests?.incoming.length ?? 0;
 
   return (

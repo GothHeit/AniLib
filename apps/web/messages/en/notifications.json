@@ -5,7 +5,7 @@
     "openUnread": "Notifications, {count} unread",
     "empty": "You're all caught up.",
     "markAll": "Mark all as read",
-    "dismiss": "Dismiss",
+    "dismissItem": "Dismiss: {text}",
     "loadFailed": "Couldn't load notifications.",
     "friend_request": "{name} wants to be your friend",
     "friend_accepted": "{name} accepted your friend request",

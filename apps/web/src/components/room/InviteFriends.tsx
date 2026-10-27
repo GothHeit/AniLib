@@ -21,11 +21,12 @@ export function InviteFriends({ code, memberIds }: Props) {
   async function toggle() {
     const next = !open;
     setOpen(next);
-    if (next && friends === null) {
-      const { data } = await api.GET("/friends").catch(() => ({ data: undefined }));
-      if (data) setFriends(data);
-      else setError(t("loadFailed"));
-    }
+    if (!next) return;
+    // Fresh every time it opens: friends made since, and a clean slate for old errors.
+    setError(null);
+    const { data } = await api.GET("/friends").catch(() => ({ data: undefined }));
+    if (data) setFriends(data);
+    else if (friends === null) setError(t("loadFailed"));
   }
 
   async function invite(userId: string) {
@@ -60,7 +61,7 @@ export function InviteFriends({ code, memberIds }: Props) {
             </p>
           )}
           {friends !== null && candidates.length === 0 && <p className="text-muted">{t("none")}</p>}
-          <ul className="flex flex-col gap-1">
+          <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto">
             {candidates.map(({ user }) => (
               <li key={user.id} className="flex items-center justify-between gap-2">
                 <span className="truncate">{user.username}</span>

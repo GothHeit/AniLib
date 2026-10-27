@@ -34,6 +34,10 @@ export function NotificationBell() {
   const t = useTranslations("notifications");
   const format = useFormatter();
   const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  // Bumped on every local change, so a poll that started earlier can't undo it.
+  const changes = useRef(0);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
   const [unread, setUnread] = useState(0);
@@ -41,7 +45,9 @@ export function NotificationBell() {
 
   const load = useCallback(async () => {
     if (document.visibilityState !== "visible") return;
+    const seen = changes.current;
     const { data } = await api.GET("/notifications").catch(() => ({ data: undefined }));
+    if (seen !== changes.current) return;
     setFailed(!data);
     if (data) {
       setItems(data.items);
@@ -62,8 +68,13 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (!open) return;
+    panel.current?.focus();
     const onPointer = (e: PointerEvent) => !root.current?.contains(e.target as Node) && setOpen(false);
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      trigger.current?.focus();
+    };
     document.addEventListener("pointerdown", onPointer);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -74,21 +85,28 @@ export function NotificationBell() {
 
   async function markRead(item: Item) {
     if (item.read) return;
+    changes.current++;
     setItems((all) => all.map((i) => (i.id === item.id ? { ...i, read: true } : i)));
     setUnread((n) => Math.max(0, n - 1));
     await api.POST("/notifications/{notification_id}/read", { params: { path: { notification_id: item.id } } }).catch(() => undefined);
+    changes.current++; // a poll that read the server before it applied this is stale too
   }
 
   async function markAll() {
+    changes.current++;
     setItems((all) => all.map((i) => ({ ...i, read: true })));
     setUnread(0);
     await api.POST("/notifications/read").catch(() => undefined);
+    changes.current++;
   }
 
   async function dismiss(item: Item) {
+    changes.current++;
+    panel.current?.focus(); // the dismiss button is about to disappear
     setItems((all) => all.filter((i) => i.id !== item.id));
     if (!item.read) setUnread((n) => Math.max(0, n - 1));
     await api.DELETE("/notifications/{notification_id}", { params: { path: { notification_id: item.id } } }).catch(() => undefined);
+    changes.current++;
   }
 
   function text(item: Item) {
@@ -107,6 +125,7 @@ export function NotificationBell() {
   return (
     <div ref={root} className="relative">
       <button
+        ref={trigger}
         type="button"
         aria-label={unread > 0 ? t("openUnread", { count: unread }) : t("open")}
         aria-haspopup="dialog"
@@ -129,9 +148,11 @@ export function NotificationBell() {
       </button>
       {open && (
         <div
+          ref={panel}
           role="dialog"
+          tabIndex={-1}
           aria-label={t("title")}
-          className="fixed inset-x-4 top-16 z-50 flex max-h-[70vh] flex-col rounded-ui border border-line bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96"
+          className="fixed inset-x-4 top-16 z-50 flex max-h-[70vh] flex-col rounded-ui border border-line bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 focus:outline-none"
         >
           <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
             <h2 className="font-bold">{t("title")}</h2>
@@ -141,6 +162,11 @@ export function NotificationBell() {
               </button>
             )}
           </div>
+          {failed && items.length > 0 && (
+            <p role="alert" className="border-b border-line px-4 py-2 text-xs text-danger">
+              {t("loadFailed")}
+            </p>
+          )}
           <ul className="overflow-y-auto">
             {items.length === 0 && (
               <li className="px-4 py-8 text-center text-sm text-muted">{failed ? t("loadFailed") : t("empty")}</li>
@@ -182,10 +208,10 @@ export function NotificationBell() {
                   <button
                     type="button"
                     onClick={() => void dismiss(item)}
-                    aria-label={t("dismiss")}
+                    aria-label={t("dismissItem", { text: text(item) })}
                     className="mr-2 mt-2 rounded-ui px-2 py-1 text-muted hover:bg-line"
                   >
-                    ×
+                    <span aria-hidden="true">×</span>
                   </button>
                 </li>
               );

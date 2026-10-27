@@ -77,7 +77,7 @@ describe("NotificationBell", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Notifications, 2 unread" }));
     expect(await screen.findByText("This room has closed.")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /bob invited you/ })).toBeNull();
-    fireEvent.click(screen.getAllByRole("button", { name: "Dismiss" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss: bob invited you to watch together" }));
     await waitFor(() => expect(screen.queryByText("bob invited you to watch together")).toBeNull());
     expect(client.DELETE).toHaveBeenCalledWith("/notifications/{notification_id}", { params: { path: { notification_id: "n2" } } });
   });
@@ -87,5 +87,41 @@ describe("NotificationBell", () => {
     renderBell();
     fireEvent.click(await screen.findByRole("button", { name: "Notifications" }));
     expect(await screen.findByText("You're all caught up.")).toBeInTheDocument();
+  });
+
+  it("moves focus into the panel and back to the bell on Escape", async () => {
+    client.GET.mockResolvedValue({ data: { items: [friend], unread: 1 } });
+    renderBell();
+    const bell = await screen.findByRole("button", { name: "Notifications, 1 unread" });
+    fireEvent.click(bell);
+    const dialog = await screen.findByRole("dialog", { name: "Notifications" });
+    await waitFor(() => expect(dialog).toHaveFocus());
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(bell).toHaveFocus();
+  });
+
+  it("does not let a poll that started before a dismissal bring the entry back", async () => {
+    client.GET.mockResolvedValueOnce({ data: { items: [friend], unread: 1 } });
+    client.DELETE.mockResolvedValue({ response: { ok: true } });
+    renderBell();
+    const bell = await screen.findByRole("button", { name: "Notifications, 1 unread" });
+    let finish: (value: unknown) => void = () => undefined;
+    client.GET.mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+    fireEvent.click(bell); // starts a poll that is still waiting
+    fireEvent.click(await screen.findByRole("button", { name: "Dismiss: ana wants to be your friend" }));
+    finish({ data: { items: [friend], unread: 1 } }); // the old answer arrives late
+    await waitFor(() => expect(client.DELETE).toHaveBeenCalled());
+    expect(screen.queryByText("ana wants to be your friend")).toBeNull();
+  });
+
+  it("keeps showing the list but says so when a refresh fails", async () => {
+    client.GET.mockResolvedValueOnce({ data: { items: [friend], unread: 1 } });
+    renderBell();
+    const bell = await screen.findByRole("button", { name: "Notifications, 1 unread" });
+    client.GET.mockRejectedValueOnce(new Error("offline"));
+    fireEvent.click(bell);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't load notifications.");
+    expect(screen.getByText("ana wants to be your friend")).toBeInTheDocument();
   });
 });
