@@ -26,6 +26,13 @@ CHAT_MAX_LENGTH = 300
 REACTIONS = ("👍", "❤️", "😂", "😮", "😢", "🔥")
 EMPTY_GRACE_SECONDS = 60
 MAX_EPISODE = 10_000
+# When someone's video stalls the room pauses for everyone, but never for longer than this in
+# one go, and nobody can hold it again for a while after, so one bad (or rude) connection
+# can't keep the room waiting.
+MAX_HOLD_SECONDS = 10
+BUFFER_COOLDOWN_SECONDS = 20
+# A just-created room is empty until its host connects; only older empty rooms are replaced.
+REPLACE_EMPTY_AFTER_SECONDS = 5
 # A friend invited to a room can still see the invite for this long.
 INVITE_TTL_SECONDS = 30 * 60
 MAX_INVITES_PER_ROOM = 50
@@ -60,6 +67,13 @@ class Room:
     # Invited user -> (who invited, monotonic time of the invite).
     invited: dict[uuid.UUID, tuple[uuid.UUID, float]] = field(default_factory=dict)
     empty_since: float | None = field(default_factory=time.monotonic)
+    # Who is waiting for their video to load, and since when (monotonic).
+    buffering: dict[uuid.UUID, float] = field(default_factory=dict)
+    # True while the room is paused only because someone is buffering.
+    held: bool = False
+    # Until when a viewer who held the room may not hold it again.
+    hold_blocked: dict[uuid.UUID, float] = field(default_factory=dict)
+    _hold_timer: asyncio.TimerHandle | None = None
 
     def now_position(self) -> float:
         if not self.playing:
@@ -85,6 +99,7 @@ class Room:
             "locked": self.locked,
             "members": [{"id": str(i), "username": m.username} for i, m in self.members.items()],
             "votes": {str(user): episode for user, episode in self.votes.items()},
+            "buffering": [str(user) for user in self.buffering],
             "playback": self.playback(),
         }
 
@@ -126,6 +141,7 @@ class Room:
             return
         del self.members[user_id]
         self.votes.pop(user_id, None)
+        self._stop_buffering(user_id)
         if not self.members:
             self.empty_since = time.monotonic()
             self.position = self.now_position()
@@ -161,10 +177,14 @@ class Room:
         if self.locked and user_id != self.host_id:
             raise ApiError(403, "controls_locked", "Only the host can control playback")
         at = self.now_position() if position is None else max(position, 0.0)
-        if action == "play":
-            self.playing = True
-        elif action == "pause":
-            self.playing = False
+        if action in ("play", "pause"):
+            # Whoever plays or pauses decides, so the hold no longer applies. A seek doesn't.
+            if self.held:
+                self.held = False
+                if self._hold_timer is not None:
+                    self._hold_timer.cancel()
+                    self._hold_timer = None
+            self.playing = action == "play"
         self.position = at
         self.moved_at = time.monotonic()
         self.broadcast("playback", self.playback(user_id))
@@ -175,7 +195,67 @@ class Room:
         self.locked = locked
         self._state()
 
+    def set_buffering(self, user_id: uuid.UUID, buffering: bool) -> None:
+        self._require_member(user_id)
+        if not buffering:
+            self._stop_buffering(user_id)
+            return
+        now = time.monotonic()
+        self.hold_blocked = {u: t for u, t in self.hold_blocked.items() if t > now}
+        if user_id in self.buffering or user_id in self.hold_blocked:
+            return
+        if not self.held:
+            # Nothing to hold in a paused room, and a locked room's playback is the host's.
+            if not self.playing or (self.locked and user_id != self.host_id):
+                return
+            self.position = self.now_position()
+            self.moved_at = now
+            self.playing = False
+            self.held = True
+            self._hold_timer = asyncio.get_running_loop().call_later(
+                MAX_HOLD_SECONDS, self._release_hold
+            )
+            self.broadcast("playback", self.playback())
+        self.buffering[user_id] = now
+        self._state()
+
+    def _stop_buffering(self, user_id: uuid.UUID) -> None:
+        if self.buffering.pop(user_id, None) is None:
+            return
+        self.hold_blocked[user_id] = time.monotonic() + BUFFER_COOLDOWN_SECONDS
+        if self.held and not self.buffering:
+            self._resume()
+        if self.members:
+            self._state()
+
+    def _resume(self) -> None:
+        if self._hold_timer is not None:
+            self._hold_timer.cancel()
+            self._hold_timer = None
+        if not self.held:
+            return
+        self.held = False
+        self.playing = True
+        self.moved_at = time.monotonic()
+        self.broadcast("playback", self.playback())
+
+    def _release_hold(self) -> None:
+        """The hold ran out: carry on without whoever is still stuck."""
+        self._hold_timer = None
+        now = time.monotonic()
+        for user_id in self.buffering:
+            self.hold_blocked[user_id] = now + BUFFER_COOLDOWN_SECONDS
+        self.buffering.clear()
+        self._resume()
+        if self.members:
+            self._state()
+
     def _switch(self, episode: int) -> None:
+        self.buffering.clear()
+        self.held = False
+        if self._hold_timer is not None:
+            self._hold_timer.cancel()
+            self._hold_timer = None
         self.episode = episode
         self.votes.clear()
         self.playing = True
@@ -251,8 +331,9 @@ class Room:
 
 
 class Rooms:
-    def __init__(self) -> None:
+    def __init__(self, max_per_host: int = MAX_ROOMS_PER_HOST) -> None:
         self._rooms: dict[str, Room] = {}
+        self._max_per_host = max_per_host
 
     def get(self, code: str) -> Room:
         room = self._rooms.get(code.strip().upper())
@@ -263,8 +344,13 @@ class Rooms:
     def create(
         self, host_id: uuid.UUID, source: str, anime_id: int, title: str, episode: int, lang: str
     ) -> Room:
+        # A host who left rooms behind (reloads, closed tabs) shouldn't be locked out by them.
+        for old_code, old in list(self._rooms.items()):
+            idle = old.empty_since is not None and time.monotonic() - old.empty_since
+            if old.host_id == host_id and not old.members and idle > REPLACE_EMPTY_AFTER_SECONDS:
+                del self._rooms[old_code]
         hosted = sum(1 for r in self._rooms.values() if r.host_id == host_id)
-        if len(self._rooms) >= MAX_ROOMS or hosted >= MAX_ROOMS_PER_HOST:
+        if len(self._rooms) >= MAX_ROOMS or hosted >= self._max_per_host:
             raise ApiError(429, "too_many_rooms", "Too many rooms are open")
         code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
         while code in self._rooms:

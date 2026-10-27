@@ -86,6 +86,11 @@ export function useRoom(initial: RoomState) {
       api.POST("/watch/rooms/{code}/control", { ...path, body: { action, position } }).catch(() => undefined),
     [path],
   );
+  const setBuffering = useCallback(
+    (buffering: boolean) =>
+      api.POST("/watch/rooms/{code}/buffering", { ...path, body: { buffering } }).catch(() => undefined),
+    [path],
+  );
   const say = useCallback(
     (text: string) => api.POST("/watch/rooms/{code}/chat", { ...path, body: { text } }).catch(() => undefined),
     [path],
@@ -107,5 +112,5 @@ export function useRoom(initial: RoomState) {
     [path],
   );
 
-  return { room, playback, messages, status, lastReaction, send, say, react, voteEpisode, withdrawVote, setLocked };
+  return { room, playback, messages, status, lastReaction, send, setBuffering, say, react, voteEpisode, withdrawVote, setLocked };
 }

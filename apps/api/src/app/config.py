@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     # How often to look for new episodes of airing titles people are watching. 0 turns it off.
     episode_check_hours: int = 6
 
+    # Open watch-together rooms one person may host.
+    max_rooms_per_host: int = 3
+
     # Video sources to enable, by name. Empty in a public deployment.
     video_sources: str = ""
 

@@ -9,7 +9,8 @@
     "lint": "eslint . && node scripts/check-messages.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "test:e2e": "playwright test",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e:rooms": "playwright test -c playwright.rooms.config.ts"
   },
   "dependencies": {
     "@app/api-client": "workspace:*",

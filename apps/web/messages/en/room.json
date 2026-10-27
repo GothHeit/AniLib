@@ -42,6 +42,7 @@
       "sent": "Invited",
       "loadFailed": "Couldn't load your friends.",
       "failed": "Couldn't send the invite."
-    }
+    },
+    "waitingFor": "Waiting for {names}…"
   }
 }

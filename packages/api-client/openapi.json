@@ -522,6 +522,19 @@
         "title": "BrowseOut",
         "type": "object"
       },
+      "BufferingIn": {
+        "properties": {
+          "buffering": {
+            "title": "Buffering",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "buffering"
+        ],
+        "title": "BufferingIn",
+        "type": "object"
+      },
       "ChatIn": {
         "properties": {
           "text": {
@@ -1988,6 +2001,13 @@
             "title": "Anime Id",
             "type": "integer"
           },
+          "buffering": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Buffering",
+            "type": "array"
+          },
           "code": {
             "title": "Code",
             "type": "string"
@@ -2049,6 +2069,7 @@
           "locked",
           "members",
           "votes",
+          "buffering",
           "playback"
         ],
         "title": "RoomOut",
@@ -4864,6 +4885,56 @@
           }
         ],
         "summary": "Get Room",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/watch/rooms/{code}/buffering": {
+      "post": {
+        "operationId": "buffering_watch_rooms__code__buffering_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BufferingIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Buffering",
         "tags": [
           "rooms"
         ]

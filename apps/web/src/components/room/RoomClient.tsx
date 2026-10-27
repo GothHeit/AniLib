@@ -23,7 +23,7 @@ type Props = {
 export function RoomClient({ initial, meId, episodes, subtitleLang, subtitleStyle }: Props) {
   const t = useTranslations("room");
   const toast = useToast();
-  const { room, playback, messages, status, lastReaction, send, say, react, voteEpisode, withdrawVote, setLocked } =
+  const { room, playback, messages, status, lastReaction, send, setBuffering, say, react, voteEpisode, withdrawVote, setLocked } =
     useRoom(initial);
   const [open, setOpen] = useState(false);
   const [seen, setSeen] = useState(0);
@@ -66,8 +66,17 @@ export function RoomClient({ initial, meId, episodes, subtitleLang, subtitleStyl
     </button>
   );
 
+  const waitingFor = room.members.filter((m) => room.buffering.includes(m.id)).map((m) => m.username);
   const overlay = (
     <>
+      {waitingFor.length > 0 && (
+        <p
+          role="status"
+          className="pointer-events-none absolute left-1/2 top-24 -translate-x-1/2 rounded-ui bg-black/80 px-4 py-2 text-sm font-medium"
+        >
+          {t("waitingFor", { names: waitingFor.join(", ") })}
+        </p>
+      )}
       {open && (
         <div className="absolute inset-y-20 right-4 z-10 w-[min(22rem,calc(100%-2rem))] sm:right-8">
           <RoomPanel
@@ -112,6 +121,7 @@ export function RoomClient({ initial, meId, episodes, subtitleLang, subtitleStyl
         playback,
         canControl,
         send,
+        setBuffering,
         pickEpisode: (episode) => void voteEpisode(episode),
         onLocked: () => toast(t("locked"), "error"),
         topBar,

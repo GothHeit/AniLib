@@ -63,7 +63,7 @@ async def lifespan(app: FastAPI):
         app.state.mal = MalClient(settings.mal_client_id, http)
         app.state.mal_accounts = MalAccounts(settings, http)
         app.state.auth_limits = AuthLimits(settings)
-        app.state.rooms = Rooms()
+        app.state.rooms = Rooms(settings.max_rooms_per_host)
         app.state.source_hints = anime.new_source_hints()
         app.state.sources = load_sources(settings.video_source_names)
         sweeper = asyncio.create_task(_sweep(app.state.auth_limits, app.state.rooms))

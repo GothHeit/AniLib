@@ -219,7 +219,7 @@ async def test_one_person_cannot_hold_many_rooms():
     rooms = Rooms()
     host = uuid.uuid4()
     for _ in range(3):
-        rooms.create(host, "zoko", 21, "One Piece", 1, "sub")
+        rooms.create(host, "zoko", 21, "One Piece", 1, "sub").join(host, "kafka")
     with pytest.raises(ApiError) as error:
         rooms.create(host, "zoko", 21, "One Piece", 1, "sub")
     assert error.value.code == "too_many_rooms"
@@ -265,3 +265,156 @@ async def test_only_members_can_invite_and_only_friends_can_be_invited(client, s
     await befriend(client, host_headers, host.id, guest_headers, "friend")
     outside = await client.post(f"/watch/rooms/{code}/invite", json=body, headers=host_headers)
     assert outside.status_code == 403 and outside.json()["error"]["code"] == "not_in_room"
+
+
+async def test_a_stalled_viewer_holds_the_room_until_they_recover():
+    room, host = new_room()
+    q_host = room.join(host, "kafka")
+    slow = uuid.uuid4()
+    room.join(slow, "slow")
+    room.control(host, "play", 50)
+    drain(q_host)
+
+    room.set_buffering(slow, True)
+    kinds = [kind for kind, _ in drain(q_host)]
+    assert "playback" in kinds
+    assert room.playing is False and room.held is True
+    assert room.snapshot()["buffering"] == [str(slow)]
+
+    room.set_buffering(slow, False)
+    assert room.playing is True and room.held is False
+    assert room.snapshot()["buffering"] == []
+    assert room.now_position() >= 50
+
+
+async def test_the_hold_waits_for_everyone_and_a_viewer_who_leaves_releases_it():
+    room, host = new_room()
+    room.join(host, "kafka")
+    a, b = uuid.uuid4(), uuid.uuid4()
+    qa = room.join(a, "a")
+    room.join(b, "b")
+    room.control(host, "play", 0)
+    room.set_buffering(a, True)
+    room.set_buffering(b, True)
+    room.set_buffering(a, False)
+    assert room.held is True
+    room.leave(b, next(iter(room.members[b].queues)))
+    assert room.playing is True and room.held is False
+    del qa
+
+
+async def test_buffering_while_paused_does_not_start_playback():
+    room, host = new_room()
+    room.join(host, "kafka")
+    slow = uuid.uuid4()
+    room.join(slow, "slow")
+    room.set_buffering(slow, True)
+    room.set_buffering(slow, False)
+    assert room.playing is False
+
+
+async def test_someone_choosing_to_pause_during_a_hold_keeps_the_room_paused():
+    room, host = new_room()
+    room.join(host, "kafka")
+    slow = uuid.uuid4()
+    room.join(slow, "slow")
+    room.control(host, "play", 5)
+    room.set_buffering(slow, True)
+    room.control(host, "pause", 5)
+    room.set_buffering(slow, False)
+    assert room.playing is False
+
+
+async def test_a_viewer_who_stays_stuck_times_out_and_cannot_hold_the_room_again():
+    room, host = new_room()
+    room.join(host, "kafka")
+    slow = uuid.uuid4()
+    room.join(slow, "slow")
+    room.control(host, "play", 0)
+    room.set_buffering(slow, True)
+    room._release_hold()
+    assert room.playing is True and room.buffering == {}
+    room.set_buffering(slow, True)
+    assert room.buffering == {} and room.playing is True
+
+
+async def test_the_buffering_endpoint_needs_membership(client, session):
+    _, host_headers = await make_user(session, "kafka")
+    app.state.sources = {"zoko": object()}
+    created = await client.post(
+        "/watch/rooms",
+        json={"source": "zoko", "anime_id": 21, "title": "One Piece", "episode": 1},
+        headers=host_headers,
+    )
+    code = created.json()["code"]
+    response = await client.post(
+        f"/watch/rooms/{code}/buffering", json={"buffering": True}, headers=host_headers
+    )
+    assert response.status_code == 403
+
+
+async def test_abandoned_rooms_do_not_count_against_the_host():
+    rooms = Rooms(max_per_host=10)
+    host = uuid.uuid4()
+    for _ in range(3):
+        rooms.create(host, "zoko", 21, "One Piece", 1, "sub")
+    # None of them has anyone in it, so a fourth is fine and replaces them. A room only just
+    # created is kept, because its host has not connected yet.
+    rooms.create(host, "zoko", 21, "One Piece", 1, "sub")
+    assert len(rooms) == 4
+    for room in rooms._rooms.values():
+        room.empty_since = 0.0
+    rooms.create(host, "zoko", 21, "One Piece", 1, "sub")
+    assert len(rooms) == 1
+
+
+async def test_a_guest_cannot_hold_a_locked_room():
+    room, host = new_room()
+    room.join(host, "kafka")
+    guest = uuid.uuid4()
+    room.join(guest, "friend")
+    room.control(host, "play", 0)
+    room.set_locked(host, True)
+    room.set_buffering(guest, True)
+    assert room.playing is True and room.buffering == {}
+
+
+async def test_a_seek_during_a_hold_keeps_the_hold_so_the_room_still_resumes():
+    room, host = new_room()
+    room.join(host, "kafka")
+    slow = uuid.uuid4()
+    room.join(slow, "slow")
+    room.control(host, "play", 0)
+    room.set_buffering(slow, True)
+    room.control(host, "seek", 30)
+    assert room.held is True and room.playing is False
+    room.set_buffering(slow, False)
+    assert room.playing is True and room.now_position() >= 30
+
+
+async def test_flapping_the_flag_cannot_keep_pausing_the_room():
+    room, host = new_room()
+    room.join(host, "kafka")
+    rude = uuid.uuid4()
+    room.join(rude, "rude")
+    room.control(host, "play", 0)
+    room.set_buffering(rude, True)
+    room.set_buffering(rude, False)
+    room.set_buffering(rude, True)
+    assert room.playing is True and room.buffering == {}
+
+
+async def test_two_stalled_viewers_share_one_hold_and_the_room_waits_for_both():
+    room, host = new_room()
+    room.join(host, "kafka")
+    a, b = uuid.uuid4(), uuid.uuid4()
+    room.join(a, "a")
+    room.join(b, "b")
+    room.control(host, "play", 0)
+    room.set_buffering(a, True)
+    room.set_buffering(b, True)
+    assert set(room.buffering) == {a, b}
+    room.set_buffering(a, False)
+    assert room.playing is False
+    room.set_buffering(b, False)
+    assert room.playing is True

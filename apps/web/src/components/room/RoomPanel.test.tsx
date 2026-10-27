@@ -22,6 +22,7 @@ const room: RoomState = {
     { id: "b", username: "other" },
   ],
   votes: { a: 3 },
+  buffering: [],
   playback: { playing: false, position: 0, by: null },
 };
 

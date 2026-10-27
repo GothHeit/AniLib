@@ -54,6 +54,8 @@ class RoomOut(BaseModel):
     members: list[MemberOut]
     # User id -> the episode they voted to switch to.
     votes: dict[str, int]
+    # Ids of the people whose video is loading; the room is held while there are any.
+    buffering: list[str]
     playback: PlaybackOut
 
 
@@ -76,6 +78,10 @@ class EpisodeIn(BaseModel):
 
 class InviteIn(BaseModel):
     user_id: uuid.UUID
+
+
+class BufferingIn(BaseModel):
+    buffering: bool
 
 
 class LockIn(BaseModel):
@@ -129,6 +135,11 @@ async def invite_friend(
 @router.post("/{code}/control", status_code=204)
 async def control(code: str, body: ControlIn, request: Request, user: CurrentUser):
     _room(request, code).control(user.id, body.action, body.position)
+
+
+@router.post("/{code}/buffering", status_code=204)
+async def buffering(code: str, body: BufferingIn, request: Request, user: CurrentUser):
+    _room(request, code).set_buffering(user.id, body.buffering)
 
 
 @router.post("/{code}/chat", status_code=204)

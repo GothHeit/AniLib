@@ -74,6 +74,42 @@ jobs:
           path: apps/web/test-results
           retention-days: 7
 
+  # Watch-together in two real browsers against the real API and a database.
+  rooms-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app" --health-interval 2s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - run: pnpm install --frozen-lockfile
+      - run: (cd apps/api && uv sync --frozen)
+      - run: pnpm --filter web build
+      - run: pnpm --filter web exec playwright install --with-deps chromium
+      - run: pnpm --filter web test:e2e:rooms
+      - name: Keep the Playwright report when e2e fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-rooms-report
+          path: apps/web/test-results
+          retention-days: 7
+
   # The production stack must keep building: images, compose file and Caddy config.
   deploy:
     runs-on: ubuntu-latest

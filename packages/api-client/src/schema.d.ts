@@ -837,6 +837,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/watch/rooms/{code}/buffering": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buffering */
+        post: operations["buffering_watch_rooms__code__buffering_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/watch/rooms/{code}/chat": {
         parameters: {
             query?: never;
@@ -1166,6 +1183,11 @@ export interface components {
             has_next: boolean;
             /** Page */
             page: number;
+        };
+        /** BufferingIn */
+        BufferingIn: {
+            /** Buffering */
+            buffering: boolean;
         };
         /** ChatIn */
         ChatIn: {
@@ -1667,6 +1689,8 @@ export interface components {
         RoomOut: {
             /** Anime Id */
             anime_id: number;
+            /** Buffering */
+            buffering: string[];
             /** Code */
             code: string;
             /** Episode */
@@ -3424,6 +3448,39 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RoomOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    buffering_watch_rooms__code__buffering_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BufferingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

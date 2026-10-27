@@ -456,9 +456,18 @@ export function Player(props: Props) {
         }}
         onSeeked={sync.onSeeked}
         onEnded={onEnded}
-        onWaiting={() => setWaiting(true)}
-        onCanPlay={() => setWaiting(false)}
-        onPlaying={() => setWaiting(false)}
+        onWaiting={() => {
+          setWaiting(true);
+          sync.onWaiting();
+        }}
+        onCanPlay={() => {
+          setWaiting(false);
+          sync.onReady();
+        }}
+        onPlaying={() => {
+          setWaiting(false);
+          sync.onReady();
+        }}
         onVolumeChange={() => {
           if (!video.current) return;
           setVolume(video.current.volume);

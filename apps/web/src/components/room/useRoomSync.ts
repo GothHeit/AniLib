@@ -9,6 +9,8 @@ export type RoomBinding = {
   /** False when the host locked the controls and this viewer isn't the host. */
   canControl: boolean;
   send: (action: LocalEvent, position: number) => unknown;
+  /** Tells the room this viewer's video is stuck loading (true) or playing again (false). */
+  setBuffering: (buffering: boolean) => unknown;
   /** The viewer asked for another episode: a vote, or an order when they host. */
   pickEpisode: (episode: number) => unknown;
   /** Called when a locked viewer tries to control the video. */
@@ -29,6 +31,8 @@ export type VideoControls = {
 };
 
 const RESYNC_MS = 5000;
+/** A stall shorter than this is a seek or a hiccup, not worth pausing everyone for. */
+const STALL_MS = 700;
 
 /**
  * Keeps a player in step with a room: applies what the room says to the video, and turns the
@@ -70,6 +74,30 @@ export function useRoomSync(video: VideoControls, room: RoomBinding | undefined)
     return () => clearInterval(id);
   }, [inRoom, apply]);
 
+  // Reports a stall once it lasts, and the recovery after it. The room decides whether it
+  // matters: a paused room ignores it.
+  const stallTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const reported = useRef(false);
+
+  const onWaiting = useCallback(() => {
+    clearTimeout(stallTimer.current);
+    stallTimer.current = setTimeout(() => {
+      const current = latest.current;
+      if (!current || reported.current) return;
+      reported.current = true;
+      void current.setBuffering(true);
+    }, STALL_MS);
+  }, []);
+
+  const onReady = useCallback(() => {
+    clearTimeout(stallTimer.current);
+    if (!reported.current) return;
+    reported.current = false;
+    void latest.current?.setBuffering(false);
+  }, []);
+
+  useEffect(() => () => clearTimeout(stallTimer.current), []);
+
   const local = useCallback(
     (event: LocalEvent) => {
       const current = latest.current;
@@ -93,5 +121,7 @@ export function useRoomSync(video: VideoControls, room: RoomBinding | undefined)
     onPause: () => local("pause"),
     onSeeked: () => local("seek"),
     onLoadedMetadata: apply,
+    onWaiting,
+    onReady,
   };
 }
