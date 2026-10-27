@@ -1,28 +1,32 @@
 import logging
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 from urllib.parse import urljoin
 
 import httpx
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import Response, StreamingResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
 from app import hls
 from app.deps import CurrentUser, Session
 from app.errors import ApiError
-from app.models import User
-from app.security import create_playback_token, decode_playback_token
+from app.models import PlayerPreferences, User
+from app.security import create_playback_token, decode_access_token, decode_playback_token
 from app.sources.base import Lang, Stream, VideoSource
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/watch", tags=["watch"])
+_bearer = HTTPBearer(auto_error=False)
 
 
 class EpisodesOut(BaseModel):
     source: str
     source_title: str
     episodes: list[int]
+    # Episode number -> still image link, signed like the HLS parts.
+    thumbnails: dict[int, str] = {}
 
 
 class SubtitleOut(BaseModel):
@@ -32,13 +36,31 @@ class SubtitleOut(BaseModel):
     url: str
 
 
+class SkipOut(BaseModel):
+    kind: Literal["intro", "outro"]
+    start: float
+    end: float
+
+
 class PlaybackOut(BaseModel):
+    # The source that answered: another enabled one when the requested source failed.
+    source: str
     kind: str
     resolution: int | None
     # Relative to the API base URL. Carries a token scoped to this one episode, because
     # <video> and native players can't send an Authorization header.
     url: str
     subtitles: list[SubtitleOut] = []
+    skips: list[SkipOut] = []
+    # Name or language of the audio track to start with, when the stream has several.
+    default_audio: str | None = None
+
+
+class PlayerPreferencesIO(BaseModel):
+    subtitle_size: Literal["small", "medium", "large", "huge"] = "medium"
+    subtitle_color: Literal["white", "yellow", "cyan", "green"] = "white"
+    subtitle_background: Literal["none", "outline", "translucent", "solid"] = "outline"
+    subtitle_position: Literal["bottom", "raised", "top"] = "bottom"
 
 
 def _source(request: Request, name: str) -> VideoSource:
@@ -52,13 +74,27 @@ async def _resolve_stream(
     request: Request, source: str, anime: dict, episode: int, lang: Lang
 ) -> tuple[str, Stream] | None:
     """The requested source first, then the other enabled ones, so one broken or missing
-    source doesn't stop playback. Returns the name of the source that answered."""
-    _source(request, source)
+    source doesn't stop playback. Returns the name of the source that answered.
+
+    A fallback only plays when its own episode list has this episode and is the same length
+    as the requested source's (when that is known), so a source that matched another season
+    or numbers episodes differently never plays the wrong one."""
+    requested = _source(request, source)
     names = [source] + [n for n in request.app.state.sources if n != source]
+    expected: int | None = None
     failed = False
     for name in names:
+        src: VideoSource = request.app.state.sources[name]
         try:
-            stream = await request.app.state.sources[name].stream(anime, episode, lang)
+            if name != source:
+                if expected is None:
+                    expected = await _episode_count(requested, anime, lang)
+                listed = await src.episodes(anime, lang)
+                if listed is None or episode not in listed.episodes:
+                    continue
+                if expected and len(listed.episodes) != expected:
+                    continue
+            stream = await src.stream(anime, episode, lang)
         except Exception:
             logger.exception("Source %s failed for MAL %s ep %s", name, anime.get("id"), episode)
             failed = True
@@ -68,6 +104,15 @@ async def _resolve_stream(
     if failed:
         raise ApiError(502, "upstream_failed", "The video sources are failing right now")
     return None
+
+
+async def _episode_count(source: VideoSource, anime: dict, lang: Lang) -> int:
+    """How many episodes a source lists, or 0 when it can't say (it is broken right now)."""
+    try:
+        listed = await source.episodes(anime, lang)
+    except Exception:
+        return 0
+    return len(listed.episodes) if listed else 0
 
 
 @router.get("/sources", response_model=list[str])
@@ -84,7 +129,36 @@ async def episodes(
     result = await src.episodes(anime, lang)
     if result is None:
         raise ApiError(404, "not_available", "This anime isn't available from this source")
-    return EpisodesOut(source=source, source_title=result.source_title, episodes=result.episodes)
+    viewer = str(user.id)
+    return EpisodesOut(
+        source=source,
+        source_title=result.source_title,
+        episodes=result.episodes,
+        thumbnails={
+            episode: f"/watch/{hls.signed_link(url, '', viewer, 'img')}"
+            for episode, url in result.thumbnails.items()
+        },
+    )
+
+
+@router.get("/preferences", response_model=PlayerPreferencesIO)
+async def get_preferences(user: CurrentUser, session: Session):
+    saved = await session.get(PlayerPreferences, user.id)
+    if saved is None:
+        return PlayerPreferencesIO()
+    return PlayerPreferencesIO.model_validate(saved, from_attributes=True)
+
+
+@router.put("/preferences", response_model=PlayerPreferencesIO)
+async def put_preferences(body: PlayerPreferencesIO, user: CurrentUser, session: Session):
+    saved = await session.get(PlayerPreferences, user.id)
+    if saved is None:
+        saved = PlayerPreferences(user_id=user.id)
+        session.add(saved)
+    for field, value in body.model_dump().items():
+        setattr(saved, field, value)
+    await session.commit()
+    return body
 
 
 @router.post("/{source}/{anime_id}/episodes/{episode}/play", response_model=PlaybackOut)
@@ -104,14 +178,22 @@ async def play(
     token = create_playback_token(user.id, used, anime_id, episode, lang)
     path = "video" if stream.kind == "mp4" else "hls"
     referer = stream.upstream_headers.get("Referer", "")
+    viewer = str(user.id)
     return PlaybackOut(
+        source=used,
         kind=stream.kind,
         resolution=stream.resolution,
         url=f"/watch/{path}?token={token}",
         subtitles=[
-            SubtitleOut(lang=s.lang, label=s.label, url=f"/watch/{hls.signed_link(s.url, referer)}")
+            SubtitleOut(
+                lang=s.lang,
+                label=s.label,
+                url=f"/watch/{hls.signed_link(s.url, referer, viewer, 'sub')}",
+            )
             for s in stream.subtitles
         ],
+        skips=[SkipOut(kind=k.kind, start=k.start, end=k.end) for k in stream.skips],
+        default_audio=stream.default_audio,
     )
 
 
@@ -211,14 +293,17 @@ async def _read_playlist(upstream: httpx.Response) -> str:
 async def hls_proxy(
     request: Request,
     session: Session,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)],
     token: Annotated[str | None, Query()] = None,
     u: Annotated[str | None, Query()] = None,
     r: Annotated[str, Query()] = "",
+    k: Annotated[str, Query()] = "",
     e: Annotated[int, Query()] = 0,
     s: Annotated[str, Query()] = "",
 ):
     """Without `u`, the master playlist of the episode the token is for. With `u`, one
-    playlist, segment or subtitle that an earlier response linked to (signed)."""
+    playlist, segment, subtitle or image that an earlier response linked to (signed for the
+    signed-in viewer, who must send their bearer token, as the web app's proxy does)."""
     if u is None:
         claims = decode_playback_token(token) if token else None
         if claims is None or await session.get(User, uuid.UUID(claims["sub"])) is None:
@@ -228,10 +313,16 @@ async def hls_proxy(
         stream = await src.stream(anime, claims["ep"], claims["lang"])
         if stream is None or stream.kind != "hls":
             raise ApiError(404, "not_available", "This episode isn't available any more")
-        url, referer = stream.url, stream.upstream_headers.get("Referer", "")
+        url, referer, viewer = stream.url, stream.upstream_headers.get("Referer", ""), claims["sub"]
     else:
-        if not hls.verify_link(u, r, e, s):
-            raise ApiError(401, "invalid_token", "Invalid or expired stream link")
+        # Only the token is checked, not the database: these come several times a second.
+        decoded = decode_access_token(credentials.credentials) if credentials else None
+        if decoded is None:
+            raise ApiError(401, "not_authenticated", "Missing or expired bearer token")
+        viewer = str(decoded[0])
+        # 403, not 401: a stale or foreign link can't be fixed by refreshing the session.
+        if not hls.verify_link(u, r, k, viewer, e, s):
+            raise ApiError(403, "invalid_link", "Invalid or expired stream link")
         url, referer = u, r
 
     headers = {"Referer": referer} if referer else {}
@@ -244,20 +335,21 @@ async def hls_proxy(
         raise ApiError(502, "upstream_failed", f"Video host answered {upstream.status_code}")
 
     content_type = upstream.headers.get("content-type", "")
-    if hls.is_playlist(url, content_type):
+    if k == "" and hls.is_playlist(url, content_type):
         text = await _read_playlist(upstream)
         return Response(
-            hls.rewrite_playlist(text, str(upstream.url), referer),
+            hls.rewrite_playlist(text, str(upstream.url), referer, viewer),
             media_type="application/vnd.apple.mpegurl",
             headers={"cache-control": "no-store"},
         )
 
-    # Segments are often disguised as images; players need to see them as video.
-    media_type = "text/vtt" if url.split("?")[0].endswith(".vtt") else "video/mp2t"
+    media_type = hls.media_type(url, k, content_type)
     passthrough = {
         h: upstream.headers[h] for h in ("content-length", "content-range") if h in upstream.headers
     }
     passthrough["accept-ranges"] = "bytes"
+    # Upstream bytes are untrusted: never let a browser guess them into HTML or script.
+    passthrough["x-content-type-options"] = "nosniff"
 
     async def body():
         try:

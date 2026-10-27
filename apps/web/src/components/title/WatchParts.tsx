@@ -34,7 +34,9 @@ export async function WatchPlay({ id }: { id: number }) {
       <span aria-hidden="true">▶</span>
       {plan.next.resume
         ? t("continue", { episode: plan.next.episode })
-        : t("play", { episode: plan.next.episode })}
+        : plan.next.rewatch
+          ? t("rewatch")
+          : t("play", { episode: plan.next.episode })}
     </ButtonLink>
   );
 }

@@ -1,9 +1,10 @@
 import httpx
 import respx
 
+from app import hls
 from app.main import app as fastapi_app
 from app.mal.client import API_BASE
-from app.sources.base import EpisodeList, Stream
+from app.sources.base import EpisodeList, Skip, Stream
 from tests.conftest import make_user
 
 VIDEO_URL = "https://video.example/ep1.mp4"
@@ -39,7 +40,12 @@ async def test_episodes_and_playback_through_proxy(client, session):
     mock_details()
 
     eps = await client.get("/watch/fake/21/episodes", headers=headers)
-    assert eps.json() == {"source": "fake", "source_title": "One Piece", "episodes": [1, 2, 3]}
+    assert eps.json() == {
+        "source": "fake",
+        "source_title": "One Piece",
+        "episodes": [1, 2, 3],
+        "thumbnails": {},
+    }
 
     play = await client.post("/watch/fake/21/episodes/1/play", headers=headers)
     assert play.status_code == 200
@@ -121,3 +127,110 @@ async def test_nsfw_titles_cannot_be_listed_or_played_with_nsfw_off(client, sess
     r = await client.post("/watch/fake/21/episodes/1/play", headers=normal)
     assert r.status_code == 404
     assert (await client.get("/watch/fake/21/episodes", headers=nsfw)).status_code == 200
+
+
+class OtherSeason:
+    """A fallback that matched a different season: same numbers, another show."""
+
+    name = "other"
+
+    def __init__(self, count: int):
+        self.count = count
+        self.streamed = False
+
+    async def episodes(self, anime, lang):
+        return EpisodeList(episodes=list(range(1, self.count + 1)), source_title="Other")
+
+    async def stream(self, anime, episode, lang):
+        self.streamed = True
+        return Stream(url=VIDEO_URL, kind="mp4", resolution=720, upstream_headers={})
+
+
+class Gone(FakeSource):
+    async def stream(self, anime, episode, lang):
+        return None
+
+
+@respx.mock
+async def test_fallback_needs_a_matching_episode_list_and_is_reported(client, session):
+    _, headers = await make_user(session, "kafka")
+    mock_details()
+
+    mismatched = OtherSeason(12)
+    fastapi_app.state.sources = {"fake": Gone(), "other": mismatched}
+    r = await client.post("/watch/fake/21/episodes/2/play", headers=headers)
+    assert r.json()["error"]["code"] == "not_available"
+    assert not mismatched.streamed
+
+    fastapi_app.state.sources = {"fake": Gone(), "other": OtherSeason(3)}
+    r = await client.post("/watch/fake/21/episodes/2/play", headers=headers)
+    assert r.status_code == 200
+    assert r.json()["source"] == "other"
+
+
+class Thumbs(FakeSource):
+    async def episodes(self, anime, lang):
+        return EpisodeList([1, 2], "x", {2: "https://img.example/2.jpg"})
+
+    async def stream(self, anime, episode, lang):
+        return Stream(
+            url=VIDEO_URL,
+            kind="mp4",
+            resolution=1080,
+            upstream_headers={},
+            skips=(Skip("intro", 30, 120),),
+            default_audio="jpn",
+        )
+
+
+@respx.mock
+async def test_thumbnails_skips_and_audio_reach_the_player(client, session, monkeypatch):
+    async def resolve(host):
+        return ["93.184.216.34"]
+
+    monkeypatch.setattr(hls, "resolve_host", resolve)
+    fastapi_app.state.sources = {"fake": Thumbs()}
+    _, headers = await make_user(session, "kafka")
+    mock_details()
+    eps = (await client.get("/watch/fake/21/episodes", headers=headers)).json()
+    assert list(eps["thumbnails"]) == ["2"]
+    assert eps["thumbnails"]["2"].startswith("/watch/hls?u=https%3A%2F%2Fimg.example")
+    assert "&k=img&" in eps["thumbnails"]["2"]
+
+    respx.get("https://img.example/2.jpg").mock(
+        return_value=httpx.Response(200, content=b"jpg", headers={"content-type": "image/jpeg"})
+    )
+    img = await client.get(eps["thumbnails"]["2"], headers=headers)
+    assert img.headers["content-type"] == "image/jpeg"
+
+    play = (await client.post("/watch/fake/21/episodes/1/play", headers=headers)).json()
+    assert play["skips"] == [{"kind": "intro", "start": 30, "end": 120}]
+    assert play["default_audio"] == "jpn"
+
+
+async def test_player_preferences_default_then_saved_per_user(client, session):
+    _, headers = await make_user(session, "kafka")
+    _, other = await make_user(session, "friend")
+    r = await client.get("/watch/preferences", headers=headers)
+    assert r.json() == {
+        "subtitle_size": "medium",
+        "subtitle_color": "white",
+        "subtitle_background": "outline",
+        "subtitle_position": "bottom",
+    }
+    body = {
+        "subtitle_size": "large",
+        "subtitle_color": "yellow",
+        "subtitle_background": "solid",
+        "subtitle_position": "raised",
+    }
+    assert (await client.put("/watch/preferences", json=body, headers=headers)).json() == body
+    assert (await client.get("/watch/preferences", headers=headers)).json() == body
+    assert (await client.get("/watch/preferences", headers=other)).json()[
+        "subtitle_size"
+    ] == "medium"
+    bad = await client.put(
+        "/watch/preferences", json={**body, "subtitle_color": "red"}, headers=headers
+    )
+    assert bad.status_code == 422
+    assert (await client.get("/watch/preferences")).status_code == 401

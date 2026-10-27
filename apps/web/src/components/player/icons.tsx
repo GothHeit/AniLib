@@ -9,6 +9,7 @@ const PATHS = {
   exitFullscreen: "M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5",
   next: "M5 5l10 7-10 7zM18 5v14",
   back: "M15 5l-7 7 7 7",
+  settings: "M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M6 15v4",
 } as const;
 
 export type PlayerIconName = keyof typeof PATHS;

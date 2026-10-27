@@ -452,10 +452,29 @@ export interface paths {
         /**
          * Hls Proxy
          * @description Without `u`, the master playlist of the episode the token is for. With `u`, one
-         *     playlist, segment or subtitle that an earlier response linked to (signed).
+         *     playlist, segment, subtitle or image that an earlier response linked to (signed for the
+         *     signed-in viewer, who must send their bearer token, as the web app's proxy does).
          */
         get: operations["hls_proxy_watch_hls_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Preferences */
+        get: operations["get_preferences_watch_preferences_get"];
+        /** Put Preferences */
+        put: operations["put_preferences_watch_preferences_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -642,6 +661,13 @@ export interface components {
             source: string;
             /** Source Title */
             source_title: string;
+            /**
+             * Thumbnails
+             * @default {}
+             */
+            thumbnails: {
+                [key: string]: string;
+            };
         };
         /** Genre */
         Genre: {
@@ -862,10 +888,19 @@ export interface components {
         };
         /** PlaybackOut */
         PlaybackOut: {
+            /** Default Audio */
+            default_audio?: string | null;
             /** Kind */
             kind: string;
             /** Resolution */
             resolution: number | null;
+            /**
+             * Skips
+             * @default []
+             */
+            skips: components["schemas"]["SkipOut"][];
+            /** Source */
+            source: string;
             /**
              * Subtitles
              * @default []
@@ -873,6 +908,33 @@ export interface components {
             subtitles: components["schemas"]["SubtitleOut"][];
             /** Url */
             url: string;
+        };
+        /** PlayerPreferencesIO */
+        PlayerPreferencesIO: {
+            /**
+             * Subtitle Background
+             * @default outline
+             * @enum {string}
+             */
+            subtitle_background: "none" | "outline" | "translucent" | "solid";
+            /**
+             * Subtitle Color
+             * @default white
+             * @enum {string}
+             */
+            subtitle_color: "white" | "yellow" | "cyan" | "green";
+            /**
+             * Subtitle Position
+             * @default bottom
+             * @enum {string}
+             */
+            subtitle_position: "bottom" | "raised" | "top";
+            /**
+             * Subtitle Size
+             * @default medium
+             * @enum {string}
+             */
+            subtitle_size: "small" | "medium" | "large" | "huge";
         };
         /** ProgressIn */
         ProgressIn: {
@@ -969,6 +1031,18 @@ export interface components {
             started_at: string;
             /** User Agent */
             user_agent: string | null;
+        };
+        /** SkipOut */
+        SkipOut: {
+            /** End */
+            end: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "intro" | "outro";
+            /** Start */
+            start: number;
         };
         /** SourcesOut */
         SourcesOut: {
@@ -1906,6 +1980,7 @@ export interface operations {
                 token?: string | null;
                 u?: string | null;
                 r?: string;
+                k?: string;
                 e?: number;
                 s?: string;
             };
@@ -1922,6 +1997,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_preferences_watch_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerPreferencesIO"];
+                };
+            };
+        };
+    };
+    put_preferences_watch_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayerPreferencesIO"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerPreferencesIO"];
                 };
             };
             /** @description Validation Error */

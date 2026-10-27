@@ -22,9 +22,13 @@ type Props = {
   progress: Progress[];
   /** Page shown first: the one holding the episode the primary button opens. */
   current?: number;
+  /** Episode number -> still image from the source (proxied, relative to the API). */
+  thumbnails?: Record<string, string>;
+  /** Title art shown on episodes the source has no image for. */
+  fallbackImage?: string;
 };
 
-export function EpisodeList({ source, animeId, episodes, progress, current }: Props) {
+export function EpisodeList({ source, animeId, episodes, progress, current, thumbnails, fallbackImage }: Props) {
   const t = useTranslations("titlePage");
   const [page, setPage] = useState(current === undefined ? 0 : pageOf(episodes, current));
   const pages = Math.ceil(episodes.length / PAGE_SIZE);
@@ -62,13 +66,24 @@ export function EpisodeList({ source, animeId, episodes, progress, current }: Pr
           const p = byEpisode.get(ep);
           const ratio = progressRatio(p);
           const pct = ratio === undefined ? undefined : Math.round(ratio * 100);
+          const still = thumbnails?.[ep];
+          const image = still ? `/api/proxy${still}` : fallbackImage;
           return (
             <li key={ep}>
               <Link href={`/watch/${source}/${animeId}/${ep}`} className="group block">
                 <div
                   className={`relative flex aspect-video items-center justify-center overflow-hidden rounded-ui border border-line transition-transform group-hover:scale-[1.03] group-focus-visible:scale-[1.03] ${gradientFor(animeId + ep)}`}
                 >
-                  <span aria-hidden="true" className="font-display text-xl font-bold text-fg/90">
+                  {image && (
+                    // eslint-disable-next-line @next/next/no-img-element -- stills come from the source or the catalog
+                    <img
+                      src={image}
+                      alt=""
+                      loading="lazy"
+                      className={`absolute inset-0 h-full w-full object-cover ${still ? "" : "scale-110 opacity-40 blur-[2px]"}`}
+                    />
+                  )}
+                  <span aria-hidden="true" className="relative font-display text-xl font-bold text-fg/90 drop-shadow">
                     {t("episodeShort", { episode: ep })}
                   </span>
                   {pct !== undefined && (

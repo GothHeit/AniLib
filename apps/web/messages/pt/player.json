@@ -30,7 +30,7 @@
     "autoNext": "Reproduzir o próximo episódio automaticamente",
     "finished": "Você chegou ao último episódio.",
     "retry": "Tentar de novo",
-    "shortcuts": "Espaço reproduz ou pausa, setas avançam e mudam o volume, F tela cheia, M silencia, N próximo episódio",
+    "shortcuts": "Espaço reproduz ou pausa, setas avançam e mudam o volume, F tela cheia, M silencia, N próximo episódio, S pula a abertura",
     "errors": {
       "not_available": "Este episódio não está disponível nesta fonte.",
       "source_not_found": "O streaming está desativado neste servidor.",
@@ -38,6 +38,44 @@
       "playback_failed": "O vídeo parou de carregar. Tente de novo.",
       "network": "Não foi possível conectar ao servidor.",
       "unknown": "Algo deu errado. Tente de novo."
+    },
+    "skipIntro": "Pular abertura",
+    "skipOutro": "Pular encerramento",
+    "fallbackSource": "tocando de {source}",
+    "settings": {
+      "title": "Configurações",
+      "quality": "Qualidade",
+      "auto": "Automática",
+      "height": "{height}p",
+      "audioTrack": "Faixa de áudio",
+      "subtitleStyle": "Estilo da legenda",
+      "size": "Tamanho",
+      "color": "Cor",
+      "background": "Fundo",
+      "position": "Posição",
+      "sizes": {
+        "small": "Pequeno",
+        "medium": "Médio",
+        "large": "Grande",
+        "huge": "Enorme"
+      },
+      "colors": {
+        "white": "Branco",
+        "yellow": "Amarelo",
+        "cyan": "Ciano",
+        "green": "Verde"
+      },
+      "backgrounds": {
+        "none": "Nenhum",
+        "outline": "Contorno",
+        "translucent": "Caixa translúcida",
+        "solid": "Caixa sólida"
+      },
+      "positions": {
+        "bottom": "Embaixo",
+        "raised": "Mais alto",
+        "top": "Em cima"
+      }
     }
   }
 }

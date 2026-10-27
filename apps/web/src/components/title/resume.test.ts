@@ -34,8 +34,13 @@ describe("nextUp", () => {
   });
 
   it("starts over after the last episode and has nothing without episodes", () => {
-    expect(nextUp([p(3, { completed: true })], [1, 2, 3])).toEqual({ episode: 1, resume: false });
+    expect(nextUp([p(3, { completed: true })], [1, 2, 3])).toEqual({ episode: 1, resume: false, rewatch: false });
     expect(nextUp([p(1)], [])).toBeNull();
+  });
+
+  it("offers a rewatch once every episode is watched", () => {
+    const all = [1, 2, 3].map((e) => p(e, { completed: true }));
+    expect(nextUp(all, [1, 2, 3])).toEqual({ episode: 1, resume: false, rewatch: true });
   });
 });
 

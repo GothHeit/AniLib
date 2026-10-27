@@ -9,8 +9,13 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 
 import { setAutoNext, useAutoNext } from "./autoNext";
+import { stageOf } from "./FullscreenStage";
 import { PlayerIcon } from "./icons";
 import { formatTime } from "./progress";
+import { SettingsMenu, type AudioTrack, type Quality } from "./SettingsMenu";
+import { activeSkip, type Skip } from "./skips";
+import { SubtitleOverlay } from "./SubtitleOverlay";
+import type { SubtitleStyle } from "./subtitleStyle";
 import { useProgressSaver } from "./useProgressSaver";
 
 export type Lang = "sub" | "dub";
@@ -27,6 +32,8 @@ type Props = {
   startAt: number;
   /** Saved subtitle choice: a language code, "off", or null for automatic. */
   subtitleLang: string | null;
+  /** Saved look of the subtitles. */
+  subtitleStyle: SubtitleStyle;
 };
 
 type Track = { lang: string; label: string; url: string };
@@ -38,10 +45,17 @@ const HIDE_CONTROLS_MS = 3000;
 export const NEXT_COUNTDOWN = 10;
 const ERRORS = ["not_available", "source_not_found", "upstream_failed", "playback_failed", "network"];
 
-/** The track to show: the saved language if this episode has it, else pt-BR, then English. */
+/** The audio track matching the source's default (by name or language), else the first. */
+export function pickAudio(tracks: { id: number; name: string; lang?: string }[], wanted: string | null): number {
+  const target = wanted?.toLowerCase();
+  const match = target && tracks.find((a) => a.name.toLowerCase() === target || a.lang?.toLowerCase() === target);
+  return match ? match.id : (tracks[0]?.id ?? -1);
+}
+
+/** The track to show: the saved language if this episode has it, else Portuguese, then English. */
 export function pickTrack(tracks: Track[], preference: string | null): number {
   if (preference === "off") return -1;
-  for (const wanted of [preference, "pt-BR", "en"]) {
+  for (const wanted of [preference, "pt-BR", "pt", "en"]) {
     const index = tracks.findIndex((t) => t.lang === wanted);
     if (wanted && index >= 0) return index;
   }
@@ -56,12 +70,16 @@ export function watchHref(source: string, animeId: number, episode: number, lang
   return `/watch/${source}/${animeId}/${episode}${qs ? `?${qs}` : ""}`;
 }
 
-export function Player({ source, animeId, episode, title, episodes, lang, startAt, subtitleLang }: Props) {
+export function Player(props: Props) {
+  const { source, animeId, episode, title, episodes, lang, startAt, subtitleLang } = props;
   const t = useTranslations("player");
   const router = useRouter();
   const toast = useToast();
+  // Full screen goes to the watch layout's stage around this, which outlives the episode,
+  // so it survives auto-next.
   const stage = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<import("hls.js").default | null>(null);
   const started = useRef(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -69,6 +87,16 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
   const [url, setUrl] = useState<string | null>(null);
   const [kind, setKind] = useState<string>("mp4");
   const [tracks, setTracks] = useState<Track[]>([]);
+  // The source that answered; another enabled one when the requested source failed.
+  const [answered, setAnswered] = useState(source);
+  const [skips, setSkips] = useState<Skip[]>([]);
+  const [defaultAudio, setDefaultAudio] = useState<string | null>(null);
+  const [qualities, setQualities] = useState<Quality[]>([]);
+  const [quality, setQuality] = useState(-1);
+  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
+  const [audioTrack, setAudioTrack] = useState(-1);
+  const [style, setStyle] = useState(props.subtitleStyle);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // null until the viewer picks one here; then it wins over the saved preference.
   const [chosen, setChosen] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +127,9 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
         if (cancelled) return;
         if (data) {
           setKind(data.kind);
+          setAnswered(data.source);
+          setSkips(data.skips ?? []);
+          setDefaultAudio(data.default_audio ?? null);
           setTracks(data.subtitles ?? []);
           setChosen(null);
           setUrl(`/api/proxy${data.url}`);
@@ -114,19 +145,6 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
   const [preference, setPreference] = useState(subtitleLang);
   const selected = chosen ?? pickTrack(tracks, preference);
 
-  // Only our own <track> elements are driven; hls.js may add text tracks of its own.
-  useEffect(() => {
-    const v = video.current;
-    if (!v) return;
-    const apply = () =>
-      v.querySelectorAll("track").forEach((el, i) => {
-        el.track.mode = i === selected ? "showing" : "disabled";
-      });
-    apply();
-    v.textTracks.addEventListener("addtrack", apply);
-    return () => v.textTracks.removeEventListener("addtrack", apply);
-  }, [selected, tracks]);
-
   function chooseTrack(index: number) {
     setChosen(index);
     const lang = index < 0 ? "off" : tracks[index].lang;
@@ -134,6 +152,22 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
     if (lang === "und") return;
     // Best effort: the choice only matters again on the next episode.
     void api.PATCH("/me", { body: { subtitle_lang: lang } }).catch(() => undefined);
+  }
+
+  function changeStyle(next: SubtitleStyle) {
+    setStyle(next);
+    // Best effort, like the subtitle language: the look still applies to this episode.
+    void api.PUT("/watch/preferences", { body: next }).catch(() => undefined);
+  }
+
+  function chooseQuality(index: number) {
+    setQuality(index);
+    if (hlsRef.current) hlsRef.current.currentLevel = index;
+  }
+
+  function chooseAudio(id: number) {
+    setAudioTrack(id);
+    if (hlsRef.current) hlsRef.current.audioTrack = id;
   }
 
   // hls.js wherever it works (one code path, so tracks behave the same); native HLS only
@@ -148,6 +182,22 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
       if (Hls.isSupported()) {
         let recovered = false;
         hls = new Hls();
+        hlsRef.current = hls;
+        hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
+          setQualities(
+            data.levels
+              .map((level, index) => ({ index, height: level.height }))
+              .filter((q) => q.height > 0)
+              .sort((a, b) => b.height - a.height),
+          );
+        });
+        hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_event, data) => {
+          const found = data.audioTracks.map((a) => ({ id: a.id, name: a.name, lang: a.lang }));
+          setAudioTracks(found.map((a) => ({ id: a.id, label: a.name || a.lang || String(a.id + 1) })));
+          const id = pickAudio(found, defaultAudio);
+          if (hls && id >= 0 && hls.audioTrack !== id) hls.audioTrack = id;
+          setAudioTrack(id);
+        });
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (!data.fatal) return;
           if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recovered) {
@@ -164,7 +214,13 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
     return () => {
       cancelled = true;
       hls?.destroy();
+      hlsRef.current = null;
+      setQualities([]);
+      setQuality(-1);
+      setAudioTracks([]);
     };
+    // defaultAudio arrives with the url, in the same response.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, kind]);
 
   const goNext = useCallback(() => {
@@ -190,7 +246,8 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
   useEffect(() => () => clearTimeout(hideTimer.current), []);
 
   useEffect(() => {
-    const onChange = () => setFullscreen(document.fullscreenElement === stage.current);
+    const onChange = () => setFullscreen(!!stage.current && document.fullscreenElement === stageOf(stage.current));
+    onChange();
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
@@ -223,8 +280,15 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
-    else void stage.current?.requestFullscreen().catch(() => undefined);
+    else void stageOf(stage.current)?.requestFullscreen().catch(() => undefined);
   }, []);
+
+  const skip = activeSkip(skips, current);
+  const skipNow = useCallback(() => {
+    const v = video.current;
+    const target = activeSkip(skips, v?.currentTime ?? 0);
+    if (v && target) v.currentTime = target.end;
+  }, [skips]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -265,6 +329,13 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
         case "n":
           goNext();
           break;
+        case "s":
+          skipNow();
+          break;
+        case "Escape":
+          if (!settingsOpen) return;
+          setSettingsOpen(false);
+          break;
         default:
           return;
       }
@@ -273,7 +344,7 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [togglePlay, seekBy, changeVolume, toggleFullscreen, toggleMute, goNext, poke]);
+  }, [togglePlay, seekBy, changeVolume, toggleFullscreen, toggleMute, goNext, skipNow, settingsOpen, poke]);
 
   async function switchLang(to: Lang) {
     if (to === lang) return;
@@ -316,7 +387,7 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
     if (next !== undefined && autoNext) setCountdown(NEXT_COUNTDOWN);
   }
 
-  const shown = active || !playing || ended || error !== null;
+  const shown = active || !playing || ended || settingsOpen || error !== null;
   const errorText = error && t(`errors.${ERRORS.includes(error) ? error : "unknown"}`);
   const iconButton = "flex h-10 w-10 items-center justify-center rounded-ui text-fg hover:bg-white/10";
 
@@ -370,6 +441,14 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
         ))}
       </video>
 
+      <SubtitleOverlay
+        video={video}
+        selected={selected}
+        tracksKey={tracks.map((track) => track.url).join()}
+        style={style}
+        controlsShown={shown && !error}
+      />
+
       {!error && waiting && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center" role="status">
           <span className="h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-accent" />
@@ -404,7 +483,10 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
           </Link>
           <div className="min-w-0">
             <p className="truncate font-display font-bold">{title}</p>
-            <p className="text-sm text-muted">{t("episode", { episode })}</p>
+            <p className="text-sm text-muted">
+              {t("episode", { episode })}
+              {answered !== source && <span className="ml-2">· {t("fallbackSource", { source: answered })}</span>}
+            </p>
           </div>
         </div>
 
@@ -509,6 +591,17 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
                   ))}
                 </select>
               </label>
+              {(qualities.length > 1 || audioTracks.length > 1 || tracks.length > 0) && (
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen((o) => !o)}
+                  aria-label={t("settings.title")}
+                  aria-expanded={settingsOpen}
+                  className={iconButton}
+                >
+                  <PlayerIcon name="settings" />
+                </button>
+              )}
               {next !== undefined && (
                 <button type="button" onClick={goNext} aria-label={t("next")} className={iconButton}>
                   <PlayerIcon name="next" />
@@ -527,6 +620,32 @@ export function Player({ source, animeId, episode, title, episodes, lang, startA
           </div>
         )}
       </div>
+
+      {settingsOpen && !error && (
+        <div className="absolute bottom-28 right-4 sm:right-8">
+          <SettingsMenu
+            qualities={qualities}
+            quality={quality}
+            onQuality={chooseQuality}
+            audioTracks={audioTracks}
+            audioTrack={audioTrack}
+            onAudioTrack={chooseAudio}
+            style={style}
+            onStyle={changeStyle}
+            hasSubtitles={tracks.length > 0}
+          />
+        </div>
+      )}
+
+      {skip && !error && !ended && !settingsOpen && (
+        <button
+          type="button"
+          onClick={skipNow}
+          className="absolute bottom-28 right-4 rounded-ui border border-white/40 bg-black/70 px-5 py-2.5 text-sm font-bold text-fg hover:bg-black/90 sm:right-8"
+        >
+          {t(skip.kind === "intro" ? "skipIntro" : "skipOutro")}
+        </button>
+      )}
 
       {ended && !error && (
         <div className="absolute bottom-28 right-4 w-[min(22rem,calc(100%-2rem))] rounded-ui border border-line bg-surface p-4 shadow-lg sm:right-8">

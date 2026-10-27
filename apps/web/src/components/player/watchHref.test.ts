@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/i18n/navigation", () => ({ Link: () => null, useRouter: () => ({}) }));
 vi.mock("@/lib/api", () => ({ api: {} }));
 
-const { pickTrack, watchHref } = await import("./Player");
+const { pickAudio, pickTrack, watchHref } = await import("./Player");
 
 describe("watchHref", () => {
   it("keeps sub and the start out of the URL unless needed", () => {
@@ -32,5 +32,24 @@ describe("pickTrack", () => {
 
   it("turns subtitles off", () => {
     expect(pickTrack(tracks, "off")).toBe(-1);
+  });
+
+  it("prefers Portugal's Portuguese over English when there is no pt-BR", () => {
+    expect(pickTrack([tracks[0], { lang: "pt", label: "Portuguese (Portugal)", url: "d" }], null)).toBe(1);
+  });
+});
+
+describe("pickAudio", () => {
+  const audio = [
+    { id: 0, name: "English", lang: "en" },
+    { id: 1, name: "Japanese", lang: "ja" },
+  ];
+
+  it("matches the source's default by name or language, else takes the first", () => {
+    expect(pickAudio(audio, "japanese")).toBe(1);
+    expect(pickAudio(audio, "ja")).toBe(1);
+    expect(pickAudio(audio, "fr")).toBe(0);
+    expect(pickAudio(audio, null)).toBe(0);
+    expect(pickAudio([], "ja")).toBe(-1);
   });
 });

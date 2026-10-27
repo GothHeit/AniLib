@@ -11,6 +11,7 @@
     "trackingOnlyHint": "This title isn't available to watch here. You can still track it in your list.",
     "play": "Play episode {episode}",
     "continue": "Continue episode {episode}",
+    "rewatch": "Rewatch",
     "episodeList": "Episodes",
     "episode": "Episode {episode}",
     "episodeShort": "EP {episode}",

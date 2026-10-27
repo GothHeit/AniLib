@@ -4,7 +4,7 @@ The rest of the app (player, progress, UI) only talks to a VideoSource. Today th
 implementation is the private AllAnime scraper; a licensed catalog would be another one.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
 Lang = Literal["sub", "dub"]
@@ -14,6 +14,8 @@ Lang = Literal["sub", "dub"]
 class EpisodeList:
     episodes: list[int]
     source_title: str
+    # Episode number -> still image, for the episodes the source has art for.
+    thumbnails: dict[int, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -25,6 +27,15 @@ class Subtitle:
 
 
 @dataclass(frozen=True)
+class Skip:
+    """A stretch the viewer may want to jump over, in seconds from the start."""
+
+    kind: Literal["intro", "outro"]
+    start: float
+    end: float
+
+
+@dataclass(frozen=True)
 class Stream:
     url: str
     kind: Literal["mp4", "hls"]
@@ -32,6 +43,9 @@ class Stream:
     # Headers the upstream host needs, e.g. a Referer for hotlink protection.
     upstream_headers: dict[str, str]
     subtitles: tuple[Subtitle, ...] = ()
+    skips: tuple[Skip, ...] = ()
+    # Name or language of the audio track to start with, when the stream has several.
+    default_audio: str | None = None
 
 
 class VideoSource(Protocol):

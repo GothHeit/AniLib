@@ -23,26 +23,76 @@ def public_dns(monkeypatch):
         return ["93.184.216.34"]
 
     monkeypatch.setattr(hls, "resolve_host", resolve)
+    hls._public_hosts.clear()
+
+
+VIEWER = "4b1d6a0e-1111-4c2b-9a8e-000000000001"
 
 
 def test_rewrite_resolves_relative_urls_and_signs_them():
-    out = hls.rewrite_playlist(MEDIA, MASTER, "https://ref.example/")
+    out = hls.rewrite_playlist(MEDIA, MASTER, "https://ref.example/", VIEWER)
     lines = out.splitlines()
     assert lines[2].startswith("hls?u=https%3A%2F%2Fhost.example%2Fp%2F1080%2Findex.m3u8")
     assert 'URI="hls?u=https%3A%2F%2Fhost.example%2Fp%2Faudio%2Fa.m3u8' in lines[3]
 
 
-def test_verify_rejects_tampering_and_expiry():
-    link = hls.signed_link("https://a.example/x", "https://r/")
+def test_verify_rejects_tampering_expiry_and_other_viewers():
+    link = hls.signed_link("https://a.example/x", "https://r/", VIEWER, "sub")
     q = dict(p.split("=") for p in link.split("?")[1].split("&"))
     expires = int(q["e"])
-    assert hls.verify_link("https://a.example/x", "https://r/", expires, q["s"])
-    assert not hls.verify_link("https://evil.example/x", "https://r/", expires, q["s"])
-    assert not hls.verify_link("https://a.example/x", "https://other/", expires, q["s"])
-    old = int(time.time()) - 1
+    assert q["k"] == "sub"
+    assert hls.verify_link("https://a.example/x", "https://r/", "sub", VIEWER, expires, q["s"])
     assert not hls.verify_link(
-        "https://a.example/x", "https://r/", old, hls._mac("https://a.example/x", "https://r/", old)
+        "https://evil.example/x", "https://r/", "sub", VIEWER, expires, q["s"]
     )
+    assert not hls.verify_link(
+        "https://a.example/x", "https://other/", "sub", VIEWER, expires, q["s"]
+    )
+    assert not hls.verify_link("https://a.example/x", "https://r/", "", VIEWER, expires, q["s"])
+    assert not hls.verify_link(
+        "https://a.example/x", "https://r/", "sub", "someone", expires, q["s"]
+    )
+    assert expires <= time.time() + hls.SEGMENT_LIFETIME
+    old = int(time.time()) - 1
+    mac = hls._mac("https://a.example/x", "https://r/", "", VIEWER, old)
+    assert not hls.verify_link("https://a.example/x", "https://r/", "", VIEWER, old, mac)
+
+
+def test_data_uris_are_left_alone():
+    text = '#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI="data:text/plain;base64,AAAA"\nseg.ts\n'
+    out = hls.rewrite_playlist(text, MASTER, "", VIEWER)
+    assert 'URI="data:text/plain;base64,AAAA"' in out
+    assert out.splitlines()[2].startswith("hls?u=")
+
+
+@pytest.mark.parametrize(
+    ("url", "kind", "upstream", "expected"),
+    [
+        ("https://h/s.ts.jpg", "", "image/jpeg", "video/mp2t"),
+        ("https://h/s.m4s", "", "", "video/mp4"),
+        ("https://h/a.aac", "", "audio/aac", "audio/aac"),
+        ("https://h/subs/x", "sub", "application/octet-stream", "text/vtt"),
+        ("https://h/x.vtt?t=1", "", "", "text/vtt"),
+        ("https://h/p.jpg", "img", "image/webp", "image/webp"),
+        ("https://h/p", "img", "text/html", "image/jpeg"),
+        ("https://h/p.svg", "img", "image/svg+xml", "image/jpeg"),
+    ],
+)
+def test_media_type(url, kind, upstream, expected):
+    assert hls.media_type(url, kind, upstream) == expected
+
+
+async def test_dns_verdicts_are_cached(monkeypatch):
+    calls = []
+
+    async def resolve(host):
+        calls.append(host)
+        return ["93.184.216.34"]
+
+    monkeypatch.setattr(hls, "resolve_host", resolve)
+    assert await hls.is_public_target("https://seg.example/1.ts")
+    assert await hls.is_public_target("https://seg.example/2.ts")
+    assert calls == ["seg.example"]
 
 
 class HlsSource:
@@ -102,7 +152,7 @@ async def test_hls_playback_falls_back_and_proxies_with_referer(client, session)
     vtt = respx.get("https://subs.example/pt.vtt").mock(
         return_value=httpx.Response(200, text="WEBVTT\n\n", headers={"content-type": "text/vtt"})
     )
-    subs = await client.get(track["url"])
+    subs = await client.get(track["url"], headers=headers)
     assert subs.text.startswith("WEBVTT")
     assert subs.headers["content-type"].startswith("text/vtt")
     assert vtt.calls.last.request.headers["referer"] == "https://ref.example/"
@@ -123,12 +173,19 @@ async def test_hls_playback_falls_back_and_proxies_with_referer(client, session)
             200, text="#EXTM3U\n#EXTINF:5,\nhttps://seg.example/s0.ts.jpg\n"
         )
     )
-    v = await client.get(f"/watch/{variant}")
+    v = await client.get(f"/watch/{variant}", headers=headers)
     segment_link = v.text.splitlines()[-1]
-    s = await client.get(f"/watch/{segment_link}")
+    s = await client.get(f"/watch/{segment_link}", headers=headers)
     assert s.content == b"\x47data"
     assert s.headers["content-type"].startswith("video/mp2t")
     assert seg.calls.last.request.headers["referer"] == "https://ref.example/"
+    assert play.json()["source"] == "ok"
+
+    # Links are bound to the viewer: no token, or someone else's, gets nothing.
+    assert (await client.get(f"/watch/{segment_link}")).status_code == 401
+    _, other = await make_user(session, "friend")
+    assert (await client.get(f"/watch/{segment_link}", headers=other)).status_code == 403
+    assert s.headers["x-content-type-options"] == "nosniff"
 
 
 async def test_hls_proxy_refuses_unsigned_urls(client, session):
@@ -139,6 +196,13 @@ async def test_hls_proxy_refuses_unsigned_urls(client, session):
         params={"u": "http://169.254.169.254/", "r": "", "e": 9999999999, "s": "0" * 32},
     )
     assert r.status_code == 401
+    # Signed-in but with a forged signature: refused without asking for a new session.
+    r = await client.get(
+        "/watch/hls",
+        params={"u": "http://169.254.169.254/", "r": "", "e": 9999999999, "s": "0" * 32},
+        headers=headers,
+    )
+    assert r.status_code == 403
 
 
 @respx.mock
@@ -167,7 +231,7 @@ async def test_all_sources_failing_is_a_clean_error_not_a_crash(client, session)
 )
 def test_internal_and_odd_urls_are_never_signed(url):
     assert not hls.looks_public(url)
-    out = hls.rewrite_playlist(f"#EXTM3U\n#EXTINF:5,\n{url}\n", MASTER, "https://r/")
+    out = hls.rewrite_playlist(f"#EXTM3U\n#EXTINF:5,\n{url}\n", MASTER, "https://r/", VIEWER)
     assert "hls?u=" not in out
 
 
@@ -184,22 +248,25 @@ async def test_names_resolving_to_private_addresses_are_refused(monkeypatch):
     assert not await hls.is_public_target("https://rebind.example/x")
 
 
-def signed(url: str) -> str:
-    return "/watch/" + hls.signed_link(url, "https://ref.example/")
+def signed(url: str, viewer: str) -> str:
+    return "/watch/" + hls.signed_link(url, "https://ref.example/", viewer)
 
 
 @respx.mock
 async def test_proxy_refuses_signed_internal_urls_and_internal_redirects(client, session):
     fastapi_app.state.sources = {"ok": HlsSource()}
+    user, headers = await make_user(session, "kafka")
     internal = respx.get("http://127.0.0.1:8000/secret").mock(return_value=httpx.Response(200))
 
-    direct = await client.get(signed("http://127.0.0.1:8000/secret"))
+    direct = await client.get(signed("http://127.0.0.1:8000/secret", str(user.id)), headers=headers)
     assert direct.status_code == 502
 
     respx.get("https://host.example/redir.ts").mock(
         return_value=httpx.Response(302, headers={"location": "http://127.0.0.1:8000/secret"})
     )
-    redirected = await client.get(signed("https://host.example/redir.ts"))
+    redirected = await client.get(
+        signed("https://host.example/redir.ts", str(user.id)), headers=headers
+    )
     assert redirected.status_code == 502
     assert not internal.called
 
@@ -207,24 +274,30 @@ async def test_proxy_refuses_signed_internal_urls_and_internal_redirects(client,
 @respx.mock
 async def test_proxy_follows_public_redirects_but_not_forever(client, session):
     fastapi_app.state.sources = {"ok": HlsSource()}
+    user, headers = await make_user(session, "kafka")
     respx.get("https://host.example/a.ts").mock(
         return_value=httpx.Response(302, headers={"location": "https://cdn.example/a.ts"})
     )
     respx.get("https://cdn.example/a.ts").mock(return_value=httpx.Response(200, content=b"seg"))
-    assert (await client.get(signed("https://host.example/a.ts"))).content == b"seg"
+    assert (
+        await client.get(signed("https://host.example/a.ts", str(user.id)), headers=headers)
+    ).content == b"seg"
 
     respx.get("https://host.example/loop.ts").mock(
         return_value=httpx.Response(302, headers={"location": "https://host.example/loop.ts"})
     )
-    assert (await client.get(signed("https://host.example/loop.ts"))).status_code == 502
+    assert (
+        await client.get(signed("https://host.example/loop.ts", str(user.id)), headers=headers)
+    ).status_code == 502
 
 
 @respx.mock
 async def test_oversized_playlists_are_cut_off(client, session):
     fastapi_app.state.sources = {"ok": HlsSource()}
+    user, headers = await make_user(session, "kafka")
     big = "#EXTM3U\n" + "#EXTINF:1,\nhttps://seg.example/s.ts\n" * 80_000
     respx.get("https://host.example/big.m3u8").mock(return_value=httpx.Response(200, text=big))
     assert len(big) > hls.MAX_PLAYLIST_BYTES
-    r = await client.get(signed("https://host.example/big.m3u8"))
+    r = await client.get(signed("https://host.example/big.m3u8", str(user.id)), headers=headers)
     assert r.status_code == 502
     assert r.json()["error"]["code"] == "upstream_failed"

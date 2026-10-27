@@ -464,6 +464,14 @@
           "source_title": {
             "title": "Source Title",
             "type": "string"
+          },
+          "thumbnails": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Thumbnails",
+            "type": "object"
           }
         },
         "required": [
@@ -1151,6 +1159,17 @@
       },
       "PlaybackOut": {
         "properties": {
+          "default_audio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Audio"
+          },
           "kind": {
             "title": "Kind",
             "type": "string"
@@ -1166,6 +1185,18 @@
             ],
             "title": "Resolution"
           },
+          "skips": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/SkipOut"
+            },
+            "title": "Skips",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
           "subtitles": {
             "default": [],
             "items": {
@@ -1180,11 +1211,61 @@
           }
         },
         "required": [
+          "source",
           "kind",
           "resolution",
           "url"
         ],
         "title": "PlaybackOut",
+        "type": "object"
+      },
+      "PlayerPreferencesIO": {
+        "properties": {
+          "subtitle_background": {
+            "default": "outline",
+            "enum": [
+              "none",
+              "outline",
+              "translucent",
+              "solid"
+            ],
+            "title": "Subtitle Background",
+            "type": "string"
+          },
+          "subtitle_color": {
+            "default": "white",
+            "enum": [
+              "white",
+              "yellow",
+              "cyan",
+              "green"
+            ],
+            "title": "Subtitle Color",
+            "type": "string"
+          },
+          "subtitle_position": {
+            "default": "bottom",
+            "enum": [
+              "bottom",
+              "raised",
+              "top"
+            ],
+            "title": "Subtitle Position",
+            "type": "string"
+          },
+          "subtitle_size": {
+            "default": "medium",
+            "enum": [
+              "small",
+              "medium",
+              "large",
+              "huge"
+            ],
+            "title": "Subtitle Size",
+            "type": "string"
+          }
+        },
+        "title": "PlayerPreferencesIO",
         "type": "object"
       },
       "ProgressIn": {
@@ -1438,6 +1519,33 @@
           "current"
         ],
         "title": "SessionOut",
+        "type": "object"
+      },
+      "SkipOut": {
+        "properties": {
+          "end": {
+            "title": "End",
+            "type": "number"
+          },
+          "kind": {
+            "enum": [
+              "intro",
+              "outro"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "start": {
+            "title": "Start",
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "start",
+          "end"
+        ],
+        "title": "SkipOut",
         "type": "object"
       },
       "SourcesOut": {
@@ -2906,7 +3014,7 @@
     },
     "/watch/hls": {
       "get": {
-        "description": "Without `u`, the master playlist of the episode the token is for. With `u`, one\nplaylist, segment or subtitle that an earlier response linked to (signed).",
+        "description": "Without `u`, the master playlist of the episode the token is for. With `u`, one\nplaylist, segment, subtitle or image that an earlier response linked to (signed for the\nsigned-in viewer, who must send their bearer token, as the web app's proxy does).",
         "operationId": "hls_proxy_watch_hls_get",
         "parameters": [
           {
@@ -2953,6 +3061,16 @@
           },
           {
             "in": "query",
+            "name": "k",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "K",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
             "name": "e",
             "required": false,
             "schema": {
@@ -2992,7 +3110,82 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Hls Proxy",
+        "tags": [
+          "watch"
+        ]
+      }
+    },
+    "/watch/preferences": {
+      "get": {
+        "operationId": "get_preferences_watch_preferences_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerPreferencesIO"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Preferences",
+        "tags": [
+          "watch"
+        ]
+      },
+      "put": {
+        "operationId": "put_preferences_watch_preferences_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayerPreferencesIO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerPreferencesIO"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Preferences",
         "tags": [
           "watch"
         ]

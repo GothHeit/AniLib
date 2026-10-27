@@ -5,6 +5,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { Player, type Lang } from "@/components/player/Player";
 import { resumePosition } from "@/components/player/progress";
+import { DEFAULT_STYLE } from "@/components/player/subtitleStyle";
 import { APP_NAME } from "@/lib/brand";
 import { serverApi, unwrap } from "@/lib/server-api";
 
@@ -36,7 +37,7 @@ export default async function WatchPage({ params, searchParams }: Params) {
   const lang: Lang = query.lang === "dub" ? "dub" : "sub";
   const api = await serverApi();
 
-  const [anime, me, progressResult, episodesResult] = await Promise.all([
+  const [anime, me, progressResult, episodesResult, preferences] = await Promise.all([
     unwrap(details(animeId), locale),
     unwrap(api.GET("/me"), locale),
     api.GET("/me/progress/{anime_id}", { params: { path: { anime_id: animeId } } }),
@@ -46,6 +47,8 @@ export default async function WatchPage({ params, searchParams }: Params) {
         params: { path: { source, anime_id: animeId }, query: { lang } },
       })
       .catch(() => undefined),
+    // Defaults are fine when this fails; the subtitles still show.
+    api.GET("/watch/preferences").catch(() => undefined),
   ]);
 
   const t = Number(typeof query.t === "string" ? query.t : NaN);
@@ -64,6 +67,7 @@ export default async function WatchPage({ params, searchParams }: Params) {
       lang={lang}
       startAt={startAt}
       subtitleLang={me.subtitle_lang}
+      subtitleStyle={preferences?.data ?? DEFAULT_STYLE}
     />
   );
 }

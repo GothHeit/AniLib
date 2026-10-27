@@ -4,7 +4,8 @@ import json
 import httpx
 import respx
 
-from app.sources.zoko import EMBED, KEY, ZokoSource, decode_blob, parse_subtitles
+from app.sources.base import Skip
+from app.sources.zoko import EMBED, KEY, ZokoSource, decode_blob, parse_skips, parse_subtitles
 
 
 def blob(data: dict) -> str:
@@ -98,3 +99,72 @@ def test_subtitles_are_labelled_by_language_not_by_the_embed_lang_field():
         ("und", "Klingon"),
     ]
     assert parse_subtitles(None) == ()
+
+
+def test_long_labels_use_their_first_word_and_brazil_marks_pt_br():
+    tracks = parse_subtitles(
+        [
+            {"label": "Portuguese (Portuguese - Brazilian [Full])", "src": "https://h/1.vtt"},
+            {"label": "Portuguese (Portuguese - [Full])", "src": "https://h/2.vtt"},
+            {"label": "Spanish (- Castilian [Full])", "src": "https://h/3.vtt"},
+            {"label": "Japanese (Japanese - [SDH])", "src": "https://h/4.vtt"},
+        ]
+    )
+    assert [t.lang for t in tracks] == ["pt-BR", "pt", "es", "ja"]
+
+
+def test_skips_come_from_skip_times_then_chapters():
+    skips = parse_skips(
+        {"intro": {"start": 31, "end": 111}, "outro": {"start": 5, "end": 2}},
+        [
+            {"title": "Opening", "start": 0, "end": 90},
+            {"title": "Ending", "start": 1300, "end": 1390},
+            {"title": "Part A", "start": 90, "end": 600},
+        ],
+    )
+    assert skips == (Skip("intro", 31, 111), Skip("outro", 1300, 1390))
+    assert parse_skips(None, []) == ()
+    assert parse_skips({"intro": {"start": "x"}}, "junk") == ()
+
+
+@respx.mock
+async def test_stream_carries_skips_audio_and_feeds_thumbnails():
+    config = {
+        "src": "https://hls.example/1.m3u8",
+        "skip": {"intro": {"start": 10, "end": 95}},
+        "default_audio": "Japanese",
+        "poster": "https://img.example/1.jpg",
+    }
+    respx.get(url__regex=rf"{EMBED}/stream/mal/9253/\d+/sub").mock(
+        side_effect=lambda r: page(config if r.url.path.split("/")[-2] == "1" else None)
+    )
+    respx.get("https://hls.example/1.m3u8").mock(return_value=httpx.Response(200, text="#EXTM3U"))
+    source = ZokoSource()
+    stream = await source.stream({**ANIME, "num_episodes": 1}, 1, "sub")
+    assert stream is not None
+    assert stream.skips == (Skip("intro", 10, 95),)
+    assert stream.default_audio == "Japanese"
+    episodes = await source.episodes({**ANIME, "num_episodes": 1}, "sub")
+    assert episodes is not None
+    assert episodes.thumbnails == {1: "https://img.example/1.jpg"}
+
+
+@respx.mock
+async def test_probing_caches_pages_misses_included():
+    route = respx.get(url__regex=rf"{EMBED}/stream/mal/9253/\d+/sub")
+    route.mock(side_effect=lambda r: page(None))
+    source = ZokoSource()
+    assert await source.stream(ANIME, 3, "sub") is None
+    assert await source.stream(ANIME, 3, "sub") is None
+    assert route.call_count == 1
+
+
+@respx.mock
+async def test_unknown_length_takes_few_rounds():
+    mock_episodes(1500)
+    source = ZokoSource()
+    result = await source.episodes({**ANIME, "num_episodes": 0}, "sub")
+    assert result is not None
+    assert result.episodes[-1] == 1500
+    # Every page is fetched at most once; the search stays far below one call per episode.
+    assert len(source._configs) < 60

@@ -93,3 +93,60 @@ test("seeks through the proxy with range requests", async ({ page }) => {
   expect(res.headers()["content-range"]).toMatch(/^bytes 100-199\/\d+$/);
   expect((await res.body()).length).toBe(100);
 });
+
+test("draws subtitles in the saved style and remembers a new one", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/en/watch/stub/4/1");
+  // An earlier test may have saved "Off".
+  await page.getByRole("combobox", { name: "Subtitles" }).selectOption({ label: "Portuguese" });
+  const subtitles = page.getByTestId("subtitles");
+  await expect(subtitles).toHaveText("Hello moon");
+  await expect(subtitles.locator("span")).toHaveCSS("color", "rgb(255, 255, 255)");
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("combobox", { name: "Color" }).selectOption({ label: "Yellow" });
+  await expect(subtitles.locator("span")).toHaveCSS("color", "rgb(255, 233, 77)");
+  await page.reload();
+  await expect(page.getByTestId("subtitles").locator("span")).toHaveCSS("color", "rgb(255, 233, 77)");
+
+  // Put it back for the other tests.
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("combobox", { name: "Color" }).selectOption({ label: "White" });
+  await expect(page.getByTestId("subtitles").locator("span")).toHaveCSS("color", "rgb(255, 255, 255)");
+});
+
+test("skips the intro when the source knows where it is", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/en/watch/stub/4/3");
+  const skip = page.getByRole("button", { name: "Skip intro" });
+  await expect(skip).toBeVisible({ timeout: 10_000 });
+  await skip.click();
+  await expect.poll(() => currentTime(page)).toBeGreaterThanOrEqual(25);
+  await expect(skip).toHaveCount(0);
+
+  // Episode 2 has no skip data, so no button at any point.
+  await page.goto("/en/watch/stub/4/2?t=3");
+  await expect.poll(() => currentTime(page)).toBeGreaterThan(4);
+  await expect(page.getByRole("button", { name: "Skip intro" })).toHaveCount(0);
+});
+
+test("says which source answered after a fallback", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/en/watch/flaky/4/1");
+  await expect(page.getByText("playing from stub")).toBeVisible();
+});
+
+test("stays in full screen when the next episode starts", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/en/watch/stub/4/1");
+  await expect.poll(() => video(page).evaluate((v: HTMLVideoElement) => v.duration)).toBeGreaterThan(30);
+  await page.keyboard.press("f");
+  const inFullscreen = () => page.evaluate(() => document.fullscreenElement?.hasAttribute("data-fullscreen-stage") ?? false);
+  await expect.poll(inFullscreen).toBe(true);
+
+  await page.keyboard.press("n");
+  await expect(page).toHaveURL(/\/en\/watch\/stub\/4\/2$/);
+  await expect(page.getByText("Episode 2", { exact: true })).toBeVisible();
+  await expect.poll(inFullscreen).toBe(true);
+  await expect(page.getByRole("button", { name: "Exit full screen" })).toBeVisible();
+});

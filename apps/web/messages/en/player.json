@@ -30,7 +30,7 @@
     "autoNext": "Autoplay next episode",
     "finished": "You've reached the last episode.",
     "retry": "Try again",
-    "shortcuts": "Space play or pause, arrows seek and volume, F full screen, M mute, N next episode",
+    "shortcuts": "Space play or pause, arrows seek and volume, F full screen, M mute, N next episode, S skip intro",
     "errors": {
       "not_available": "This episode isn't available from this source.",
       "source_not_found": "Streaming is turned off on this server.",
@@ -38,6 +38,44 @@
       "playback_failed": "The video stopped loading. Try again.",
       "network": "Couldn't reach the server.",
       "unknown": "Something went wrong. Try again."
+    },
+    "skipIntro": "Skip intro",
+    "skipOutro": "Skip credits",
+    "fallbackSource": "playing from {source}",
+    "settings": {
+      "title": "Settings",
+      "quality": "Quality",
+      "auto": "Auto",
+      "height": "{height}p",
+      "audioTrack": "Audio track",
+      "subtitleStyle": "Subtitle style",
+      "size": "Size",
+      "color": "Color",
+      "background": "Background",
+      "position": "Position",
+      "sizes": {
+        "small": "Small",
+        "medium": "Medium",
+        "large": "Large",
+        "huge": "Huge"
+      },
+      "colors": {
+        "white": "White",
+        "yellow": "Yellow",
+        "cyan": "Cyan",
+        "green": "Green"
+      },
+      "backgrounds": {
+        "none": "None",
+        "outline": "Outline",
+        "translucent": "Translucent box",
+        "solid": "Solid box"
+      },
+      "positions": {
+        "bottom": "Bottom",
+        "raised": "Raised",
+        "top": "Top"
+      }
     }
   }
 }

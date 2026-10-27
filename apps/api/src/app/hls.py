@@ -3,6 +3,7 @@
 Source hosts want a Referer a browser can't send, and spread segments over other hosts, so
 every playlist is rewritten to point back at /watch/hls. Each rewritten URL is signed, so
 the proxy only fetches URLs that came out of a playlist it already served (no open relay).
+Signatures are bound to the viewer, so a copied link is useless to anyone else.
 """
 
 import asyncio
@@ -14,13 +15,24 @@ import socket
 import time
 from urllib.parse import quote, urljoin, urlsplit
 
+from cachetools import TTLCache
+
 from app.config import get_settings
 
 URI_ATTR = re.compile(r'URI="([^"]*)"')
-SEGMENT_LIFETIME = 6 * 3600
+# Long enough for a film watched with a few pauses; a stale link only needs a retry.
+SEGMENT_LIFETIME = 4 * 3600
+# How long a host's DNS verdict is trusted. Segments come from a handful of hosts.
+DNS_TTL = 300
 MAX_PLAYLIST_BYTES = 2 * 1024 * 1024
 MAX_REDIRECTS = 3
 INTERNAL_SUFFIXES = (".localhost", ".local", ".internal", ".lan", ".home", ".corp")
+# What a signed link points at, when the proxy can't tell from the upstream answer:
+# "" a playlist or segment, "sub" WebVTT subtitles, "img" a still image.
+KINDS = ("", "sub", "img")
+SAFE_IMAGES = ("image/jpeg", "image/png", "image/webp", "image/gif", "image/avif")
+
+_public_hosts: TTLCache[str, bool] = TTLCache(maxsize=1024, ttl=DNS_TTL)
 
 
 def _public_ip(value: str) -> bool:
@@ -63,42 +75,73 @@ async def is_public_target(url: str) -> bool:
         return True
     except ValueError:
         pass
+    if host in _public_hosts:
+        return _public_hosts[host]
     try:
         addresses = await resolve_host(host)
     except OSError:
+        # Not cached: a lookup that failed may work on the next segment.
         return False
-    return bool(addresses) and all(_public_ip(a) for a in addresses)
+    verdict = bool(addresses) and all(_public_ip(a) for a in addresses)
+    _public_hosts[host] = verdict
+    return verdict
 
 
-def _mac(url: str, referer: str, expires: int) -> str:
+def _mac(url: str, referer: str, kind: str, viewer: str, expires: int) -> str:
     key = get_settings().jwt_secret.encode()
-    msg = f"hls\n{url}\n{referer}\n{expires}".encode()
+    msg = f"hls\n{url}\n{referer}\n{kind}\n{viewer}\n{expires}".encode()
     return hmac.new(key, msg, hashlib.sha256).hexdigest()[:32]
 
 
-def signed_link(url: str, referer: str) -> str:
+def signed_link(url: str, referer: str, viewer: str, kind: str = "") -> str:
+    """`viewer` is the user id the link is for; the proxy only serves it to that user."""
     # Relative to /watch/hls on purpose: it resolves under whatever prefix the client
     # reaches the API through (the web app proxies it under /api/proxy).
     expires = int(time.time()) + SEGMENT_LIFETIME
+    kind_param = f"&k={kind}" if kind else ""
     return (
-        f"hls?u={quote(url, safe='')}&r={quote(referer, safe='')}"
-        f"&e={expires}&s={_mac(url, referer, expires)}"
+        f"hls?u={quote(url, safe='')}&r={quote(referer, safe='')}{kind_param}"
+        f"&e={expires}&s={_mac(url, referer, kind, viewer, expires)}"
     )
 
 
-def verify_link(url: str, referer: str, expires: int, sig: str) -> bool:
-    return expires > time.time() and hmac.compare_digest(sig, _mac(url, referer, expires))
+def verify_link(url: str, referer: str, kind: str, viewer: str, expires: int, sig: str) -> bool:
+    return (
+        kind in KINDS
+        and expires > time.time()
+        and hmac.compare_digest(sig, _mac(url, referer, kind, viewer, expires))
+    )
 
 
 def is_playlist(url: str, content_type: str) -> bool:
     return "mpegurl" in content_type.lower() or url.split("?")[0].lower().endswith(".m3u8")
 
 
-def rewrite_playlist(text: str, base_url: str, referer: str) -> str:
+def media_type(url: str, kind: str, upstream_type: str) -> str:
+    """The type to serve a non-playlist with. Hosts often disguise segments as images, so
+    their own type is only trusted when it already says video or audio."""
+    path = url.split("?")[0].lower()
+    upstream_type = upstream_type.split(";")[0].strip().lower()
+    if kind == "sub" or path.endswith(".vtt") or upstream_type == "text/vtt":
+        return "text/vtt"
+    if kind == "img":
+        # Raster formats only: an SVG served from our origin could run script.
+        return upstream_type if upstream_type in SAFE_IMAGES else "image/jpeg"
+    if upstream_type.startswith(("video/", "audio/")):
+        return upstream_type
+    if path.endswith((".m4s", ".mp4")):
+        return "video/mp4"
+    return "video/mp2t"
+
+
+def rewrite_playlist(text: str, base_url: str, referer: str, viewer: str) -> str:
     def link(target: str) -> str:
+        # Inline data (keys, init sections) needs no fetching and must reach the player as is.
+        if target.startswith("data:"):
+            return target
         absolute = urljoin(base_url, target)
         # Refused URLs are blanked, so the player just fails to load that part.
-        return signed_link(absolute, referer) if looks_public(absolute) else ""
+        return signed_link(absolute, referer, viewer) if looks_public(absolute) else ""
 
     lines = []
     for line in text.splitlines():

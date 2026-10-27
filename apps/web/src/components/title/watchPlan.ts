@@ -8,6 +8,8 @@ export type WatchPlan = {
   source: string;
   episodes: number[];
   progress: Progress[];
+  /** Episode number -> still image from the source (proxied, relative to the API). */
+  thumbnails: Record<string, string>;
   next: NextUp;
   href: string;
 };
@@ -36,5 +38,6 @@ export const watchPlan = cache(async (id: number): Promise<WatchPlan | null> => 
   const progress = progressResult?.data ?? [];
   const next = nextUp(progress, episodes);
   if (!next) return null;
-  return { source, episodes, progress, next, href: `/watch/${source}/${id}/${next.episode}` };
+  const thumbnails = episodesResult?.data?.thumbnails ?? {};
+  return { source, episodes, progress, thumbnails, next, href: `/watch/${source}/${id}/${next.episode}` };
 });

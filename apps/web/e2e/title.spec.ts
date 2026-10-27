@@ -65,3 +65,9 @@ test("speaks Portuguese", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Continuar episódio 2" })).toBeVisible();
   await expect(page.getByText("Outono 2026")).toBeVisible();
 });
+
+test("offers a rewatch once every episode is watched", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/en/anime/6");
+  await expect(page.getByRole("link", { name: "Rewatch" })).toHaveAttribute("href", "/en/watch/stub/6/1");
+});

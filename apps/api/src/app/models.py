@@ -94,3 +94,17 @@ class WatchProgress(Base):
     duration_seconds: Mapped[float | None] = mapped_column(Float)
     completed: Mapped[bool] = mapped_column(default=False)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)
+
+
+class PlayerPreferences(Base):
+    """How a user likes the player. One row per user, created on first save."""
+
+    __tablename__ = "player_preferences"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    subtitle_size: Mapped[str] = mapped_column(String(16), default="medium")
+    subtitle_color: Mapped[str] = mapped_column(String(16), default="white")
+    subtitle_background: Mapped[str] = mapped_column(String(16), default="outline")
+    subtitle_position: Mapped[str] = mapped_column(String(16), default="bottom")

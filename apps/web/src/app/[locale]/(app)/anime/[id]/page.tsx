@@ -50,7 +50,7 @@ async function listState(id: number): Promise<ListState> {
   }
 }
 
-async function Episodes({ id }: { id: number }) {
+async function Episodes({ id, image }: { id: number; image?: string }) {
   const plan = await watchPlan(id);
   if (!plan) return null;
   return (
@@ -60,6 +60,8 @@ async function Episodes({ id }: { id: number }) {
       episodes={plan.episodes}
       progress={plan.progress}
       current={plan.next.episode}
+      thumbnails={plan.thumbnails}
+      fallbackImage={image}
     />
   );
 }
@@ -97,7 +99,7 @@ export default async function TitlePage({ params }: PageProps<"/[locale]/anime/[
       />
       <div className="flex flex-col gap-10 py-6">
         <Suspense fallback={null}>
-          <Episodes id={id} />
+          <Episodes id={id} image={anime.main_picture?.large ?? anime.main_picture?.medium ?? undefined} />
         </Suspense>
         {!!anime.related_anime?.length && (
           <Row title={t("related")}>

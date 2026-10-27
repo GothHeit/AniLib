@@ -6,7 +6,18 @@ const SOURCE = "stub";
 const EPISODES = { sub: [1, 2, 3], dub: [1] };
 // Episode 1 comes with subtitle tracks; the others have none.
 const SUBTITLE_EPISODE = 1;
-const VTT = "WEBVTT\n\n00:00:00.000 --> 00:00:30.000\nHello moon\n";
+const VTT = "WEBVTT\n\n00:00:00.000 --> 00:00:30.000\n<i>Hello</i> moon\n";
+// Episode 3 has an intro to skip.
+const SKIPS = { 3: [{ kind: "intro", start: 2, end: 25 }] };
+// Asking this source plays from the stub one, like a fallback after a failure.
+const FLAKY = "flaky";
+const DEFAULT_PREFERENCES = {
+  subtitle_size: "medium",
+  subtitle_color: "white",
+  subtitle_background: "outline",
+  subtitle_position: "bottom",
+};
+let preferences = { ...DEFAULT_PREFERENCES };
 
 function details(id) {
   const watchable = id !== 2;
@@ -48,6 +59,8 @@ function seed(animeId, episode, position, completed) {
 seed(1, 1, 40, true);
 seed(1, 2, 12, false);
 seed(4, 2, 12, false);
+// Anime 6 is fully watched, so its title page offers a rewatch.
+for (const episode of [1, 2, 3]) seed(6, episode, 40, true);
 
 // anime id -> MAL list status. Anime 4 starts as completed.
 const listStatus = new Map([[4, "completed"]]);
@@ -97,6 +110,12 @@ export async function handleWatch(req, res, { url, send, error, body, authed }) 
     return true;
   }
 
+  if (path === "/watch/preferences") {
+    if (!authed) return reply(401, error("not_authenticated"));
+    if (req.method === "PUT") preferences = { ...DEFAULT_PREFERENCES, ...(await body(req)) };
+    return reply(200, preferences);
+  }
+
   let m = /^\/anime\/(\d+)$/.exec(path);
   if (m) {
     if (!authed) return reply(401, error("not_authenticated"));
@@ -128,9 +147,9 @@ export async function handleWatch(req, res, { url, send, error, body, authed }) 
   m = /^\/watch\/([^/]+)\/(\d+)\/episodes(?:\/(\d+)\/play)?$/.exec(path);
   if (m) {
     if (!authed) return reply(401, error("not_authenticated"));
-    if (m[1] !== SOURCE) return reply(404, error("source_not_found"));
+    if (m[1] !== SOURCE && !(m[1] === FLAKY && m[3])) return reply(404, error("source_not_found"));
     const lang = url.searchParams.get("lang") === "dub" ? "dub" : "sub";
-    if (!m[3]) return reply(200, { source: SOURCE, source_title: "Moon Test", episodes: EPISODES[lang] });
+    if (!m[3]) return reply(200, { source: SOURCE, source_title: "Moon Test", episodes: EPISODES[lang], thumbnails: {} });
     const episode = Number(m[3]);
     if (!EPISODES[lang].includes(episode)) return reply(404, error("not_available"));
     const subtitles =
@@ -141,6 +160,9 @@ export async function handleWatch(req, res, { url, send, error, body, authed }) 
           ]
         : [];
     return reply(200, {
+      source: SOURCE,
+      skips: SKIPS[episode] ?? [],
+      default_audio: null,
       kind: "mp4",
       resolution: 720,
       url: `/watch/video?token=ep-${episode}-${lang}`,
