@@ -10,10 +10,12 @@ import { LocaleSwitcher } from "./LocaleSwitcher";
 import { Logo } from "./Logo";
 import { isActive, NAV_ITEMS } from "./nav-items";
 import { SearchBox } from "./SearchBox";
+import type { AvatarInfo } from "@/lib/avatar";
+
 import { UserMenu } from "./UserMenu";
 
 /** Transparent over the hero, solid once the page scrolls. */
-export function TopNav({ username, isAdmin }: { username: string; isAdmin: boolean }) {
+export function TopNav({ userId, username, avatar, isAdmin }: { userId: string; username: string; avatar: AvatarInfo; isAdmin: boolean }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
@@ -56,7 +58,7 @@ export function TopNav({ username, isAdmin }: { username: string; isAdmin: boole
           </div>
           <LocaleSwitcher />
           <div className="hidden md:block">
-            <UserMenu username={username} isAdmin={isAdmin} />
+            <UserMenu userId={userId} username={username} avatar={avatar} isAdmin={isAdmin} />
           </div>
         </div>
       </nav>

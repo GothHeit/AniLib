@@ -318,6 +318,48 @@ export interface paths {
         patch: operations["update_entry_me_animelist__anime_id__patch"];
         trace?: never;
     };
+    "/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload Avatar
+         * @description Sets the picture from the raw image bytes (PNG, JPEG or WebP, up to 2 MB). The server
+         *     crops it to a square and stores a 256 px WebP.
+         */
+        put: operations["upload_avatar_me_avatar_put"];
+        post?: never;
+        /**
+         * Remove Avatar
+         * @description Back to the default: the linked MAL picture, or the user's initial.
+         */
+        delete: operations["remove_avatar_me_avatar_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/avatar/preset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Choose Preset */
+        put: operations["choose_preset_me_avatar_preset_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/mal": {
         parameters: {
             query?: never;
@@ -457,6 +499,23 @@ export interface paths {
         post?: never;
         /** Revoke Session */
         delete: operations["revoke_session_me_sessions__session_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Avatar */
+        get: operations["get_avatar_users__user_id__avatar_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -798,6 +857,23 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** AvatarOut */
+        AvatarOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "upload" | "preset" | "mal" | "none";
+            /** Preset */
+            preset?: string | null;
+            /** Url */
+            url?: string | null;
+            /**
+             * Version
+             * @default 0
+             */
+            version: number;
+        };
         /** Broadcast */
         Broadcast: {
             /** Day Of The Week */
@@ -1033,6 +1109,7 @@ export interface components {
         };
         /** MeOut */
         MeOut: {
+            avatar: components["schemas"]["AvatarOut"];
             /** Id */
             id: string;
             /** Is Admin */
@@ -1105,6 +1182,11 @@ export interface components {
              * @enum {string}
              */
             subtitle_size: "small" | "medium" | "large" | "huge";
+        };
+        /** PresetIn */
+        PresetIn: {
+            /** Preset */
+            preset: string;
         };
         /** ProgressIn */
         ProgressIn: {
@@ -1996,6 +2078,79 @@ export interface operations {
             };
         };
     };
+    upload_avatar_me_avatar_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    remove_avatar_me_avatar_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+        };
+    };
+    choose_preset_me_avatar_preset_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     status_me_mal_get: {
         parameters: {
             query?: never;
@@ -2247,6 +2402,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_avatar_users__user_id__avatar_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
             };
             /** @description Validation Error */
             422: {

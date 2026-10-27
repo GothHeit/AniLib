@@ -38,7 +38,11 @@
     "unknown": "Algo deu errado. Tente de novo.",
     "wrong_password": "A senha atual está errada.",
     "session_not_found": "Essa sessão já foi encerrada.",
-    "forbidden": "Essa solicitação foi recusada."
+    "forbidden": "Essa solicitação foi recusada.",
+    "avatar_type": "Use uma imagem PNG, JPEG ou WebP.",
+    "avatar_too_large": "Essa imagem tem mais de 2 MB.",
+    "avatar_dimensions": "Essa imagem tem pixels demais. Use uma menor.",
+    "avatar_preset": "Esse avatar não está disponível."
   },
   "row": {
     "previous": "Rolar para a esquerda",

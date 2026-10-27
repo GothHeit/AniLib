@@ -5,6 +5,7 @@ const PREFIXES = ["anime", "home", "invites", "watch", "me"];
 export function isProxyPathAllowed(path: string[]): boolean {
   const [first, second] = path;
   if (first === "mal") return path.length === 2 && second === "link";
+  if (first === "users") return path.length === 3 && path[2] === "avatar" && !path.some((s) => s === "." || s === "..");
   return PREFIXES.includes(first) && path.every((segment) => segment !== "." && segment !== "..");
 }
 

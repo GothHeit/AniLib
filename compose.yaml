@@ -20,9 +20,11 @@ services:
     env_file: apps/api/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://app:app@db:5432/app
+    volumes: [avatars:/data/avatars]
     ports: ["8000:8000"]
     depends_on:
       db: {condition: service_healthy}
 
 volumes:
   db-data:
+  avatars:

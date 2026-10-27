@@ -77,3 +77,8 @@ Copy the repo and `.env`, restore a backup, then:
 2. Point the domain's DNS at the VPS.
 3. `docker compose -f compose.yaml -f compose.vps.yaml up -d --build` (publishes 80 and 443;
    Caddy gets the certificate by itself).
+
+Uploaded profile pictures live in the `avatars` Docker volume, not in the database, so the dump does
+not include them. Losing them is harmless (people fall back to their MAL picture or initial and can
+upload again), but to keep them copy the volume, e.g.
+`docker run --rm -v <project>_avatars:/a -v "$PWD/backups":/b alpine tar czf /b/avatars.tgz -C /a .`.

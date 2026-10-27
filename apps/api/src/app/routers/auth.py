@@ -7,11 +7,12 @@ from pydantic import BaseModel, Field, StringConstraints
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
+from app.avatars import AvatarOut, avatar_out
 from app.config import get_settings
 from app.db import utcnow
 from app.deps import ClientIp, CurrentSessionId, CurrentUser, Session
 from app.errors import ApiError
-from app.models import Invite, RefreshToken, User
+from app.models import Invite, MalLink, RefreshToken, User
 from app.security import (
     DUMMY_PASSWORD_HASH,
     create_access_token,
@@ -58,6 +59,7 @@ class MeOut(BaseModel):
     show_nsfw: bool
     subtitle_lang: str | None
     is_admin: bool
+    avatar: AvatarOut
 
 
 class MeUpdate(BaseModel):
@@ -113,7 +115,8 @@ async def _issue_tokens(
     )
 
 
-def _me(user: User) -> MeOut:
+async def build_me(user: User, session: Session) -> MeOut:
+    link = await session.get(MalLink, user.id)
     return MeOut(
         id=str(user.id),
         username=user.username,
@@ -121,6 +124,7 @@ def _me(user: User) -> MeOut:
         show_nsfw=user.show_nsfw,
         subtitle_lang=user.subtitle_lang,
         is_admin=user.is_admin,
+        avatar=avatar_out(user, link.mal_picture if link else None),
     )
 
 
@@ -220,8 +224,8 @@ async def logout(body: RefreshIn, session: Session):
 
 
 @router.get("/me", response_model=MeOut)
-async def me(user: CurrentUser):
-    return _me(user)
+async def me(user: CurrentUser, session: Session):
+    return await build_me(user, session)
 
 
 @router.patch("/me", response_model=MeOut)
@@ -229,7 +233,7 @@ async def update_me(body: MeUpdate, user: CurrentUser, session: Session):
     for field, value in body.model_dump(exclude_none=True).items():
         setattr(user, field, None if value == "auto" else value)
     await session.commit()
-    return _me(user)
+    return await build_me(user, session)
 
 
 def _revoke(user: User, *, keep: uuid.UUID | None = None, only: uuid.UUID | None = None):

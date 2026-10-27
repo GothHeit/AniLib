@@ -87,6 +87,19 @@
       "revokeAllBody": "Every device, including this one, will be signed out and will need your password again.",
       "revokeAllConfirm": "Sign out everywhere",
       "cancel": "Cancel"
+    },
+    "avatar": {
+      "title": "Profile picture",
+      "choose": "Choose a picture",
+      "save": "Save picture",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "remove": "Remove",
+      "saved": "Profile picture updated.",
+      "previewAlt": "Preview of the new picture",
+      "hint": "PNG, JPEG or WebP, up to 2 MB. It is cropped to a square. Without one, your linked MyAnimeList picture or your initial is shown.",
+      "presets": "Or pick one of ours",
+      "presetLabel": "Avatar {number}"
     }
   }
 }

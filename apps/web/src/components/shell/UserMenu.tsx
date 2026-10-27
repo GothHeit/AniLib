@@ -4,10 +4,14 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Link, useRouter } from "@/i18n/navigation";
+import { Avatar } from "@/components/ui/Avatar";
 import { postAuth } from "@/lib/bff";
+import type { AvatarInfo } from "@/lib/avatar";
 
 type Props = {
+  userId: string;
   username: string;
+  avatar: AvatarInfo;
   isAdmin?: boolean;
   /** "tab" opens upward from the phone tab bar. */
   variant?: "nav" | "tab";
@@ -15,7 +19,7 @@ type Props = {
   triggerClassName?: string;
 };
 
-export function UserMenu({ username, isAdmin = false, variant = "nav", trigger, triggerClassName }: Props) {
+export function UserMenu({ userId, username, avatar, isAdmin = false, variant = "nav", trigger, triggerClassName }: Props) {
   const t = useTranslations("nav");
   const tAccount = useTranslations("account");
   const router = useRouter();
@@ -52,9 +56,7 @@ export function UserMenu({ username, isAdmin = false, variant = "nav", trigger, 
         className={triggerClassName}
       >
         {trigger ?? (
-          <span className="flex h-8 w-8 items-center justify-center rounded-ui bg-accent-deep text-sm font-bold uppercase">
-            {username.charAt(0)}
-          </span>
+          <Avatar userId={userId} username={username} avatar={avatar} />
         )}
       </button>
       {open && (

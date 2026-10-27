@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 
+import { AvatarForm } from "@/components/account/AvatarForm";
 import { MalSection } from "@/components/account/MalSection";
 import { PasswordForm } from "@/components/account/PasswordForm";
 import { PreferencesForm } from "@/components/account/PreferencesForm";
@@ -45,6 +46,10 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
             {t("invites.manage")}
           </ButtonLink>
         )}
+      </Section>
+
+      <Section title={t("avatar.title")}>
+        <AvatarForm userId={me.id} username={me.username} avatar={me.avatar} />
       </Section>
 
       <Section title={t("settings.preferences")}>

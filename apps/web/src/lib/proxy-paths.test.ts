@@ -4,13 +4,13 @@ import { isAuthFailure, isProxyPathAllowed } from "./proxy-paths";
 
 describe("isProxyPathAllowed", () => {
   it("allows the API areas the browser uses", () => {
-    for (const path of [["me"], ["me", "sessions", "x"], ["anime", "1"], ["home"], ["watch", "hls"], ["invites"], ["mal", "link"]]) {
+    for (const path of [["me"], ["me", "sessions", "x"], ["anime", "1"], ["home"], ["watch", "hls"], ["invites"], ["mal", "link"], ["users", "x", "avatar"]]) {
       expect(isProxyPathAllowed(path)).toBe(true);
     }
   });
 
   it("refuses auth routes, the MAL callback, unknown areas and traversal", () => {
-    for (const path of [["auth", "login"], ["mal", "callback"], ["mal"], ["health"], ["me", "..", "auth"], []]) {
+    for (const path of [["auth", "login"], ["mal", "callback"], ["mal"], ["health"], ["users"], ["users", "x"], ["users", "x", "other"], ["users", "..", "avatar"], ["me", "..", "auth"], []]) {
       expect(isProxyPathAllowed(path)).toBe(false);
     }
   });

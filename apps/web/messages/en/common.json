@@ -38,7 +38,11 @@
     "unknown": "Something went wrong. Try again.",
     "wrong_password": "The current password is wrong.",
     "session_not_found": "That session is already gone.",
-    "forbidden": "That request was refused."
+    "forbidden": "That request was refused.",
+    "avatar_type": "Use a PNG, JPEG or WebP image.",
+    "avatar_too_large": "That image is larger than 2 MB.",
+    "avatar_dimensions": "That image has too many pixels. Use a smaller one.",
+    "avatar_preset": "That avatar isn't available."
   },
   "row": {
     "previous": "Scroll left",

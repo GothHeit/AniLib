@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     mal_client_secret: str = ""
     mal_redirect_uri: str = "http://localhost:8000/mal/callback"
 
+    # Where uploaded profile pictures are stored. Mount a volume here to keep them.
+    avatar_dir: str = "data/avatars"
+
     # Video sources to enable, by name. Empty in a public deployment.
     video_sources: str = ""
 

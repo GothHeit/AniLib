@@ -22,6 +22,12 @@ class User(TimestampMixin, Base):
     # None means automatic (pt-BR, then English); "off" hides subtitles.
     subtitle_lang: Mapped[str | None] = mapped_column(String(8), default=None)
     is_admin: Mapped[bool] = mapped_column(default=False)
+    # A preset artwork key, or None. An uploaded picture wins over it when avatar_uploaded.
+    avatar_preset: Mapped[str | None] = mapped_column(String(16), default=None)
+    avatar_uploaded: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # Counts uploads and never goes down, so a new picture always gets a new URL and a cache
+    # can't serve an old one.
+    avatar_version: Mapped[int] = mapped_column(default=0, server_default="0")
 
 
 class Invite(TimestampMixin, Base):

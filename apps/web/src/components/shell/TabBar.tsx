@@ -6,12 +6,14 @@ import { Link, usePathname } from "@/i18n/navigation";
 
 import { Icon } from "./Icon";
 import { isActive, NAV_ITEMS } from "./nav-items";
+import type { AvatarInfo } from "@/lib/avatar";
+
 import { UserMenu } from "./UserMenu";
 
 const item = "flex flex-1 flex-col items-center gap-1 py-2 text-xs";
 
 /** Phone navigation: Home, Browse, My list, Search, You. */
-export function TabBar({ username, isAdmin }: { username: string; isAdmin: boolean }) {
+export function TabBar({ userId, username, avatar, isAdmin }: { userId: string; username: string; avatar: AvatarInfo; isAdmin: boolean }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const tabs = [...NAV_ITEMS, { href: "/search" as const, key: "search" as const, icon: "search" as const }];
@@ -37,7 +39,9 @@ export function TabBar({ username, isAdmin }: { username: string; isAdmin: boole
       })}
       <div className="flex flex-1 justify-center">
         <UserMenu
+          userId={userId}
           username={username}
+          avatar={avatar}
           isAdmin={isAdmin}
           variant="tab"
           triggerClassName={`${item} h-full w-full text-muted`}

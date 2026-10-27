@@ -36,6 +36,7 @@ services:
       VIDEO_SOURCES: ${VIDEO_SOURCES:-}
       # Only Caddy can reach the API, and it writes the real client address.
       TRUST_PROXY_HEADERS: "true"
+    volumes: [avatars:/data/avatars]
     depends_on:
       db: {condition: service_healthy}
     healthcheck:
@@ -87,4 +88,5 @@ services:
 
 volumes:
   db-data:
+  avatars:
   caddy-data:

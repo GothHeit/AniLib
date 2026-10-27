@@ -10,7 +10,9 @@ COPY . .
 RUN uv sync --frozen --no-dev ${EXTRAS:+--extra $EXTRAS}
 
 ENV PATH="/srv/.venv/bin:$PATH"
-RUN useradd --system --no-create-home app
+RUN useradd --system --no-create-home app \
+    && mkdir -p /data/avatars && chown app /data/avatars
+ENV AVATAR_DIR=/data/avatars
 USER app
 EXPOSE 8000
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

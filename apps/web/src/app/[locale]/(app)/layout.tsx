@@ -19,9 +19,9 @@ export default async function AppLayout({ children, params }: LayoutProps<"/[loc
       >
         {t("skip")}
       </a>
-      <TopNav username={me.username} isAdmin={me.is_admin} />
+      <TopNav userId={me.id} username={me.username} avatar={me.avatar} isAdmin={me.is_admin} />
       <main id="main" tabIndex={-1} className="pb-24 md:pb-16">{children}</main>
-      <TabBar username={me.username} isAdmin={me.is_admin} />
+      <TabBar userId={me.id} username={me.username} avatar={me.avatar} isAdmin={me.is_admin} />
     </>
   );
 }

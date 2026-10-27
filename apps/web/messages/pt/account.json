@@ -87,6 +87,19 @@
       "revokeAllBody": "Todos os dispositivos, inclusive este, serão desconectados e vão precisar da sua senha de novo.",
       "revokeAllConfirm": "Desconectar tudo",
       "cancel": "Cancelar"
+    },
+    "avatar": {
+      "title": "Foto de perfil",
+      "choose": "Escolher foto",
+      "save": "Salvar foto",
+      "saving": "Salvando…",
+      "cancel": "Cancelar",
+      "remove": "Remover",
+      "saved": "Foto de perfil atualizada.",
+      "previewAlt": "Prévia da nova foto",
+      "hint": "PNG, JPEG ou WebP, até 2 MB. A foto é cortada em quadrado. Sem foto, aparece a do MyAnimeList vinculado ou a sua inicial.",
+      "presets": "Ou escolha uma das nossas",
+      "presetLabel": "Avatar {number}"
     }
   }
 }

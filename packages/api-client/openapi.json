@@ -394,6 +394,52 @@
         "title": "AnimeDetailsOut",
         "type": "object"
       },
+      "AvatarOut": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "upload",
+              "preset",
+              "mal",
+              "none"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "preset": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preset"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "version": {
+            "default": 0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "AvatarOut",
+        "type": "object"
+      },
       "Broadcast": {
         "properties": {
           "day_of_the_week": {
@@ -1090,6 +1136,9 @@
       },
       "MeOut": {
         "properties": {
+          "avatar": {
+            "$ref": "#/components/schemas/AvatarOut"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -1132,7 +1181,8 @@
           "locale",
           "show_nsfw",
           "subtitle_lang",
-          "is_admin"
+          "is_admin",
+          "avatar"
         ],
         "title": "MeOut",
         "type": "object"
@@ -1296,6 +1346,19 @@
           }
         },
         "title": "PlayerPreferencesIO",
+        "type": "object"
+      },
+      "PresetIn": {
+        "properties": {
+          "preset": {
+            "title": "Preset",
+            "type": "string"
+          }
+        },
+        "required": [
+          "preset"
+        ],
+        "title": "PresetIn",
         "type": "object"
       },
       "ProgressIn": {
@@ -2920,6 +2983,104 @@
         ]
       }
     },
+    "/me/avatar": {
+      "delete": {
+        "description": "Back to the default: the linked MAL picture, or the user's initial.",
+        "operationId": "remove_avatar_me_avatar_delete",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove Avatar",
+        "tags": [
+          "avatars"
+        ]
+      },
+      "put": {
+        "description": "Sets the picture from the raw image bytes (PNG, JPEG or WebP, up to 2 MB). The server\ncrops it to a square and stores a 256 px WebP.",
+        "operationId": "upload_avatar_me_avatar_put",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Upload Avatar",
+        "tags": [
+          "avatars"
+        ]
+      }
+    },
+    "/me/avatar/preset": {
+      "put": {
+        "operationId": "choose_preset_me_avatar_preset_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresetIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Choose Preset",
+        "tags": [
+          "avatars"
+        ]
+      }
+    },
     "/me/mal": {
       "delete": {
         "operationId": "unlink_me_mal_delete",
@@ -3303,6 +3464,52 @@
         "summary": "Revoke Session",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/users/{user_id}/avatar": {
+      "get": {
+        "operationId": "get_avatar_users__user_id__avatar_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Avatar",
+        "tags": [
+          "avatars"
         ]
       }
     },
