@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Path, Query, Response
 from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import distinct_on, insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +9,7 @@ from sqlalchemy.orm import aliased
 
 from app.db import utcnow
 from app.deps import CurrentUser, Session
-from app.models import WatchProgress
+from app.models import ContinueHidden, WatchProgress
 from app.schemas import ProgressIn, ProgressOut
 
 router = APIRouter(prefix="/me/progress", tags=["progress"])
@@ -53,6 +53,12 @@ async def latest_per_anime(
     result = await session.scalars(
         select(row)
         .join(seen, seen.c.anime_id == row.anime_id)
+        .outerjoin(
+            ContinueHidden,
+            (ContinueHidden.user_id == user_id) & (ContinueHidden.anime_id == row.anime_id),
+        )
+        # Removed from Continue watching, and not watched since.
+        .where(or_(ContinueHidden.hidden_at.is_(None), seen.c.seen > ContinueHidden.hidden_at))
         .order_by(seen.c.seen.desc())
         .limit(limit)
     )
@@ -64,6 +70,21 @@ async def continue_watching(
     user: CurrentUser, session: Session, limit: Annotated[int, Query(ge=1, le=100)] = 20
 ):
     return [to_out(r) for r in await latest_per_anime(session, user.id, limit)]
+
+
+@router.delete("/{anime_id}/continue", status_code=204)
+async def remove_from_continue_watching(
+    anime_id: Annotated[int, Path(ge=1)], user: CurrentUser, session: Session
+):
+    """Hide a title from Continue watching. Progress is kept; watching it again brings it back."""
+    stmt = insert(ContinueHidden).values(user_id=user.id, anime_id=anime_id, hidden_at=utcnow())
+    await session.execute(
+        stmt.on_conflict_do_update(
+            index_elements=["user_id", "anime_id"], set_={"hidden_at": stmt.excluded.hidden_at}
+        )
+    )
+    await session.commit()
+    return Response(status_code=204)
 
 
 @router.get("/{anime_id}", response_model=list[ProgressOut])

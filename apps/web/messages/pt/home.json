@@ -2,6 +2,7 @@
   "home": {
     "play": "Assistir agora",
     "episode": "Episódio {n}",
+    "remove": "Remover {title} de Continuar assistindo",
     "score": "Nota {score}",
     "rows": {
       "continue_watching": "Continuar assistindo",

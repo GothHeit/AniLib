@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 
 import { PosterCard } from "@/components/ui/PosterCard";
 import { Row } from "@/components/ui/Row";
-import { WideCard } from "@/components/ui/WideCard";
+import { ContinueCard } from "./ContinueCard";
 import { animeHref, captionOf, watchHref, posterOf, progressFraction, type HomeOut } from "@/lib/catalog";
 
 const WIDE = "w-64 sm:w-72";
@@ -20,8 +20,9 @@ export async function HomeRows({ rows }: { rows: HomeOut["rows"] }) {
         >
           {row.items.map(({ anime, progress, resume_episode }) =>
             row.id === "continue_watching" ? (
-              <WideCard
+              <ContinueCard
                 key={anime.id}
+                animeId={anime.id}
                 href={resume_episode ? watchHref(anime.id, resume_episode) : animeHref(anime.id)}
                 title={anime.title}
                 image={posterOf(anime)}

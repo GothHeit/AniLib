@@ -387,6 +387,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/progress/{anime_id}/continue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove From Continue Watching
+         * @description Hide a title from Keep watching. Progress is kept; watching it again brings it back.
+         */
+        delete: operations["remove_from_continue_watching_me_progress__anime_id__continue_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/progress/{anime_id}/{episode}": {
         parameters: {
             query?: never;
@@ -1859,6 +1879,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ProgressOut"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_from_continue_watching_me_progress__anime_id__continue_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                anime_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

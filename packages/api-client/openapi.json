@@ -2855,6 +2855,48 @@
         ]
       }
     },
+    "/me/progress/{anime_id}/continue": {
+      "delete": {
+        "description": "Hide a title from Keep watching. Progress is kept; watching it again brings it back.",
+        "operationId": "remove_from_continue_watching_me_progress__anime_id__continue_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anime_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Anime Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Remove From Continue Watching",
+        "tags": [
+          "progress"
+        ]
+      }
+    },
     "/me/progress/{anime_id}/{episode}": {
       "put": {
         "operationId": "save_progress_me_progress__anime_id___episode__put",

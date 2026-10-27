@@ -67,3 +67,35 @@ async def test_rewatching_an_early_episode_keeps_the_furthest_one(client, sessio
     await put(client, headers, anime=1, episode=1, position_seconds=10, duration_seconds=1400)
     entries = (await client.get("/me/progress", headers=headers)).json()
     assert [(e["anime_id"], e["episode"]) for e in entries] == [(1, 12)]
+
+
+async def test_removing_from_continue_watching_keeps_history_until_watched_again(client, session):
+    _, headers = await make_user(session, "kafka")
+    await put(client, headers, anime=1, episode=1, position_seconds=10)
+    await put(client, headers, anime=2, episode=1, position_seconds=10)
+
+    r = await client.delete("/me/progress/1/continue", headers=headers)
+    assert r.status_code == 204
+    # Idempotent.
+    assert (await client.delete("/me/progress/1/continue", headers=headers)).status_code == 204
+
+    entries = (await client.get("/me/progress", headers=headers)).json()
+    assert [e["anime_id"] for e in entries] == [2]
+    assert len((await client.get("/me/progress/1", headers=headers)).json()) == 1
+
+    await put(client, headers, anime=1, episode=2, position_seconds=10)
+    entries = (await client.get("/me/progress", headers=headers)).json()
+    assert [e["anime_id"] for e in entries] == [1, 2]
+
+
+async def test_removing_from_continue_watching_is_per_user(client, session):
+    _, kafka = await make_user(session, "kafka")
+    _, friend = await make_user(session, "friend")
+    await put(client, kafka, anime=1, position_seconds=10)
+    await put(client, friend, anime=1, position_seconds=10)
+    await client.delete("/me/progress/1/continue", headers=kafka)
+    assert (await client.get("/me/progress", headers=friend)).json() != []
+
+
+async def test_remove_from_continue_watching_needs_login(client):
+    assert (await client.delete("/me/progress/1/continue")).status_code == 401

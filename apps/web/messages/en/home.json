@@ -2,6 +2,7 @@
   "home": {
     "play": "Watch now",
     "episode": "Episode {n}",
+    "remove": "Remove {title} from Continue watching",
     "score": "Score {score}",
     "rows": {
       "continue_watching": "Continue watching",
