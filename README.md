@@ -1,20 +1,17 @@
 # MoonRoom
 
-Um app de anime para você e seus amigos: acompanhe sua lista, assista episódios, veja junto com amigos. Privado, só por convite, grátis.
-Disponível em português (pt-BR) e inglês.
-
 An anime app for you and your friends: track your list, watch episodes and watch together. Private, invite-only, free.
-Available in Portuguese (pt-BR) and English.
+Available in English and Portuguese (pt-BR).
 
-## Recursos / Features
+## Features
 
-- Catálogo e lista de anime (MyAnimeList) / Catalog and list sync (MyAnimeList)
-- Player com fontes de vídeo plugáveis / Player with pluggable video sources
-- Assistir junto em salas / Watch together in rooms
-- Amigos, perfis e notificações / Friends, profiles and notifications
-- Funciona no iPhone, com "Adicionar à Tela de Início" / Works on iPhone, with Add to Home Screen
+- Catalog and list sync (MyAnimeList)
+- Player with pluggable video sources
+- Watch together in rooms
+- Friends, profiles and notifications
+- Works on iPhone, with Add to Home Screen
 
-## Estrutura / Layout
+## Layout
 
 ```
 apps/api/             FastAPI + PostgreSQL
@@ -24,9 +21,9 @@ deploy/               production stack
 legacy/               the original version, kept for reference
 ```
 
-## Rodando localmente / Running locally
+## Running locally
 
-Requisitos / Requirements: Docker, [uv](https://docs.astral.sh/uv/), Node 22, pnpm.
+Requirements: Docker, [uv](https://docs.astral.sh/uv/), Node 22, pnpm.
 
 ```bash
 docker compose up -d db
@@ -44,8 +41,8 @@ pnpm dev:web                      # http://localhost:3000
 
 After registering: `uv run python -m app.cli promote <username>` makes you an admin.
 
-Tests / Testes: `cd apps/api && uv run pytest`, `pnpm lint && pnpm typecheck`, `pnpm --filter web build`.
+Tests: `cd apps/api && uv run pytest`, `pnpm lint && pnpm typecheck`, `pnpm --filter web build`.
 
-## Publicando / Deploying
+## Deploying
 
 Production and auto-deploy: [deploy/README.md](deploy/README.md).
