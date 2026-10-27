@@ -819,19 +819,6 @@
         "title": "HomeRow",
         "type": "object"
       },
-      "InviteIn": {
-        "properties": {
-          "days_valid": {
-            "default": 7,
-            "maximum": 90.0,
-            "minimum": 1.0,
-            "title": "Days Valid",
-            "type": "integer"
-          }
-        },
-        "title": "InviteIn",
-        "type": "object"
-      },
       "InviteOut": {
         "properties": {
           "code": {
@@ -1874,6 +1861,38 @@
         "title": "RoomCreate",
         "type": "object"
       },
+      "RoomInviteOut": {
+        "properties": {
+          "anime_id": {
+            "title": "Anime Id",
+            "type": "integer"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "episode": {
+            "title": "Episode",
+            "type": "integer"
+          },
+          "inviter": {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "title",
+          "episode",
+          "anime_id",
+          "inviter"
+        ],
+        "title": "RoomInviteOut",
+        "type": "object"
+      },
       "RoomOut": {
         "properties": {
           "anime_id": {
@@ -2225,6 +2244,19 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "app__routers__invites__InviteIn": {
+        "properties": {
+          "days_valid": {
+            "default": 7,
+            "maximum": 90.0,
+            "minimum": 1.0,
+            "title": "Days Valid",
+            "type": "integer"
+          }
+        },
+        "title": "InviteIn",
+        "type": "object"
+      },
       "app__routers__mal__AnimeListOut": {
         "properties": {
           "data": {
@@ -2239,6 +2271,20 @@
           "data"
         ],
         "title": "AnimeListOut",
+        "type": "object"
+      },
+      "app__routers__rooms__InviteIn": {
+        "properties": {
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "title": "InviteIn",
         "type": "object"
       },
       "app__routers__rooms__PlaybackOut": {
@@ -3243,7 +3289,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/InviteIn"
+                "$ref": "#/components/schemas/app__routers__invites__InviteIn"
               }
             }
           },
@@ -4433,6 +4479,77 @@
         ]
       }
     },
+    "/watch/rooms/invites": {
+      "get": {
+        "description": "Rooms friends invited you to. Declared before /{code} so \"invites\" is not read as a code.",
+        "operationId": "my_invites_watch_rooms_invites_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RoomInviteOut"
+                  },
+                  "title": "Response My Invites Watch Rooms Invites Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "My Invites",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/watch/rooms/invites/{code}": {
+      "delete": {
+        "operationId": "dismiss_invite_watch_rooms_invites__code__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Dismiss Invite",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
     "/watch/rooms/{code}": {
       "get": {
         "operationId": "get_room_watch_rooms__code__get",
@@ -4704,6 +4821,57 @@
           }
         ],
         "summary": "Events",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/watch/rooms/{code}/invite": {
+      "post": {
+        "description": "Invites a friend to a room you are in. They see it next to their other notices.",
+        "operationId": "invite_friend_watch_rooms__code__invite_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__routers__rooms__InviteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Invite Friend",
         "tags": [
           "rooms"
         ]

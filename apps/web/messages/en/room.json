@@ -34,6 +34,18 @@
     "joinIntro": "Enter the code a friend shared to watch together. To start a room yourself, open an episode and choose Watch together.",
     "codeLabel": "Room code",
     "invalidCode": "That doesn't look like a room code.",
-    "join": "Join"
+    "join": "Join",
+    "invite": {
+      "button": "Invite a friend",
+      "none": "No friends to invite.",
+      "send": "Invite",
+      "sent": "Invited",
+      "loadFailed": "Couldn't load your friends.",
+      "failed": "Couldn't send the invite.",
+      "from": "{name} invited you",
+      "what": "{title}, episode {episode}",
+      "join": "Join",
+      "dismiss": "Dismiss invite"
+    }
   }
 }

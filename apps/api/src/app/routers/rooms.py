@@ -1,5 +1,6 @@
 import asyncio
 import json
+import uuid
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Request
@@ -8,10 +9,11 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 
 from app import db
-from app.deps import CurrentUser
+from app.deps import CurrentUser, Session
 from app.errors import ApiError
 from app.models import User
 from app.rooms import REACTIONS, Room, Rooms
+from app.routers.friends import UserSummary, friend_ids, summaries
 from app.security import decode_access_token
 
 router = APIRouter(prefix="/watch/rooms", tags=["rooms"])
@@ -71,6 +73,18 @@ class EpisodeIn(BaseModel):
     episode: int = Field(ge=0, le=10_000)
 
 
+class InviteIn(BaseModel):
+    user_id: uuid.UUID
+
+
+class RoomInviteOut(BaseModel):
+    code: str
+    title: str
+    episode: int
+    anime_id: int
+    inviter: UserSummary
+
+
 class LockIn(BaseModel):
     locked: bool
 
@@ -89,12 +103,52 @@ async def create_room(body: RoomCreate, request: Request, user: CurrentUser):
     return room.snapshot()
 
 
+@router.get("/invites", response_model=list[RoomInviteOut])
+async def my_invites(request: Request, user: CurrentUser, session: Session):
+    """Rooms friends invited you to. Declared before /{code} so "invites" is not read as a code."""
+    friends = set(await friend_ids(session, user.id))
+    # An unfriended inviter's invite is gone with the friendship.
+    pending = [(r, by) for r, by in request.app.state.rooms.invites_for(user.id) if by in friends]
+    people = await summaries(session, list({by for _, by in pending}))
+    return [
+        RoomInviteOut(
+            code=room.code,
+            title=room.title,
+            episode=room.episode,
+            anime_id=room.anime_id,
+            inviter=people[by],
+        )
+        for room, by in pending
+        if by in people
+    ]
+
+
+@router.delete("/invites/{code}", status_code=204)
+async def dismiss_invite(code: str, request: Request, user: CurrentUser):
+    rooms: Rooms = request.app.state.rooms
+    try:
+        rooms.get(code).invited.pop(user.id, None)
+    except ApiError:
+        pass  # the room is already gone, which is what dismissing wanted
+
+
 @router.get("/{code}", response_model=RoomOut)
 async def get_room(code: str, request: Request, user: CurrentUser):
     room = _room(request, code)
     if room.is_full_for(user.id):
         raise ApiError(409, "room_full", "The room is full")
     return room.snapshot()
+
+
+@router.post("/{code}/invite", status_code=204)
+async def invite_friend(
+    code: str, body: InviteIn, request: Request, user: CurrentUser, session: Session
+):
+    """Invites a friend to a room you are in. They see it next to their other notices."""
+    room = _room(request, code)
+    if body.user_id not in await friend_ids(session, user.id):
+        raise ApiError(403, "invite_not_friends", "You can only invite friends")
+    room.invite(user.id, body.user_id)
 
 
 @router.post("/{code}/control", status_code=204)

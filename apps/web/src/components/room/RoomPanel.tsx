@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { Switch } from "@/components/account/Switch";
 
 import type { ChatMessage, RoomState } from "./useRoom";
+import { InviteFriends } from "./InviteFriends";
 import { votesNeeded } from "./sync";
 
 export const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
@@ -93,6 +94,8 @@ export function RoomPanel({ room, meId, messages, episodes, onSay, onReact, onVo
         )}
         {!isHost && room.locked && <p className="mt-3 text-muted">{t("lockedByHost")}</p>}
       </section>
+
+      <InviteFriends code={room.code} memberIds={room.members.map((m) => m.id)} />
 
       <section>
         <h2 className="font-bold">{t("episode", { episode: room.episode })}</h2>

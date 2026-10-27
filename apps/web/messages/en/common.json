@@ -50,7 +50,11 @@
     "too_many_requests": "Too many pending requests. Wait for some to be answered.",
     "request_not_found": "That request is gone.",
     "friend_not_found": "That person is not in your friends.",
-    "not_friends": "Only friends can see this profile."
+    "not_friends": "Only friends can see this profile.",
+    "already_in_room": "They are already in the room.",
+    "too_many_invites": "This room has too many invites.",
+    "not_in_room": "Join the room first.",
+    "invite_not_friends": "You can only invite friends."
   },
   "row": {
     "previous": "Scroll left",

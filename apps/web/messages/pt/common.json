@@ -50,7 +50,11 @@
     "too_many_requests": "Pedidos demais pendentes. Espere alguns serem respondidos.",
     "request_not_found": "Esse pedido não existe mais.",
     "friend_not_found": "Essa pessoa não está nos seus amigos.",
-    "not_friends": "Só amigos podem ver este perfil."
+    "not_friends": "Só amigos podem ver este perfil.",
+    "already_in_room": "A pessoa já está na sala.",
+    "too_many_invites": "Esta sala tem convites demais.",
+    "not_in_room": "Entre na sala primeiro.",
+    "invite_not_friends": "Você só pode convidar amigos."
   },
   "row": {
     "previous": "Rolar para a esquerda",

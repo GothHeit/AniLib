@@ -128,7 +128,7 @@ async def friend_ids(session: Session, user_id: uuid.UUID) -> list[uuid.UUID]:
     return [b if a == user_id else a for a, b in rows]
 
 
-async def _summaries(session: Session, ids: list[uuid.UUID]) -> dict[uuid.UUID, UserSummary]:
+async def summaries(session: Session, ids: list[uuid.UUID]) -> dict[uuid.UUID, UserSummary]:
     if not ids:
         return {}
     rows = await session.execute(
@@ -136,10 +136,10 @@ async def _summaries(session: Session, ids: list[uuid.UUID]) -> dict[uuid.UUID, 
         .outerjoin(MalLink, MalLink.user_id == User.id)
         .where(User.id.in_(ids))
     )
-    return {u.id: _summary(u, picture) for u, picture in rows}
+    return {u.id: user_summary(u, picture) for u, picture in rows}
 
 
-def _summary(user: User, mal_picture: str | None = None) -> UserSummary:
+def user_summary(user: User, mal_picture: str | None = None) -> UserSummary:
     return UserSummary(
         id=str(user.id), username=user.username, avatar=avatar_out(user, mal_picture)
     )
@@ -181,7 +181,7 @@ async def _activity(
     candidates = list(
         await session.scalars(select(row).order_by(row.updated_at.desc()).limit(limit * 2))
     )
-    people = await _summaries(session, list({r.user_id for r in candidates}))
+    people = await summaries(session, list({r.user_id for r in candidates}))
     cards = await _cards(
         request.app.state.mal, list({r.anime_id for r in candidates}), viewer.show_nsfw
     )
@@ -211,7 +211,7 @@ async def lookup(
     picture = await session.scalar(select(MalLink.mal_picture).where(MalLink.user_id == found.id))
     row = None if found.id == user.id else await _friendship(session, user.id, found.id)
     relation: Relation = "self" if found.id == user.id else _relation(user.id, row)
-    return LookupOut(user=_summary(found, picture), relation=relation)
+    return LookupOut(user=user_summary(found, picture), relation=relation)
 
 
 @router.post("/friends/requests", response_model=LookupOut, status_code=201)
@@ -248,7 +248,7 @@ async def send_request(body: RequestIn, user: CurrentUser, session: Session):
         raise ApiError(409, "already_requested", "A request already exists") from None
     row = await _friendship(session, user.id, target.id)
     picture = await session.scalar(select(MalLink.mal_picture).where(MalLink.user_id == target.id))
-    return LookupOut(user=_summary(target, picture), relation=_relation(user.id, row))
+    return LookupOut(user=user_summary(target, picture), relation=_relation(user.id, row))
 
 
 @router.get("/friends/requests", response_model=RequestsOut)
@@ -263,7 +263,7 @@ async def list_requests(user: CurrentUser, session: Session):
             .order_by(Friendship.created_at.desc())
         )
     )
-    people = await _summaries(
+    people = await summaries(
         session, [r.addressee_id if r.requester_id == user.id else r.requester_id for r in rows]
     )
     incoming = [
@@ -288,7 +288,7 @@ async def accept_request(user_id: uuid.UUID, user: CurrentUser, session: Session
         row.accepted = True
         row.accepted_at = utcnow()
         await session.commit()
-    people = await _summaries(session, [user_id])
+    people = await summaries(session, [user_id])
     return FriendOut(user=people[user_id], since=row.accepted_at or row.created_at)
 
 
@@ -316,7 +316,7 @@ async def list_friends(user: CurrentUser, session: Session):
         )
     )
     other = {r: r.addressee_id if r.requester_id == user.id else r.requester_id for r in rows}
-    people = await _summaries(session, list(other.values()))
+    people = await summaries(session, list(other.values()))
     out = [
         FriendOut(user=people[other[r]], since=r.accepted_at or r.created_at)
         for r in rows
@@ -378,7 +378,7 @@ async def profile(
     friend_count = len(await friend_ids(session, target.id))
     shared = target.share_activity or relation == "self"
     out = ProfileOut(
-        user=_summary(target, picture),
+        user=user_summary(target, picture),
         relation=relation,
         joined_at=target.created_at,
         friends_since=since,

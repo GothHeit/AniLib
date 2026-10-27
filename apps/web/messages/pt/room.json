@@ -34,6 +34,18 @@
     "joinIntro": "Digite o código que um amigo compartilhou para assistir juntos. Para abrir uma sala, abra um episódio e escolha Assistir juntos.",
     "codeLabel": "Código da sala",
     "invalidCode": "Isso não parece um código de sala.",
-    "join": "Entrar"
+    "join": "Entrar",
+    "invite": {
+      "button": "Convidar um amigo",
+      "none": "Nenhum amigo para convidar.",
+      "send": "Convidar",
+      "sent": "Convidado",
+      "loadFailed": "Não deu para carregar seus amigos.",
+      "failed": "Não deu para enviar o convite.",
+      "from": "{name} convidou você",
+      "what": "{title}, episódio {episode}",
+      "join": "Entrar",
+      "dismiss": "Dispensar convite"
+    }
   }
 }

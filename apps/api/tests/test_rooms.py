@@ -223,3 +223,102 @@ async def test_one_person_cannot_hold_many_rooms():
     with pytest.raises(ApiError) as error:
         rooms.create(host, "zoko", 21, "One Piece", 1, "sub")
     assert error.value.code == "too_many_rooms"
+
+
+async def open_room(client, headers):
+    app.state.sources = {"zoko": object()}
+    created = await client.post(
+        "/watch/rooms",
+        json={"source": "zoko", "anime_id": 21, "title": "One Piece", "episode": 3},
+        headers=headers,
+    )
+    return created.json()["code"]
+
+
+async def befriend(client, a_headers, a_id, b_headers, b_name):
+    await client.post("/friends/requests", json={"username": b_name}, headers=a_headers)
+    await client.post(f"/friends/requests/{a_id}/accept", headers=b_headers)
+
+
+async def test_a_member_can_invite_a_friend_who_then_sees_and_dismisses_it(client, session):
+    host, host_headers = await make_user(session, "kafka")
+    guest, guest_headers = await make_user(session, "friend")
+    await befriend(client, host_headers, host.id, guest_headers, "friend")
+    code = await open_room(client, host_headers)
+    app.state.rooms.get(code).join(host.id, "kafka")
+
+    sent = await client.post(
+        f"/watch/rooms/{code}/invite", json={"user_id": str(guest.id)}, headers=host_headers
+    )
+    assert sent.status_code == 204
+    invites = (await client.get("/watch/rooms/invites", headers=guest_headers)).json()
+    assert [(i["code"], i["title"], i["episode"], i["inviter"]["username"]) for i in invites] == [
+        (code, "One Piece", 3, "kafka")
+    ]
+    assert (await client.get("/watch/rooms/invites", headers=host_headers)).json() == []
+
+    dismissed = await client.delete(f"/watch/rooms/invites/{code}", headers=guest_headers)
+    assert dismissed.status_code == 204
+    assert (await client.get("/watch/rooms/invites", headers=guest_headers)).json() == []
+
+
+async def test_an_invite_goes_away_once_the_friend_joins(client, session):
+    host, host_headers = await make_user(session, "kafka")
+    guest, guest_headers = await make_user(session, "friend")
+    await befriend(client, host_headers, host.id, guest_headers, "friend")
+    code = await open_room(client, host_headers)
+    room = app.state.rooms.get(code)
+    room.join(host.id, "kafka")
+    await client.post(
+        f"/watch/rooms/{code}/invite", json={"user_id": str(guest.id)}, headers=host_headers
+    )
+    room.join(guest.id, "friend")
+    assert (await client.get("/watch/rooms/invites", headers=guest_headers)).json() == []
+    again = await client.post(
+        f"/watch/rooms/{code}/invite", json={"user_id": str(guest.id)}, headers=host_headers
+    )
+    assert again.status_code == 409
+
+
+async def test_only_members_can_invite_and_only_friends_can_be_invited(client, session):
+    host, host_headers = await make_user(session, "kafka")
+    guest, guest_headers = await make_user(session, "friend")
+    code = await open_room(client, host_headers)
+    body = {"user_id": str(guest.id)}
+    stranger = await client.post(f"/watch/rooms/{code}/invite", json=body, headers=host_headers)
+    assert stranger.status_code == 403 and stranger.json()["error"]["code"] == "invite_not_friends"
+    await befriend(client, host_headers, host.id, guest_headers, "friend")
+    outside = await client.post(f"/watch/rooms/{code}/invite", json=body, headers=host_headers)
+    assert outside.status_code == 403 and outside.json()["error"]["code"] == "not_in_room"
+
+
+async def test_an_expired_invite_is_not_shown(client, session, monkeypatch):
+    host, host_headers = await make_user(session, "kafka")
+    guest, guest_headers = await make_user(session, "friend")
+    await befriend(client, host_headers, host.id, guest_headers, "friend")
+    code = await open_room(client, host_headers)
+    room = app.state.rooms.get(code)
+    room.join(host.id, "kafka")
+    room.invite(host.id, guest.id)
+    monkeypatch.setattr("app.rooms.INVITE_TTL_SECONDS", -1)
+    assert (await client.get("/watch/rooms/invites", headers=guest_headers)).json() == []
+
+
+async def test_an_invite_is_used_up_by_joining_and_dies_with_the_friendship(client, session):
+    host, host_headers = await make_user(session, "kafka")
+    guest, guest_headers = await make_user(session, "friend")
+    await befriend(client, host_headers, host.id, guest_headers, "friend")
+    code = await open_room(client, host_headers)
+    room = app.state.rooms.get(code)
+    room.join(host.id, "kafka")
+    body = {"user_id": str(guest.id)}
+    await client.post(f"/watch/rooms/{code}/invite", json=body, headers=host_headers)
+    queue = room.join(guest.id, "friend")
+    room.leave(guest.id, queue)
+    assert (await client.get("/watch/rooms/invites", headers=guest_headers)).json() == []
+
+    await client.post(f"/watch/rooms/{code}/invite", json=body, headers=host_headers)
+    await client.delete(f"/friends/{host.id}", headers=guest_headers)
+    assert (await client.get("/watch/rooms/invites", headers=guest_headers)).json() == []
+    gone = await client.delete("/watch/rooms/invites/NOPE00", headers=guest_headers)
+    assert gone.status_code == 204

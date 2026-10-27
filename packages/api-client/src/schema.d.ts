@@ -731,6 +731,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/watch/rooms/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Invites
+         * @description Rooms friends invited you to. Declared before /{code} so "invites" is not read as a code.
+         */
+        get: operations["my_invites_watch_rooms_invites_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/rooms/invites/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Dismiss Invite */
+        delete: operations["dismiss_invite_watch_rooms_invites__code__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/watch/rooms/{code}": {
         parameters: {
             query?: never;
@@ -815,6 +852,26 @@ export interface paths {
         get: operations["events_watch_rooms__code__events_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/rooms/{code}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite Friend
+         * @description Invites a friend to a room you are in. They see it next to their other notices.
+         */
+        post: operations["invite_friend_watch_rooms__code__invite_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1159,14 +1216,6 @@ export interface components {
             id: "continue_watching" | "my_list" | "seasonal" | "top";
             /** Items */
             items: components["schemas"]["HomeItem"][];
-        };
-        /** InviteIn */
-        InviteIn: {
-            /**
-             * Days Valid
-             * @default 7
-             */
-            days_valid: number;
         };
         /** InviteOut */
         InviteOut: {
@@ -1530,6 +1579,18 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** RoomInviteOut */
+        RoomInviteOut: {
+            /** Anime Id */
+            anime_id: number;
+            /** Code */
+            code: string;
+            /** Episode */
+            episode: number;
+            inviter: components["schemas"]["UserSummary"];
+            /** Title */
+            title: string;
+        };
         /** RoomOut */
         RoomOut: {
             /** Anime Id */
@@ -1670,10 +1731,26 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /** InviteIn */
+        app__routers__invites__InviteIn: {
+            /**
+             * Days Valid
+             * @default 7
+             */
+            days_valid: number;
+        };
         /** AnimeListOut */
         app__routers__mal__AnimeListOut: {
             /** Data */
             data: components["schemas"]["ListItemOut"][];
+        };
+        /** InviteIn */
+        app__routers__rooms__InviteIn: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
         };
         /** PlaybackOut */
         app__routers__rooms__PlaybackOut: {
@@ -2312,7 +2389,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["InviteIn"];
+                "application/json": components["schemas"]["app__routers__invites__InviteIn"];
             };
         };
         responses: {
@@ -3086,6 +3163,55 @@ export interface operations {
             };
         };
     };
+    my_invites_watch_rooms_invites_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomInviteOut"][];
+                };
+            };
+        };
+    };
+    dismiss_invite_watch_rooms_invites__code__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_room_watch_rooms__code__get: {
         parameters: {
             query?: never;
@@ -3258,6 +3384,39 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invite_friend_watch_rooms__code__invite_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__routers__rooms__InviteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

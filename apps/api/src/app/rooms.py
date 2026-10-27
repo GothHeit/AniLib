@@ -26,6 +26,10 @@ CHAT_MAX_LENGTH = 300
 REACTIONS = ("👍", "❤️", "😂", "😮", "😢", "🔥")
 EMPTY_GRACE_SECONDS = 60
 MAX_EPISODE = 10_000
+# A friend invited to a room can still see the invite for this long.
+INVITE_TTL_SECONDS = 30 * 60
+MAX_INVITES_PER_ROOM = 50
+MAX_INVITES_PER_PERSON = 10
 
 Event = tuple[str, dict]
 
@@ -53,6 +57,8 @@ class Room:
     members: dict[uuid.UUID, Member] = field(default_factory=dict)
     votes: dict[uuid.UUID, int] = field(default_factory=dict)
     chat: list[dict] = field(default_factory=list)
+    # Invited user -> (who invited, monotonic time of the invite).
+    invited: dict[uuid.UUID, tuple[uuid.UUID, float]] = field(default_factory=dict)
     empty_since: float | None = field(default_factory=time.monotonic)
 
     def now_position(self) -> float:
@@ -103,6 +109,7 @@ class Room:
         is_new = user_id not in self.members
         self.members.setdefault(user_id, Member(username)).queues.add(queue)
         self.empty_since = None
+        self.invited.pop(user_id, None)
         queue.put_nowait(("state", self.snapshot()))
         for message in self.chat:
             queue.put_nowait(("chat", message))
@@ -196,6 +203,29 @@ class Room:
         if self.votes.pop(user_id, None) is not None:
             self._state()
 
+    def invite(self, inviter_id: uuid.UUID, target_id: uuid.UUID) -> None:
+        self._require_member(inviter_id)
+        if target_id in self.members:
+            raise ApiError(409, "already_in_room", "They are already in the room")
+        now = time.monotonic()
+        self.invited = {
+            u: (by, at) for u, (by, at) in self.invited.items() if now - at < INVITE_TTL_SECONDS
+        }
+        by_inviter = sum(1 for by, _ in self.invited.values() if by == inviter_id)
+        if target_id not in self.invited and (
+            len(self.invited) >= MAX_INVITES_PER_ROOM or by_inviter >= MAX_INVITES_PER_PERSON
+        ):
+            raise ApiError(429, "too_many_invites", "Too many invites for this room")
+        self.invited[target_id] = (inviter_id, now)
+
+    def live_invite(self, user_id: uuid.UUID) -> uuid.UUID | None:
+        """Who invited the user, if the invite is still good."""
+        entry = self.invited.get(user_id)
+        if entry is None or user_id in self.members:
+            return None
+        by, at = entry
+        return by if time.monotonic() - at < INVITE_TTL_SECONDS else None
+
     def say(self, user_id: uuid.UUID, text: str) -> None:
         self._require_member(user_id)
         text = text.strip()[:CHAT_MAX_LENGTH]
@@ -250,6 +280,10 @@ class Rooms:
         room = Room(code, host_id, source, anime_id, title, episode, lang)
         self._rooms[code] = room
         return room
+
+    def invites_for(self, user_id: uuid.UUID) -> list[tuple[Room, uuid.UUID]]:
+        found = [(room, by) for room in self._rooms.values() if (by := room.live_invite(user_id))]
+        return sorted(found, key=lambda pair: -pair[0].invited[user_id][1])
 
     def sweep(self) -> None:
         """Drops rooms that have been empty past the grace period."""
