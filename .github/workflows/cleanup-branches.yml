@@ -1,0 +1,59 @@
+name: Cleanup branches
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: List branches that would be deleted without deleting them
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cleanup-branches
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # A branch counts as merged when merging it into main would change
+      # nothing. This also holds for squash merges, where the branch commits
+      # never become ancestors of main. Branches whose tip is under an hour old
+      # are skipped so freshly created branches are never removed.
+      - name: Delete merged branches
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          main_tree=$(git rev-parse origin/main^{tree})
+          cutoff=$(( $(date +%s) - 3600 ))
+          git for-each-ref --format='%(refname:strip=3)' refs/remotes/origin | while read -r branch; do
+            case "$branch" in HEAD|main) continue ;; esac
+            tip=$(git rev-parse "origin/$branch")
+            if [ "$(git log -1 --format=%ct "$tip")" -gt "$cutoff" ]; then
+              echo "keep $branch (recent)"; continue
+            fi
+            if git merge-base --is-ancestor "$tip" origin/main; then
+              echo "keep $branch (no own commits)"; continue
+            fi
+            merged_tree=$(git merge-tree --write-tree origin/main "$tip" 2>/dev/null | head -n1)
+            if [ "$merged_tree" != "$main_tree" ]; then
+              echo "keep $branch (unmerged changes)"; continue
+            fi
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "would delete $branch"
+            else
+              echo "delete $branch"
+              git push --force-with-lease="refs/heads/$branch:$tip" origin ":refs/heads/$branch"
+            fi
+          done
