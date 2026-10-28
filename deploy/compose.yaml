@@ -20,8 +20,6 @@ services:
   api:
     build:
       context: ../apps/api
-      args:
-        EXTRAS: ${API_EXTRAS:-}
     restart: unless-stopped
     environment:
       APP_NAME: ${APP_NAME:-MoonRoom}

@@ -19,11 +19,6 @@ dependencies = [
     "pillow>=13.0.0",
 ]
 
-[project.optional-dependencies]
-# Private-only source. Never installed in a public deployment.
-# Pinned: anipy-api 3.10 no longer ships the AllAnime provider.
-allanime = ["anipy-api==3.8.12"]
-
 [dependency-groups]
 dev = [
     "mypy>=2.4.0",
@@ -61,7 +56,3 @@ warn_unused_ignores = true
 warn_redundant_casts = true
 no_implicit_optional = true
 files = ["src", "tests"]
-
-[[tool.mypy.overrides]]
-module = ["anipy_api.*"]
-ignore_missing_imports = true

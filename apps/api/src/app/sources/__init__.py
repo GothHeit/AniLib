@@ -1,4 +1,11 @@
+import logging
+
 from app.sources.base import VideoSource
+
+log = logging.getLogger(__name__)
+
+# Sources that no longer exist. Skipped with a warning so an old VIDEO_SOURCES still boots.
+RETIRED = {"allanime"}
 
 
 def load_sources(names: list[str]) -> dict[str, VideoSource]:
@@ -6,10 +13,8 @@ def load_sources(names: list[str]) -> dict[str, VideoSource]:
     (or needs installed) a private source."""
     sources: dict[str, VideoSource] = {}
     for name in names:
-        if name == "allanime":
-            from app.sources.allanime import AllAnimeSource
-
-            sources[name] = AllAnimeSource()
+        if name in RETIRED:
+            log.warning("Video source %r was removed; drop it from VIDEO_SOURCES", name)
         elif name == "zoko":
             from app.sources.zoko import ZokoSource
 

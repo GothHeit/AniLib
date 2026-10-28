@@ -15,8 +15,6 @@ services:
   api:
     build:
       context: apps/api
-      args:
-        EXTRAS: ${API_EXTRAS:-}
     env_file: apps/api/.env
     environment:
       DATABASE_URL: postgresql+asyncpg://app:app@db:5432/app

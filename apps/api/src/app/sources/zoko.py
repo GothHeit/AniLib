@@ -1,6 +1,6 @@
 """PRIVATE ONLY: episodes from the ZokoAnime embed player, addressed by MAL id.
 
-Unlicensed, like AllAnime: enable only on an invite-only deployment (VIDEO_SOURCES=zoko).
+Unlicensed: enable only on an invite-only deployment (VIDEO_SOURCES=zoko).
 Same chain as ani-cli's HiAnime provider, minus the title search: the embed URL is
 `/stream/mal/{mal_id}/{episode}/{sub|dub}`, so no fuzzy matching is needed. The page ships
 its config as `window.__P`, base64 of JSON XOR-ed with a fixed key, whose `src` is an HLS

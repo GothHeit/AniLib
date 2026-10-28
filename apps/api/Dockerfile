@@ -1,13 +1,11 @@
 FROM python:3.13-slim
 COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /usr/local/bin/uv
 
-# Set to "allanime" only for the private, invite-only deployment.
-ARG EXTRAS=""
 WORKDIR /srv
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project ${EXTRAS:+--extra $EXTRAS}
+RUN uv sync --frozen --no-dev --no-install-project
 COPY . .
-RUN uv sync --frozen --no-dev ${EXTRAS:+--extra $EXTRAS}
+RUN uv sync --frozen --no-dev
 
 ENV PATH="/srv/.venv/bin:$PATH"
 RUN useradd --system --no-create-home app \

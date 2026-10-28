@@ -90,9 +90,8 @@ Keep a copy off the PC too (cloud drive, another disk). Also back up `deploy/.en
 ## Video sources
 
 `VIDEO_SOURCES` lists unlicensed sources and is meant for this private deployment only. Leave it
-empty (and `API_EXTRAS` too) for anything public or any store build. `PT_SYNOPSIS_SCRAPE` is the same
-kind of switch: it fetches Portuguese synopses from an unlicensed site, so keep it `false` outside
-this deployment.
+empty for anything public or any store build. `PT_SYNOPSIS_SCRAPE` is the same kind of switch: it
+fetches Portuguese synopses from an unlicensed site, so keep it `false` outside this deployment.
 
 ## Moving to a VPS later
 
