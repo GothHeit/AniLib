@@ -1,10 +1,11 @@
+import asyncio
 import logging
 import uuid
 from typing import Annotated, Literal
 from urllib.parse import urljoin
 
 import httpx
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import Response, StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
@@ -12,13 +13,18 @@ from pydantic import BaseModel
 from app import hls
 from app.deps import CurrentUser, Session
 from app.errors import ApiError
-from app.models import PlayerPreferences, User
+from app.models import PlayerPreferences, SourceChoice, User
+from app.schemas import StreamOption
 from app.security import create_playback_token, decode_access_token, decode_playback_token
 from app.sources.base import Lang, Stream, VideoSource
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/watch", tags=["watch"])
 _bearer = HTTPBearer(auto_error=False)
+
+# How long the player's source menu waits on each source before leaving it out.
+OPTION_PROBE_TIMEOUT = 8.0
+LANGS: tuple[Lang, ...] = ("sub", "dub")
 
 
 class EpisodesOut(BaseModel):
@@ -139,6 +145,49 @@ async def episodes(
             for episode, url in result.thumbnails.items()
         },
     )
+
+
+@router.get("/options/{anime_id}/{episode}", response_model=list[StreamOption])
+async def options(request: Request, anime_id: int, episode: int, user: CurrentUser):
+    """Every source and sub/dub that lists this episode, in fallback order, for the player's
+    source menu. A source that is slow or failing is left out."""
+    anime = await request.app.state.mal.visible_details(anime_id, user.show_nsfw)
+    pairs = [(name, lang) for name in request.app.state.sources for lang in LANGS]
+
+    async def has(name: str, lang: Lang) -> bool:
+        try:
+            listed = await asyncio.wait_for(
+                request.app.state.sources[name].episodes(anime, lang), OPTION_PROBE_TIMEOUT
+            )
+        except Exception:
+            return False
+        return listed is not None and episode in listed.episodes
+
+    found = await asyncio.gather(*(has(name, lang) for name, lang in pairs))
+    return [
+        StreamOption(source=name, lang=lang)
+        for (name, lang), hit in zip(pairs, found, strict=True)
+        if hit
+    ]
+
+
+@router.put("/choice/{anime_id}", status_code=204)
+async def put_choice(
+    anime_id: Annotated[int, Path(ge=1)],
+    body: StreamOption,
+    request: Request,
+    user: CurrentUser,
+    session: Session,
+):
+    """Remembers the source and sub/dub the user picked for this title."""
+    _source(request, body.source)
+    saved = await session.get(SourceChoice, (user.id, anime_id))
+    if saved is None:
+        saved = SourceChoice(user_id=user.id, anime_id=anime_id)
+        session.add(saved)
+    saved.source = body.source
+    saved.lang = body.lang
+    await session.commit()
 
 
 @router.get("/preferences", response_model=PlayerPreferencesIO)

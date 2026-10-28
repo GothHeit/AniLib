@@ -113,9 +113,18 @@ class AnimeDetailsOut(AnimeCard):
     recommendations: list[Recommendation] = Field(default_factory=list)
 
 
+class StreamOption(BaseModel):
+    """One way to play a title: a source and its sub or dub."""
+
+    source: str = Field(min_length=1, max_length=40)
+    lang: Literal["sub", "dub"]
+
+
 class SourcesOut(BaseModel):
     # Names of the enabled VideoSources that have this title. A hint: it can be stale.
     sources: list[str]
+    # What the user last picked in the player for this title, when that source still has it.
+    choice: StreamOption | None = None
 
 
 class ProgressIn(BaseModel):

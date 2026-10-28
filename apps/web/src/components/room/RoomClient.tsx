@@ -23,8 +23,21 @@ type Props = {
 export function RoomClient({ initial, meId, episodes, subtitleLang, subtitleStyle }: Props) {
   const t = useTranslations("room");
   const toast = useToast();
-  const { room, playback, messages, status, lastReaction, send, setBuffering, say, react, voteEpisode, withdrawVote, setLocked } =
-    useRoom(initial);
+  const {
+    room,
+    playback,
+    messages,
+    status,
+    lastReaction,
+    send,
+    setBuffering,
+    say,
+    react,
+    voteEpisode,
+    withdrawVote,
+    setLocked,
+    switchStream,
+  } = useRoom(initial);
   const [open, setOpen] = useState(false);
   const [seen, setSeen] = useState(0);
   const unread = open ? 0 : messages.length - seen;
@@ -123,6 +136,7 @@ export function RoomClient({ initial, meId, episodes, subtitleLang, subtitleStyl
         send,
         setBuffering,
         pickEpisode: (episode) => void voteEpisode(episode),
+        switchStream: room.host_id === meId ? switchStream : undefined,
         onLocked: () => toast(t("locked"), "error"),
         topBar,
         overlay,

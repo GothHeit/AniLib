@@ -2260,6 +2260,16 @@
       },
       "SourcesOut": {
         "properties": {
+          "choice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StreamOption"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "sources": {
             "items": {
               "type": "string"
@@ -2290,6 +2300,55 @@
           "season"
         ],
         "title": "StartSeason",
+        "type": "object"
+      },
+      "StreamIn": {
+        "properties": {
+          "lang": {
+            "enum": [
+              "sub",
+              "dub"
+            ],
+            "title": "Lang",
+            "type": "string"
+          },
+          "source": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "lang"
+        ],
+        "title": "StreamIn",
+        "type": "object"
+      },
+      "StreamOption": {
+        "description": "One way to play a title: a source and its sub or dub.",
+        "properties": {
+          "lang": {
+            "enum": [
+              "sub",
+              "dub"
+            ],
+            "title": "Lang",
+            "type": "string"
+          },
+          "source": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "lang"
+        ],
+        "title": "StreamOption",
         "type": "object"
       },
       "Studio": {
@@ -4697,6 +4756,57 @@
         ]
       }
     },
+    "/watch/choice/{anime_id}": {
+      "put": {
+        "description": "Remembers the source and sub/dub the user picked for this title.",
+        "operationId": "put_choice_watch_choice__anime_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anime_id",
+            "required": true,
+            "schema": {
+              "title": "Anime Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StreamOption"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Choice",
+        "tags": [
+          "watch"
+        ]
+      }
+    },
     "/watch/hls": {
       "get": {
         "description": "Without `u`, the master playlist of the episode the token is for. With `u`, one\nplaylist, segment, subtitle or image that an earlier response linked to (signed for the\nsigned-in viewer, who must send their bearer token, as the web app's proxy does).",
@@ -4801,6 +4911,67 @@
           }
         ],
         "summary": "Hls Proxy",
+        "tags": [
+          "watch"
+        ]
+      }
+    },
+    "/watch/options/{anime_id}/{episode}": {
+      "get": {
+        "description": "Every source and sub/dub that lists this episode, in fallback order, for the player's\nsource menu. A source that is slow or failing is left out.",
+        "operationId": "options_watch_options__anime_id___episode__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anime_id",
+            "required": true,
+            "schema": {
+              "title": "Anime Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "episode",
+            "required": true,
+            "schema": {
+              "title": "Episode",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StreamOption"
+                  },
+                  "title": "Response Options Watch Options  Anime Id   Episode  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Options",
         "tags": [
           "watch"
         ]
@@ -5394,6 +5565,57 @@
           }
         ],
         "summary": "Reaction",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/watch/rooms/{code}/stream": {
+      "put": {
+        "description": "The host switches everyone to another source, or between sub and dub.",
+        "operationId": "switch_stream_watch_rooms__code__stream_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StreamIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Switch Stream",
         "tags": [
           "rooms"
         ]

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
 
+import type { StreamChoice } from "@/lib/watch-target";
+
 import { APPLY_WINDOW_MS, commandFor, correction, type LocalEvent, type Playback } from "./sync";
 
 export type RoomBinding = {
@@ -13,6 +15,8 @@ export type RoomBinding = {
   setBuffering: (buffering: boolean) => unknown;
   /** The viewer asked for another episode: a vote, or an order when they host. */
   pickEpisode: (episode: number) => unknown;
+  /** Moves everyone to another source or between sub and dub. Only set for the host. */
+  switchStream?: (to: StreamChoice) => unknown;
   /** Called when a locked viewer tries to control the video. */
   onLocked: () => void;
   /** Rendered in the player's top bar, after the title. */

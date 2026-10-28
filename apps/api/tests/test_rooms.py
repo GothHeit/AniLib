@@ -72,6 +72,30 @@ async def test_locked_controls_are_host_only():
     room.control(host, "pause", 0)
 
 
+async def test_the_host_switches_the_stream_for_everyone_at_the_same_spot():
+    room, host = new_room()
+    room.join(host, "kafka")
+    guest = uuid.uuid4()
+    q = room.join(guest, "friend")
+    room.control(host, "play", 300)
+    room.set_buffering(guest, True)
+    drain(q)
+    with pytest.raises(ApiError) as error:
+        room.set_stream(guest, "animesdigital", "sub")
+    assert error.value.code == "host_only"
+
+    room.set_stream(host, "animesdigital", "dub")
+    kind, state = drain(q)[-1]
+    assert kind == "state"
+    assert (state["source"], state["lang"], state["episode"]) == ("animesdigital", "dub", 1)
+    assert state["playback"]["position"] >= 300
+    # The old stream's stall no longer holds anyone.
+    assert state["buffering"] == [] and not room.held
+
+    room.set_stream(host, "animesdigital", "dub")
+    assert drain(q) == []
+
+
 async def test_strangers_cannot_act():
     room, host = new_room()
     room.join(host, "kafka")
@@ -180,6 +204,19 @@ async def test_the_api_creates_and_runs_a_room(client, session):
         f"/watch/rooms/{code}/lock", json={"locked": True}, headers=guest_headers
     )
     assert locked.status_code == 403
+
+    stream = {"source": "zoko", "lang": "dub"}
+    switched = await client.put(f"/watch/rooms/{code}/stream", json=stream, headers=host_headers)
+    assert switched.status_code == 204
+    assert app.state.rooms.get(code).lang == "dub"
+    off = await client.put(
+        f"/watch/rooms/{code}/stream", json={"source": "nope", "lang": "sub"}, headers=host_headers
+    )
+    assert off.status_code == 404
+    guest_switch = await client.put(
+        f"/watch/rooms/{code}/stream", json=stream, headers=guest_headers
+    )
+    assert guest_switch.status_code == 403
 
 
 async def test_creating_a_room_needs_login_and_an_enabled_source(client, session):

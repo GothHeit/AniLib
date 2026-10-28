@@ -3,14 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/i18n/navigation", () => ({ Link: () => null, useRouter: () => ({}) }));
 vi.mock("@/lib/api", () => ({ api: {} }));
 
-const { pickAudio, pickTrack, watchHref } = await import("./Player");
-
-describe("watchHref", () => {
-  it("keeps sub and the start out of the URL unless needed", () => {
-    expect(watchHref("zoko", 5, 3)).toBe("/watch/zoko/5/3");
-    expect(watchHref("zoko", 5, 3, "dub", 61.8)).toBe("/watch/zoko/5/3?lang=dub&t=61");
-  });
-});
+const { pickAudio, pickTrack } = await import("./Player");
 
 describe("pickTrack", () => {
   const tracks = [

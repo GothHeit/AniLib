@@ -17,6 +17,10 @@ async function stubVideo(page: Page) {
       json: { source: "zoko", kind: "mp4", resolution: null, url: "/watch/media/clip.webm", subtitles: [], skips: [] },
     }),
   );
+  await page.route(/\/api\/proxy\/watch\/options\/\d+\/\d+/, (route) =>
+    route.fulfill({ json: [{ source: "zoko", lang: "sub" }, { source: "zoko", lang: "dub" }] }),
+  );
+  await page.route(/\/api\/proxy\/watch\/choice\/\d+/, (route) => route.fulfill({ status: 204 }));
   await page.route("**/api/proxy/watch/media/clip.webm", (route) => {
     const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers()["range"] ?? "");
     if (!range) return route.fulfill({ body: CLIP, contentType: "video/webm", headers: { "Accept-Ranges": "bytes" } });
@@ -96,6 +100,24 @@ test("play and pause reach everyone", async ({ browser }) => {
   await guest.keyboard.press("Space");
   await expect.poll(() => playing(host)).toBe(false);
   await expect.poll(() => playing(guest)).toBe(false);
+  await expectInSync(host, guest);
+});
+
+test("the host switches everyone to another source where the room is", async ({ browser }) => {
+  const { host, guest } = await pair(browser);
+  await guest.getByRole("button", { name: "Settings" }).click();
+  await expect(guest.getByRole("button", { name: /^Playback speed/ })).toBeVisible();
+  await expect(guest.getByRole("button", { name: /^Source/ })).toHaveCount(0);
+  await guest.getByRole("button", { name: "Close settings" }).click();
+
+  await seek(host, 15);
+  await expect.poll(() => time(guest)).toBeGreaterThan(14);
+  const reloaded = guest.waitForRequest(/\/episodes\/1\/play\?lang=dub/);
+  await host.getByRole("button", { name: "Settings" }).click();
+  await host.getByRole("button", { name: /^Source/ }).click();
+  await host.getByRole("radio", { name: "Zoko · English dub" }).click();
+  await reloaded;
+  await expect.poll(() => time(guest)).toBeGreaterThan(14);
   await expectInSync(host, guest);
 });
 

@@ -5,6 +5,7 @@ import { errorCode } from "@app/api-client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "@/lib/api";
+import type { StreamChoice } from "@/lib/watch-target";
 
 import type { LocalEvent, Playback } from "./sync";
 
@@ -107,10 +108,14 @@ export function useRoom(initial: RoomState) {
     () => api.DELETE("/watch/rooms/{code}/episode", path).catch(() => undefined),
     [path],
   );
+  const switchStream = useCallback(
+    (to: StreamChoice) => api.PUT("/watch/rooms/{code}/stream", { ...path, body: to }).catch(() => undefined),
+    [path],
+  );
   const setLocked = useCallback(
     (locked: boolean) => api.PUT("/watch/rooms/{code}/lock", { ...path, body: { locked } }).catch(() => undefined),
     [path],
   );
 
-  return { room, playback, messages, status, lastReaction, send, setBuffering, say, react, voteEpisode, withdrawVote, setLocked };
+  return { room, playback, messages, status, lastReaction, send, setBuffering, say, react, voteEpisode, withdrawVote, setLocked, switchStream };
 }

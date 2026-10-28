@@ -1,7 +1,7 @@
 // Minimal stand-in for the API, so the web e2e tests need no database.
 import { createServer } from "node:http";
 
-import { handleWatch } from "./fake-watch.mjs";
+import { choiceFor, handleWatch } from "./fake-watch.mjs";
 
 // The saved subtitle choice, like the real account setting.
 let subtitleLang = null;
@@ -205,7 +205,10 @@ createServer(async (req, res) => {
     if (url.pathname === "/home") return send(200, HOME);
     // Every title but the tracking-only one (id 2) has the stub source.
     const sources = /^\/anime\/(\d+)\/sources$/.exec(url.pathname);
-    if (sources) return send(200, { sources: Number(sources[1]) === 2 ? [] : ["stub"] });
+    if (sources) {
+      const id = Number(sources[1]);
+      return send(200, id === 2 ? { sources: [], choice: null } : { sources: ["stub"], choice: choiceFor(id) });
+    }
     if (url.pathname === "/anime/genres") return send(200, GENRES);
     if (url.pathname === "/anime/search") {
       const q = (url.searchParams.get("q") ?? "").toLowerCase();

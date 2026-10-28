@@ -197,3 +197,18 @@ class EpisodeSeen(Base):
     anime_id: Mapped[int] = mapped_column(primary_key=True)
     latest_episode: Mapped[int]
     checked_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class SourceChoice(Base):
+    """The source and sub/dub a user picked in the player for one title, so it plays from
+    there next time. Only explicit picks are kept, never a fallback that happened to answer."""
+
+    __tablename__ = "source_choices"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    anime_id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str] = mapped_column(String(40))
+    lang: Mapped[str] = mapped_column(String(3))
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow, onupdate=utcnow)

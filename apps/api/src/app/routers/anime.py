@@ -6,10 +6,11 @@ from typing import Annotated, Literal
 from cachetools import TLRUCache
 from fastapi import APIRouter, Query, Request
 
-from app.deps import CurrentUser
+from app.deps import CurrentUser, Session
 from app.errors import ApiError
 from app.mal.client import MalClient, is_safe
 from app.mal.genres import GENRE_IDS, GENRES
+from app.models import SourceChoice
 from app.schemas import (
     AnimeCard,
     AnimeDetailsOut,
@@ -18,6 +19,7 @@ from app.schemas import (
     GenreOut,
     SeasonalOut,
     SourcesOut,
+    StreamOption,
 )
 
 router = APIRouter(prefix="/anime", tags=["anime"])
@@ -136,11 +138,16 @@ async def details(
 
 
 @router.get("/{anime_id}/sources", response_model=SourcesOut)
-async def sources(request: Request, anime_id: int, user: CurrentUser):
+async def sources(request: Request, anime_id: int, user: CurrentUser, session: Session):
     """Which sources can play this title. Separate from the details so a slow scraper never
     holds the title page back."""
     raw = await _mal(request).visible_details(anime_id, user.show_nsfw)
-    return SourcesOut(sources=await _available_sources(request, raw))
+    available = await _available_sources(request, raw)
+    saved = await session.get(SourceChoice, (user.id, anime_id))
+    choice = None
+    if saved is not None and saved.source in available:
+        choice = StreamOption(source=saved.source, lang="dub" if saved.lang == "dub" else "sub")
+    return SourcesOut(sources=available, choice=choice)
 
 
 # Checks left running after the response. The loop only holds tasks weakly, so keep them here

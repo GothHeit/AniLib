@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 
-import type { Lang } from "./Player";
 import { BACKGROUNDS, COLORS, POSITIONS, SIZES, type SubtitleStyle } from "./subtitleStyle";
 
 export type Quality = { index: number; height: number };
@@ -18,11 +17,14 @@ type Props = {
   audioTracks: AudioTrack[];
   audioTrack: number;
   onAudioTrack: (id: number) => void;
-  /** Sub or dub: a different stream, so changing it reloads the episode. */
-  lang: Lang;
-  onLang: (lang: Lang) => void;
-  /** Hidden in a room, where everyone watches the same stream. */
-  canSwitchLang: boolean;
+  /** Labels of the sources (each with its sub or dub) that have this episode. Picking one
+   * reloads the episode from there. Empty when the viewer can't switch, e.g. a room guest. */
+  streams: string[];
+  /** The one playing, or -1. */
+  stream: number;
+  onStream: (index: number) => void;
+  /** Label of what is playing now. */
+  streamName: string;
   /** Names already localized, in the same order as the tracks. */
   subtitleNames: string[];
   /** -1 for off. */
@@ -36,7 +38,7 @@ type Props = {
   onClose: () => void;
 };
 
-type View = "main" | "audio" | "subtitles" | "speed" | "quality" | "style";
+type View = "main" | "source" | "audio" | "subtitles" | "speed" | "quality" | "style";
 
 function Row({ label, value, onClick }: { label: string; value: string; onClick: () => void }) {
   return (
@@ -120,6 +122,7 @@ export function SettingsMenu(props: Props) {
   const qualityName = props.quality < 0 ? t("settings.auto") : t("settings.height", { height: heightOf(props) });
   const titles: Record<View, string> = {
     main: t("settings.title"),
+    source: t("source"),
     audio: t("audio"),
     subtitles: t("subtitles"),
     speed: t("speed"),
@@ -130,25 +133,25 @@ export function SettingsMenu(props: Props) {
 
   let body: ReactNode;
   switch (view) {
+    case "source":
+      body = (
+        <div role="radiogroup" aria-label={titles.source}>
+          {props.streams.map((label, i) => (
+            <Option key={i} checked={props.stream === i} onClick={() => props.onStream(i)}>
+              {label}
+            </Option>
+          ))}
+        </div>
+      );
+      break;
     case "audio":
       body = (
         <div role="radiogroup" aria-label={titles.audio}>
-          {props.canSwitchLang &&
-            (["sub", "dub"] as const).map((l) => (
-              <Option key={l} checked={props.lang === l} onClick={() => props.onLang(l)}>
-                {t(l)}
-              </Option>
-            ))}
-          {hasAudioTracks && (
-            <>
-              {props.canSwitchLang && <p className="px-3 pb-1 pt-3 text-xs font-bold uppercase tracking-wide text-muted">{t("settings.audioTrack")}</p>}
-              {props.audioTracks.map((a) => (
-                <Option key={a.id} checked={a.id === props.audioTrack} onClick={() => props.onAudioTrack(a.id)}>
-                  {a.label}
-                </Option>
-              ))}
-            </>
-          )}
+          {props.audioTracks.map((a) => (
+            <Option key={a.id} checked={a.id === props.audioTrack} onClick={() => props.onAudioTrack(a.id)}>
+              {a.label}
+            </Option>
+          ))}
         </div>
       );
       break;
@@ -208,13 +211,8 @@ export function SettingsMenu(props: Props) {
     default:
       body = (
         <>
-          {(props.canSwitchLang || hasAudioTracks) && (
-            <Row
-              label={t("audio")}
-              value={[t(props.lang), hasAudioTracks ? audioName : undefined].filter(Boolean).join(" · ")}
-              onClick={() => setView("audio")}
-            />
-          )}
+          {props.streams.length > 1 && <Row label={t("source")} value={props.streamName} onClick={() => setView("source")} />}
+          {hasAudioTracks && <Row label={t("audio")} value={audioName ?? ""} onClick={() => setView("audio")} />}
           {hasSubtitles && <Row label={t("subtitles")} value={subtitleName} onClick={() => setView("subtitles")} />}
           <Row label={t("speed")} value={t("speedValue", { rate: props.rate })} onClick={() => setView("speed")} />
           {props.qualities.length > 1 && <Row label={t("settings.quality")} value={qualityName} onClick={() => setView("quality")} />}

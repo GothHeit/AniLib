@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { gradientFor } from "@/components/ui/PosterCard";
 import { Link } from "@/i18n/navigation";
+import { watchHref, type Lang } from "@/lib/watch-target";
 
 import { progressRatio, type Progress } from "./resume";
 
@@ -17,6 +18,7 @@ export function pageOf(episodes: number[], episode: number) {
 
 type Props = {
   source: string;
+  lang?: Lang;
   animeId: number;
   episodes: number[];
   progress: Progress[];
@@ -28,7 +30,7 @@ type Props = {
   fallbackImage?: string;
 };
 
-export function EpisodeList({ source, animeId, episodes, progress, current, thumbnails, fallbackImage }: Props) {
+export function EpisodeList({ source, lang = "sub", animeId, episodes, progress, current, thumbnails, fallbackImage }: Props) {
   const t = useTranslations("titlePage");
   const [page, setPage] = useState(current === undefined ? 0 : pageOf(episodes, current));
   const pages = Math.ceil(episodes.length / PAGE_SIZE);
@@ -70,7 +72,7 @@ export function EpisodeList({ source, animeId, episodes, progress, current, thum
           const image = still ? `/api/proxy${still}` : fallbackImage;
           return (
             <li key={ep}>
-              <Link href={`/watch/${source}/${animeId}/${ep}`} className="group block">
+              <Link href={watchHref(source, animeId, ep, lang)} className="group block">
                 <div
                   className={`relative flex aspect-video items-center justify-center overflow-hidden rounded-ui border border-line transition-transform group-hover:scale-[1.03] group-focus-visible:scale-[1.03] ${gradientFor(animeId + ep)}`}
                 >

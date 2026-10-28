@@ -88,6 +88,11 @@ class LockIn(BaseModel):
     locked: bool
 
 
+class StreamIn(BaseModel):
+    source: str = Field(min_length=1, max_length=40)
+    lang: Literal["sub", "dub"]
+
+
 def _room(request: Request, code: str) -> Room:
     rooms: Rooms = request.app.state.rooms
     return rooms.get(code)
@@ -160,6 +165,15 @@ async def vote_episode(code: str, body: EpisodeIn, request: Request, user: Curre
 @router.delete("/{code}/episode", status_code=204)
 async def withdraw_vote(code: str, request: Request, user: CurrentUser):
     _room(request, code).withdraw_vote(user.id)
+
+
+@router.put("/{code}/stream", status_code=204)
+async def switch_stream(code: str, body: StreamIn, request: Request, user: CurrentUser):
+    """The host switches everyone to another source, or between sub and dub."""
+    room = _room(request, code)
+    if body.source not in request.app.state.sources:
+        raise ApiError(404, "source_not_found", f"Video source '{body.source}' is not enabled")
+    room.set_stream(user.id, body.source, body.lang)
 
 
 @router.put("/{code}/lock", status_code=204)

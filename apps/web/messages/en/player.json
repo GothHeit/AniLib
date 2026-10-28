@@ -21,7 +21,6 @@
     "audio": "Audio",
     "sub": "Sub",
     "dub": "Dub",
-    "dubUnavailable": "No dub for this episode.",
     "next": "Next episode",
     "nextIn": "Episode {episode} starts in {seconds, plural, one {# second} other {# seconds}}",
     "nextReady": "Up next: episode {episode}",
@@ -42,12 +41,24 @@
     "skipIntro": "Skip intro",
     "skipOutro": "Skip credits",
     "fallbackSource": "playing from {source}",
+    "source": "Source",
+    "streams": {
+      "zoko": {
+        "sub": "Zoko · Subtitled",
+        "dub": "Zoko · English dub"
+      },
+      "animesdigital": {
+        "sub": "Animes Digital · Portuguese subtitles",
+        "dub": "Animes Digital · Portuguese dub"
+      }
+    },
+    "streamFallback": "{source} · {lang}",
+    "tryAnotherSource": "Or try another source:",
     "settings": {
       "title": "Settings",
       "quality": "Quality",
       "auto": "Auto",
       "height": "{height}p",
-      "audioTrack": "Audio track",
       "subtitleStyle": "Subtitle style",
       "size": "Size",
       "color": "Color",

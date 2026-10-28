@@ -117,9 +117,13 @@ async def test_details_include_related_recommendations_and_lazy_sources(client, 
     assert "available_sources" not in body
 
     assert (await client.get("/anime/5/sources", headers=headers)).json() == {
-        "sources": ["present"]
+        "sources": ["present"],
+        "choice": None,
     }
-    assert (await client.get("/anime/8/sources", headers=headers)).json() == {"sources": []}
+    assert (await client.get("/anime/8/sources", headers=headers)).json() == {
+        "sources": [],
+        "choice": None,
+    }
 
 
 @respx.mock

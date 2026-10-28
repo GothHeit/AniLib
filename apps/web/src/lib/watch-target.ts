@@ -1,3 +1,16 @@
+export type Lang = "sub" | "dub";
+
+/** A way to play a title: which source, and its sub or dub. */
+export type StreamChoice = { source: string; lang: Lang };
+
+export function watchHref(source: string, animeId: number, episode: number, lang: Lang = "sub", startAt = 0) {
+  const query = new URLSearchParams();
+  if (lang !== "sub") query.set("lang", lang);
+  if (startAt > 0) query.set("t", String(Math.floor(startAt)));
+  const qs = query.toString();
+  return `/watch/${source}/${animeId}/${episode}${qs ? `?${qs}` : ""}`;
+}
+
 /**
  * The episode to open when someone asks for `wanted` of a title whose source lists `episodes`.
  * A resume point can sit past what has aired (or past a shorter source), so it is clamped to

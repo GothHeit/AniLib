@@ -763,6 +763,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/watch/choice/{anime_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Choice
+         * @description Remembers the source and sub/dub the user picked for this title.
+         */
+        put: operations["put_choice_watch_choice__anime_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/watch/hls": {
         parameters: {
             query?: never;
@@ -777,6 +797,27 @@ export interface paths {
          *     signed-in viewer, who must send their bearer token, as the web app's proxy does).
          */
         get: operations["hls_proxy_watch_hls_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/options/{anime_id}/{episode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Options
+         * @description Every source and sub/dub that lists this episode, in fallback order, for the player's
+         *     source menu. A source that is slow or failing is left out.
+         */
+        get: operations["options_watch_options__anime_id___episode__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -975,6 +1016,26 @@ export interface paths {
         put?: never;
         /** Reaction */
         post: operations["reaction_watch_rooms__code__reaction_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/rooms/{code}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Switch Stream
+         * @description The host switches everyone to another source, or between sub and dub.
+         */
+        put: operations["switch_stream_watch_rooms__code__stream_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1778,6 +1839,7 @@ export interface components {
         };
         /** SourcesOut */
         SourcesOut: {
+            choice?: components["schemas"]["StreamOption"] | null;
             /** Sources */
             sources: string[];
         };
@@ -1787,6 +1849,29 @@ export interface components {
             season: string;
             /** Year */
             year: number;
+        };
+        /** StreamIn */
+        StreamIn: {
+            /**
+             * Lang
+             * @enum {string}
+             */
+            lang: "sub" | "dub";
+            /** Source */
+            source: string;
+        };
+        /**
+         * StreamOption
+         * @description One way to play a title: a source and its sub or dub.
+         */
+        StreamOption: {
+            /**
+             * Lang
+             * @enum {string}
+             */
+            lang: "sub" | "dub";
+            /** Source */
+            source: string;
         };
         /** Studio */
         Studio: {
@@ -3326,6 +3411,39 @@ export interface operations {
             };
         };
     };
+    put_choice_watch_choice__anime_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                anime_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StreamOption"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     hls_proxy_watch_hls_get: {
         parameters: {
             query?: {
@@ -3349,6 +3467,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    options_watch_options__anime_id___episode__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                anime_id: number;
+                episode: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StreamOption"][];
                 };
             };
             /** @description Validation Error */
@@ -3747,6 +3897,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ReactionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    switch_stream_watch_rooms__code__stream_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StreamIn"];
             };
         };
         responses: {

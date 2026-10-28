@@ -21,7 +21,6 @@
     "audio": "Áudio",
     "sub": "Legendado",
     "dub": "Dublado",
-    "dubUnavailable": "Este episódio não tem versão dublada.",
     "next": "Próximo episódio",
     "nextIn": "O episódio {episode} começa em {seconds, plural, one {# segundo} other {# segundos}}",
     "nextReady": "A seguir: episódio {episode}",
@@ -42,12 +41,24 @@
     "skipIntro": "Pular abertura",
     "skipOutro": "Pular encerramento",
     "fallbackSource": "tocando de {source}",
+    "source": "Fonte",
+    "streams": {
+      "zoko": {
+        "sub": "Zoko · Legendado",
+        "dub": "Zoko · Dublado em inglês"
+      },
+      "animesdigital": {
+        "sub": "Animes Digital · Legendado em português",
+        "dub": "Animes Digital · Dublado em português"
+      }
+    },
+    "streamFallback": "{source} · {lang}",
+    "tryAnotherSource": "Ou tente outra fonte:",
     "settings": {
       "title": "Configurações",
       "quality": "Qualidade",
       "auto": "Automática",
       "height": "{height}p",
-      "audioTrack": "Faixa de áudio",
       "subtitleStyle": "Estilo da legenda",
       "size": "Tamanho",
       "color": "Cor",

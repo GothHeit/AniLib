@@ -58,6 +58,7 @@ async function Episodes({ id, image }: { id: number; image?: string }) {
   return (
     <EpisodeList
       source={plan.source}
+      lang={plan.lang}
       animeId={id}
       episodes={plan.episodes}
       progress={plan.progress}

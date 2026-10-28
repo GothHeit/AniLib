@@ -18,6 +18,10 @@ const DEFAULT_PREFERENCES = {
   subtitle_position: "bottom",
 };
 let preferences = { ...DEFAULT_PREFERENCES };
+// anime id -> the source and sub/dub picked in the player.
+const choices = new Map();
+
+export const choiceFor = (animeId) => choices.get(animeId) ?? null;
 
 function details(id) {
   const watchable = id !== 2;
@@ -116,7 +120,24 @@ export async function handleWatch(req, res, { url, send, error, body, authed }) 
     return reply(200, preferences);
   }
 
-  let m = /^\/anime\/(\d+)$/.exec(path);
+  let m = /^\/watch\/options\/(\d+)\/(\d+)$/.exec(path);
+  if (m) {
+    if (!authed) return reply(401, error("not_authenticated"));
+    const episode = Number(m[2]);
+    return reply(
+      200,
+      ["sub", "dub"].filter((lang) => EPISODES[lang].includes(episode)).map((lang) => ({ source: SOURCE, lang })),
+    );
+  }
+  m = /^\/watch\/choice\/(\d+)$/.exec(path);
+  if (m && req.method === "PUT") {
+    if (!authed) return reply(401, error("not_authenticated"));
+    choices.set(Number(m[1]), await body(req));
+    res.writeHead(204);
+    res.end();
+    return true;
+  }
+  m = /^\/anime\/(\d+)$/.exec(path);
   if (m) {
     if (!authed) return reply(401, error("not_authenticated"));
     return reply(200, details(Number(m[1])));

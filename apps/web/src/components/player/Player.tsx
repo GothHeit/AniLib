@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { Link, useRouter } from "@/i18n/navigation";
 import { api } from "@/lib/api";
+import { watchHref, type Lang, type StreamChoice } from "@/lib/watch-target";
 
 import { useRoomSync, type RoomBinding } from "@/components/room/useRoomSync";
 
@@ -17,12 +18,13 @@ import { PlayerIcon } from "./icons";
 import { languageName, trackNames } from "./languages";
 import { formatTime } from "./progress";
 import { SettingsMenu, type AudioTrack, type Quality } from "./SettingsMenu";
+import { sameStream, streamLabel, type StreamNames } from "./streams";
 import { activeSkip, type Skip } from "./skips";
 import { SubtitleOverlay } from "./SubtitleOverlay";
 import type { SubtitleStyle } from "./subtitleStyle";
 import { useProgressSaver } from "./useProgressSaver";
 
-export type Lang = "sub" | "dub";
+export type { Lang };
 
 type Props = {
   source: string;
@@ -32,7 +34,7 @@ type Props = {
   /** Sorted episode numbers the source has, used for the next episode. May be empty. */
   episodes: number[];
   lang: Lang;
-  /** Seconds to start from: the saved position, or where a sub/dub switch left off. */
+  /** Seconds to start from: the saved position, or where a source or sub/dub switch left off. */
   startAt: number;
   /** Saved subtitle choice: a language code, "off", or null for automatic. */
   subtitleLang: string | null;
@@ -68,14 +70,6 @@ export function pickTrack(tracks: Track[], preference: string | null): number {
   return -1;
 }
 
-export function watchHref(source: string, animeId: number, episode: number, lang: Lang = "sub", startAt = 0) {
-  const query = new URLSearchParams();
-  if (lang !== "sub") query.set("lang", lang);
-  if (startAt > 0) query.set("t", String(Math.floor(startAt)));
-  const qs = query.toString();
-  return `/watch/${source}/${animeId}/${episode}${qs ? `?${qs}` : ""}`;
-}
-
 export function Player(props: Props) {
   const { source, animeId, episode, title, episodes, lang, startAt, subtitleLang } = props;
   const t = useTranslations("player");
@@ -107,6 +101,8 @@ export function Player(props: Props) {
   // null until the viewer picks one here; then it wins over the saved preference.
   const [chosen, setChosen] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Every source and sub/dub that has this episode, for the source menu.
+  const [streams, setStreams] = useState<StreamChoice[]>([]);
   const [playing, setPlaying] = useState(false);
   const [waiting, setWaiting] = useState(true);
   const [current, setCurrent] = useState(startAt);
@@ -121,6 +117,10 @@ export function Player(props: Props) {
   const autoNext = useAutoNext();
 
   const subtitleNames = trackNames(tracks, locale);
+  const names: StreamNames = { has: (key) => t.has(key), t: (key, values) => t(key, values) };
+  const playingFrom: StreamChoice = { source: answered, lang };
+  // In a room only the host moves everyone to another stream.
+  const canSwitchStream = !props.room || props.room.switchStream !== undefined;
   const audioNames = audioTracks.map((a) => ({ ...a, label: languageName(a.lang, locale) ?? a.label }));
 
   const next = episodes.find((e) => e > episode);
@@ -163,6 +163,18 @@ export function Player(props: Props) {
       cancelled = true;
     };
   }, [source, animeId, episode, lang, attempt]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .GET("/watch/options/{anime_id}/{episode}", { params: { path: { anime_id: animeId, episode } } })
+      .then(({ data }) => !cancelled && data && setStreams(data))
+      // Without the list the menu just has nothing to switch to.
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [animeId, episode]);
 
   const [preference, setPreference] = useState(subtitleLang);
   const selected = chosen ?? pickTrack(tracks, preference);
@@ -377,20 +389,22 @@ export function Player(props: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [togglePlay, seekBy, changeVolume, toggleFullscreen, toggleMute, goNext, skipNow, settingsOpen, poke]);
 
-  async function switchLang(to: Lang) {
-    if (to === lang) return;
-    const position = video.current?.currentTime ?? current;
-    // Check first, so a missing dub doesn't drop the viewer on an error screen.
-    const { data } = await api
-      .GET("/watch/{source}/{anime_id}/episodes", {
-        params: { path: { source, anime_id: animeId }, query: { lang: to } },
-      })
-      .catch(() => ({ data: undefined }));
-    if (!data?.episodes.includes(episode)) {
-      toast(to === "dub" ? t("dubUnavailable") : t("errors.not_available"), "error");
+  function switchStream(to: StreamChoice) {
+    setSettingsOpen(false);
+    if (sameStream(to, playingFrom) && !error) return;
+    // What was asked for already: a fallback answered or it failed, so ask again.
+    if (sameStream(to, { source, lang })) {
+      retry();
       return;
     }
-    router.replace(watchHref(source, animeId, episode, to, position));
+    // Best effort: the title opens from here next time.
+    void api.PUT("/watch/choice/{anime_id}", { params: { path: { anime_id: animeId } }, body: to }).catch(() => undefined);
+    // The room reloads everyone's player at the room's position.
+    if (room?.switchStream) {
+      void room.switchStream(to);
+      return;
+    }
+    router.replace(watchHref(to.source, animeId, episode, to.lang, video.current?.currentTime ?? current));
   }
 
   async function startRoom() {
@@ -427,6 +441,7 @@ export function Player(props: Props) {
     if (next !== undefined && autoNext) setCountdown(NEXT_COUNTDOWN);
   }
 
+  const others = streams.filter((s) => !sameStream(s, { source, lang }));
   const shown = active || !playing || ended || settingsOpen || error !== null;
   const errorText = error && t(`errors.${ERRORS.includes(error) ? error : "unknown"}`);
   const iconButton = "flex h-10 w-10 items-center justify-center rounded-ui text-fg hover:bg-white/10";
@@ -523,6 +538,23 @@ export function Player(props: Props) {
                 {t("back")}
               </Link>
             </div>
+            {canSwitchStream && others.length > 0 && (
+              <div className="mt-6">
+                <p className="text-sm text-muted">{t("tryAnotherSource")}</p>
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  {others.map((s) => (
+                    <button
+                      key={`${s.source}-${s.lang}`}
+                      type="button"
+                      onClick={() => switchStream(s)}
+                      className="rounded-ui border border-line bg-surface px-4 py-2 text-sm font-bold"
+                    >
+                      {streamLabel(names, s)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -538,7 +570,9 @@ export function Player(props: Props) {
             <p className="truncate font-display font-bold">{title}</p>
             <p className="text-sm text-muted">
               {t("episode", { episode })}
-              {answered !== source && <span className="ml-2">· {t("fallbackSource", { source: answered })}</span>}
+              {answered !== source && (
+                <span className="ml-2">· {t("fallbackSource", { source: streamLabel(names, playingFrom) })}</span>
+              )}
             </p>
           </div>
           {room ? (
@@ -663,9 +697,10 @@ export function Player(props: Props) {
             audioTracks={audioNames}
             audioTrack={audioTrack}
             onAudioTrack={chooseAudio}
-            lang={lang}
-            onLang={(to) => void switchLang(to)}
-            canSwitchLang={!room}
+            streams={canSwitchStream ? streams.map((s) => streamLabel(names, s)) : []}
+            stream={streams.findIndex((s) => sameStream(s, playingFrom))}
+            onStream={(index) => switchStream(streams[index])}
+            streamName={streamLabel(names, playingFrom)}
             subtitleNames={subtitleNames}
             subtitle={selected}
             onSubtitle={chooseTrack}

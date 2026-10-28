@@ -234,3 +234,79 @@ async def test_player_preferences_default_then_saved_per_user(client, session):
     )
     assert bad.status_code == 422
     assert (await client.get("/watch/preferences")).status_code == 401
+
+
+class DubOnlyEpisodeTwo:
+    """Has every episode subbed but only episode 2 dubbed, and lists no dub at all for 9."""
+
+    name = "dubs"
+
+    async def episodes(self, anime, lang):
+        return EpisodeList(episodes=[1, 2, 3] if lang == "sub" else [2], source_title="x")
+
+    async def stream(self, anime, episode, lang):
+        return None
+
+
+class Broken:
+    async def episodes(self, anime, lang):
+        raise RuntimeError("down")
+
+    async def stream(self, anime, episode, lang):
+        raise RuntimeError("down")
+
+
+@respx.mock
+async def test_options_list_each_source_and_lang_with_the_episode(client, session):
+    fastapi_app.state.sources = {
+        "fake": FakeSource(),
+        "dubs": DubOnlyEpisodeTwo(),
+        "broken": Broken(),
+    }
+    _, headers = await make_user(session, "kafka")
+    mock_details()
+
+    two = await client.get("/watch/options/21/2", headers=headers)
+    assert two.json() == [
+        {"source": "fake", "lang": "sub"},
+        {"source": "fake", "lang": "dub"},
+        {"source": "dubs", "lang": "sub"},
+        {"source": "dubs", "lang": "dub"},
+    ]
+    three = await client.get("/watch/options/21/3", headers=headers)
+    assert {"source": "dubs", "lang": "dub"} not in three.json()
+    assert (await client.get("/watch/options/21/9", headers=headers)).json() == []
+
+
+@respx.mock
+async def test_a_picked_source_is_remembered_per_user_and_title(client, session):
+    fastapi_app.state.sources = {"fake": FakeSource(), "dubs": DubOnlyEpisodeTwo()}
+    _, headers = await make_user(session, "kafka")
+    _, other = await make_user(session, "friend")
+    mock_details()
+
+    first = await client.get("/anime/21/sources", headers=headers)
+    assert first.json() == {"sources": ["fake", "dubs"], "choice": None}
+
+    for lang in ("sub", "dub"):
+        r = await client.put(
+            "/watch/choice/21", json={"source": "dubs", "lang": lang}, headers=headers
+        )
+        assert r.status_code == 204
+    picked = await client.get("/anime/21/sources", headers=headers)
+    assert picked.json()["choice"] == {"source": "dubs", "lang": "dub"}
+    assert (await client.get("/anime/21/sources", headers=other)).json()["choice"] is None
+
+    unknown = await client.put(
+        "/watch/choice/21", json={"source": "nope", "lang": "sub"}, headers=headers
+    )
+    assert unknown.status_code == 404
+    zero = await client.put(
+        "/watch/choice/0", json={"source": "fake", "lang": "sub"}, headers=headers
+    )
+    assert zero.status_code == 422
+
+    # A choice whose source was turned off is ignored rather than sent to a dead source.
+    fastapi_app.state.sources = {"fake": FakeSource()}
+    fastapi_app.state.source_hints.clear()
+    assert (await client.get("/anime/21/sources", headers=headers)).json()["choice"] is None

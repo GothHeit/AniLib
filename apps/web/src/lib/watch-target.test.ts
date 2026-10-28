@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { pickEpisode } from "./watch-target";
+import { pickEpisode, watchHref } from "./watch-target";
+
+describe("watchHref", () => {
+  it("keeps sub and the start out of the URL unless needed", () => {
+    expect(watchHref("zoko", 5, 3)).toBe("/watch/zoko/5/3");
+    expect(watchHref("zoko", 5, 3, "dub", 61.8)).toBe("/watch/zoko/5/3?lang=dub&t=61");
+  });
+});
 
 describe("pickEpisode", () => {
   it("keeps an episode the source has", () => {

@@ -80,14 +80,28 @@ test("explains a disabled source", async ({ page }) => {
   await expect(page.getByText("Streaming is turned off on this server.")).toBeVisible();
 });
 
-test("keeps sub when the episode has no dub", async ({ page }) => {
+test("offers no source switch when the episode has only one version", async ({ page }) => {
   await signIn(page);
   await page.goto("/en/watch/stub/4/2");
   await page.getByRole("button", { name: "Settings" }).click();
-  await page.getByRole("button", { name: /^Audio/ }).click();
-  await page.getByRole("radio", { name: "Dub" }).click();
-  await expect(page.getByText("No dub for this episode.")).toBeVisible();
-  await expect(page).toHaveURL(/\/watch\/stub\/4\/2$/);
+  await expect(page.getByRole("button", { name: /^Playback speed/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Source/ })).toHaveCount(0);
+});
+
+test("switches source at the same spot and remembers it for the title", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/en/watch/stub/7/1");
+  await expect.poll(() => currentTime(page)).toBeGreaterThan(2);
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: /^Source/ }).click();
+  await page.getByRole("radio", { name: "stub · Dub" }).click();
+  await expect(page).toHaveURL(/\/watch\/stub\/7\/1\?lang=dub&t=\d+$/);
+  const t = Number(new URL(page.url()).searchParams.get("t"));
+  expect(t).toBeGreaterThanOrEqual(2);
+  await expect.poll(() => currentTime(page)).toBeGreaterThanOrEqual(t);
+
+  await page.goto("/en/continue/7/1");
+  await expect(page).toHaveURL(/\/watch\/stub\/7\/1\?lang=dub$/);
 });
 
 test("seeks through the proxy with range requests", async ({ page }) => {

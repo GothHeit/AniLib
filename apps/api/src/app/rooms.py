@@ -195,6 +195,24 @@ class Room:
         self.locked = locked
         self._state()
 
+    def set_stream(self, user_id: uuid.UUID, source: str, lang: str) -> None:
+        """The host plays the same episode from another source or in sub/dub. Everyone reloads
+        and picks up where the room is, so nobody waits on anyone else's old stream."""
+        if user_id != self.host_id:
+            raise ApiError(403, "host_only", "Only the host can do this")
+        if (source, lang) == (self.source, self.lang):
+            return
+        self.buffering.clear()
+        self.held = False
+        if self._hold_timer is not None:
+            self._hold_timer.cancel()
+            self._hold_timer = None
+        self.position = self.now_position()
+        self.moved_at = time.monotonic()
+        self.source = source
+        self.lang = lang
+        self._state()
+
     def set_buffering(self, user_id: uuid.UUID, buffering: bool) -> None:
         self._require_member(user_id)
         if not buffering:
