@@ -8,40 +8,22 @@ import asyncio
 import html
 import logging
 import re
-from urllib.parse import quote
 
 import httpx
 from cachetools import TLRUCache
 
-from app.sources.matching import Candidate, mal_titles, match
+from app.sources.animesdigital import BASE, USER_AGENT, find
 
 log = logging.getLogger(__name__)
 
-BASE = "https://animesdigital.org"
-USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-)
 TIMEOUT = 6.0
 FOUND_TTL = 7 * 86400
 MISS_TTL = 86400
 ERROR_TTL = 300
-# Titles searched per entry: the main title first, then the English one.
-MAX_QUERIES = 2
 MIN_LENGTH = 40
 
-RESULT = re.compile(
-    r'<a href="'
-    + re.escape(BASE)
-    + r'/anime/a/([^"/]+)"[^>]*>.*?<span class="title_anime">([^<]*)</span>',
-    re.DOTALL,
-)
 SYNOPSIS = re.compile(r'<div class="sinopse">(.*?)</div>', re.DOTALL)
 TAG = re.compile(r"<[^>]+>")
-
-
-def parse_results(page: str) -> list[Candidate]:
-    return [Candidate(slug, html.unescape(name).strip()) for slug, name in RESULT.findall(page)]
 
 
 def parse_synopsis(page: str) -> str | None:
@@ -50,16 +32,6 @@ def parse_synopsis(page: str) -> str | None:
         return None
     text = " ".join(html.unescape(TAG.sub(" ", found.group(1))).split())
     return text if len(text) >= MIN_LENGTH else None
-
-
-def _queries(detail: dict) -> list[str]:
-    alt = detail.get("alternative_titles") or {}
-    ordered = [detail.get("title"), alt.get("en")]
-    seen: list[str] = []
-    for title in ordered:
-        if title and title not in seen:
-            seen.append(title)
-    return seen[:MAX_QUERIES] or sorted(mal_titles(detail))[:MAX_QUERIES]
 
 
 class PtSynopses:
@@ -99,10 +71,7 @@ class PtSynopses:
         return response.text
 
     async def _lookup(self, detail: dict) -> str | None:
-        queries = _queries(detail)
-        pages = await asyncio.gather(*(self._get(f"{BASE}/pesquisa/{quote(q)}/") for q in queries))
-        results = {q: parse_results(page) for q, page in zip(queries, pages, strict=True)}
-        best = match(detail, lambda q: results.get(q, []), lambda _slug: [])
+        best = await find(detail, self._get, "sub")
         if best is None:
             return None
         return parse_synopsis(await self._get(f"{BASE}/anime/a/{best.identifier}"))

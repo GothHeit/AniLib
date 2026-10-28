@@ -4,7 +4,8 @@ import httpx
 import respx
 
 from app.main import app as fastapi_app
-from app.synopsis import BASE, PtSynopses, parse_results, parse_synopsis
+from app.sources.animesdigital import BASE, parse_results
+from app.synopsis import PtSynopses, parse_synopsis
 from tests.conftest import make_user
 from tests.mal_fixtures import mock_details
 
