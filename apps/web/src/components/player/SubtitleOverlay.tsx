@@ -15,6 +15,8 @@ type Props = {
   tracksKey: string;
   style: SubtitleStyle;
   controlsShown: boolean;
+  /** False while the track is drawn styled by AssSubtitles: only native full screen uses it then. */
+  draw?: boolean;
 };
 
 /**
@@ -23,7 +25,7 @@ type Props = {
  * load, nothing is drawn natively) and every other track is disabled. In Safari's native
  * full screen our overlay is not shown, so the track is switched to "showing" until it ends.
  */
-export function SubtitleOverlay({ video, selected, tracksKey, style, controlsShown }: Props) {
+export function SubtitleOverlay({ video, selected, tracksKey, style, controlsShown, draw = true }: Props) {
   const [lines, setLines] = useState<string[]>([]);
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export function SubtitleOverlay({ video, selected, tracksKey, style, controlsSho
     };
   }, [video, selected, tracksKey]);
 
-  if (selected < 0 || lines.length === 0) return null;
+  if (!draw || selected < 0 || lines.length === 0) return null;
   return (
     <div
       data-testid="subtitles"

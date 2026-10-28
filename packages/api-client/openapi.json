@@ -2371,6 +2371,17 @@
       },
       "SubtitleOut": {
         "properties": {
+          "ass_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ass Url"
+          },
           "label": {
             "title": "Label",
             "type": "string"
@@ -2568,6 +2579,14 @@
               }
             ],
             "title": "Default Audio"
+          },
+          "fonts": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Fonts",
+            "type": "object"
           },
           "kind": {
             "title": "Kind",
@@ -4766,6 +4785,7 @@
             "name": "anime_id",
             "required": true,
             "schema": {
+              "minimum": 1,
               "title": "Anime Id",
               "type": "integer"
             }

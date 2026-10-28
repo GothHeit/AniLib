@@ -1,0 +1,13 @@
+diff --git a/dist/wasm/jassub-worker.js b/dist/wasm/jassub-worker.js
+index 7e3f211d6983576ea22685aefff53fa5b1dedbab..aad07b7a9c61d33d4e9f110bf496ac46708290cc 100644
+--- a/dist/wasm/jassub-worker.js
++++ b/dist/wasm/jassub-worker.js
+@@ -192,7 +192,7 @@ async function Module(moduleArg = {}) {
+             }
+         } worker.postMessage({ cmd: 1, handlers, wasmMemory, wasmModule }); }), async loadWasmModuleToAllWorkers() { if (ENVIRONMENT_IS_PTHREAD) {
+             return;
+-        } let pthreadPoolReady = Promise.all(PThread.unusedWorkers.map(PThread.loadWasmModuleToWorker)); return pthreadPoolReady; }, allocateUnusedWorker() { var worker; worker = new Worker(new URL("jassub-worker.js", import.meta.url), { type: "module", name: "em-pthread" }); PThread.unusedWorkers.push(worker); return worker; }, getNewWorker() { if (PThread.unusedWorkers.length == 0) {
++        } let pthreadPoolReady = Promise.all(PThread.unusedWorkers.map(PThread.loadWasmModuleToWorker)); return pthreadPoolReady; }, allocateUnusedWorker() { var worker; worker = new Worker(import.meta.url, { type: "module", name: "em-pthread" }); PThread.unusedWorkers.push(worker); return worker; }, getNewWorker() { if (PThread.unusedWorkers.length == 0) {
+             var newWorker = PThread.allocateUnusedWorker();
+             PThread.loadWasmModuleToWorker(newWorker);
+         } return PThread.unusedWorkers.pop(); } };

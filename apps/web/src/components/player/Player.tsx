@@ -17,9 +17,11 @@ import type { WebkitVideo } from "./SubtitleOverlay";
 import { PlayerIcon } from "./icons";
 import { languageName, trackNames } from "./languages";
 import { formatTime } from "./progress";
+import { qualityList } from "./qualities";
 import { SettingsMenu, type AudioTrack, type Quality } from "./SettingsMenu";
 import { sameStream, streamLabel, type StreamNames } from "./streams";
 import { activeSkip, type Skip } from "./skips";
+import { AssSubtitles } from "./AssSubtitles";
 import { SubtitleOverlay } from "./SubtitleOverlay";
 import type { SubtitleStyle } from "./subtitleStyle";
 import { useProgressSaver } from "./useProgressSaver";
@@ -44,7 +46,7 @@ type Props = {
   room?: RoomBinding;
 };
 
-type Track = { lang: string; label: string; url: string };
+type Track = { lang: string; label: string; url: string; ass_url?: string | null };
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const SEEK_STEP = 10;
@@ -88,6 +90,10 @@ export function Player(props: Props) {
   const [url, setUrl] = useState<string | null>(null);
   const [kind, setKind] = useState<string>("mp4");
   const [tracks, setTracks] = useState<Track[]>([]);
+  // Fonts for the styled subtitles, through the proxy like the tracks.
+  const [fonts, setFonts] = useState<Record<string, string>>({});
+  // Set when styled subtitles can't be drawn here; the WebVTT copies are shown instead.
+  const [assFailed, setAssFailed] = useState(false);
   // The source that answered; another enabled one when the requested source failed.
   const [answered, setAnswered] = useState(source);
   const [skips, setSkips] = useState<Skip[]>([]);
@@ -153,6 +159,8 @@ export function Player(props: Props) {
           setSkips(data.skips ?? []);
           setDefaultAudio(data.default_audio ?? null);
           setTracks(data.subtitles ?? []);
+          setFonts(Object.fromEntries(Object.entries(data.fonts ?? {}).map(([name, link]) => [name, `/api/proxy${link}`])));
+          setAssFailed(false);
           setChosen(null);
           setUrl(`/api/proxy${data.url}`);
         }
@@ -178,6 +186,8 @@ export function Player(props: Props) {
 
   const [preference, setPreference] = useState(subtitleLang);
   const selected = chosen ?? pickTrack(tracks, preference);
+  const styled = assFailed ? null : tracks[selected]?.ass_url;
+  const onAssFail = useCallback(() => setAssFailed(true), []);
 
   function chooseTrack(index: number) {
     setChosen(index);
@@ -218,12 +228,7 @@ export function Player(props: Props) {
         hls = new Hls();
         hlsRef.current = hls;
         hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
-          setQualities(
-            data.levels
-              .map((level, index) => ({ index, height: level.height }))
-              .filter((q) => q.height > 0)
-              .sort((a, b) => b.height - a.height),
-          );
+          setQualities(qualityList(data.levels));
         });
         hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_event, data) => {
           const found = data.audioTracks.map((a) => ({ id: a.id, name: a.name, lang: a.lang }));
@@ -509,8 +514,11 @@ export function Player(props: Props) {
         ))}
       </video>
 
+      {styled && <AssSubtitles key={styled} video={video} url={`/api/proxy${styled}`} fonts={fonts} onFail={onAssFail} />}
+
       <SubtitleOverlay
         video={video}
+        draw={!styled}
         selected={selected}
         tracksKey={tracks.map((track) => track.url).join()}
         style={style}

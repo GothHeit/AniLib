@@ -175,3 +175,35 @@ test("stays in full screen when the next episode starts", async ({ page }) => {
   await expect.poll(inFullscreen).toBe(true);
   await expect(page.getByRole("button", { name: "Exit full screen" })).toBeVisible();
 });
+
+test("draws styled subtitles over the video instead of the plain ones", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/en/watch/stub/7/1");
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: /^Subtitles/ }).click();
+  await page.getByRole("radio", { name: "Brazilian Portuguese" }).click();
+  await page.getByRole("button", { name: "Close settings" }).click();
+  await expect(page.getByTestId("ass-subtitles").locator("canvas")).toHaveCount(1);
+  await expect(page.getByTestId("subtitles")).toHaveCount(0);
+  // The plain WebVTT copy stays loaded for Safari's native full screen.
+  await expect(video(page).locator("track")).toHaveCount(1);
+
+  // The script paints the whole picture magenta; the canvas can't be read back, so look at the page.
+  await expect
+    .poll(async () => {
+      const box = (await video(page).boundingBox())!;
+      const shot = await page.screenshot({ clip: { x: box.x + box.width / 2, y: box.y + box.height / 2, width: 1, height: 1 } });
+      return page.evaluate(async (png) => {
+        const img = new Image();
+        img.src = `data:image/png;base64,${png}`;
+        await img.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 1;
+        const context = canvas.getContext("2d")!;
+        context.drawImage(img, 0, 0);
+        const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
+        return r > 200 && g < 60 && b > 200;
+      }, shot.toString("base64"));
+    }, { timeout: 15_000 })
+    .toBe(true);
+});

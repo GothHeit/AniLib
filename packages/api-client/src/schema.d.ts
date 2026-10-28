@@ -1882,6 +1882,8 @@ export interface components {
         };
         /** SubtitleOut */
         SubtitleOut: {
+            /** Ass Url */
+            ass_url?: string | null;
             /** Label */
             label: string;
             /** Lang */
@@ -1962,6 +1964,13 @@ export interface components {
         app__routers__watch__PlaybackOut: {
             /** Default Audio */
             default_audio?: string | null;
+            /**
+             * Fonts
+             * @default {}
+             */
+            fonts: {
+                [key: string]: string;
+            };
             /** Kind */
             kind: string;
             /** Resolution */

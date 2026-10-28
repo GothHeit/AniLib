@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 
 import httpx
 from fastapi import APIRouter, Depends, Path, Query, Request
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
 
@@ -40,6 +40,8 @@ class SubtitleOut(BaseModel):
     label: str
     # Same-origin-friendly WebVTT link, signed like the HLS parts.
     url: str
+    # The same track as styled ASS, when the source has it.
+    ass_url: str | None = None
 
 
 class SkipOut(BaseModel):
@@ -60,6 +62,8 @@ class PlaybackOut(BaseModel):
     skips: list[SkipOut] = []
     # Name or language of the audio track to start with, when the stream has several.
     default_audio: str | None = None
+    # Font name (lower case) -> link, for rendering the ASS subtitles.
+    fonts: dict[str, str] = {}
 
 
 class PlayerPreferencesIO(BaseModel):
@@ -238,11 +242,20 @@ async def play(
                 lang=s.lang,
                 label=s.label,
                 url=f"/watch/{hls.signed_link(s.url, referer, viewer, 'sub')}",
+                ass_url=(
+                    f"/watch/{hls.signed_link(s.ass_url, referer, viewer, 'ass')}"
+                    if s.ass_url
+                    else None
+                ),
             )
             for s in stream.subtitles
         ],
         skips=[SkipOut(kind=k.kind, start=k.start, end=k.end) for k in stream.skips],
         default_audio=stream.default_audio,
+        fonts={
+            name: f"/watch/{hls.signed_link(url, referer, viewer, 'font')}"
+            for name, url in stream.fonts.items()
+        },
     )
 
 
@@ -338,6 +351,32 @@ async def _read_playlist(upstream: httpx.Response) -> str:
     return b"".join(chunks).decode("utf-8", errors="replace")
 
 
+# Library files never change once converted; a link stays valid for hours.
+LOCAL_CACHE = "private, max-age=3600"
+
+
+def _serve_local(url: str, viewer: str) -> Response:
+    """A file from the local library: playlists rewritten like remote ones, the rest as is
+    (with Range support, for seeking). Blocking: a playlist checks every segment on disk, and
+    the library may sit on a slow mount, so run it in a thread."""
+    path = hls.local_path(url)
+    if path is None:
+        raise ApiError(404, "not_available", "This episode isn't available any more")
+    if path.suffix == ".m3u8":
+        if path.stat().st_size > hls.MAX_PLAYLIST_BYTES:
+            raise ApiError(502, "upstream_failed", "Playlist is too large")
+        return Response(
+            hls.rewrite_playlist(path.read_text(encoding="utf-8"), url, "", viewer),
+            media_type="application/vnd.apple.mpegurl",
+            headers={"cache-control": "no-store"},
+        )
+    return FileResponse(
+        path,
+        media_type=hls.local_media_type(path),
+        headers={"cache-control": LOCAL_CACHE, "x-content-type-options": "nosniff"},
+    )
+
+
 @router.get("/hls")
 async def hls_proxy(
     request: Request,
@@ -373,6 +412,9 @@ async def hls_proxy(
         if not hls.verify_link(u, r, k, viewer, e, s):
             raise ApiError(403, "invalid_link", "Invalid or expired stream link")
         url, referer = u, r
+
+    if url.startswith("file:"):
+        return await asyncio.to_thread(_serve_local, url, viewer)
 
     headers = {"Referer": referer} if referer else {}
     if "range" in request.headers:

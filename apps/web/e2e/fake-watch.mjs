@@ -7,6 +7,22 @@ const EPISODES = { sub: [1, 2, 3], dub: [1] };
 // Episode 1 comes with subtitle tracks; the others have none.
 const SUBTITLE_EPISODE = 1;
 const VTT = "WEBVTT\n\n00:00:00.000 --> 00:00:30.000\n<i>Hello</i> moon\n";
+// A title whose subtitles also come styled, like the local library's: a magenta box over the
+// whole picture, easy to spot in a screenshot.
+const STYLED_ANIME = 7;
+const ASS = `[Script Info]
+ScriptType: v4.00+
+PlayResX: 640
+PlayResY: 360
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,20,&H00FF00FF,&H00FF00FF,&H00000000,&H00000000,0,0,0,0,100,100,0,0,1,0,0,7,0,0,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:10:00.00,Default,,0,0,0,,{\\pos(0,0)\\p1}m 0 0 l 640 0 640 360 0 360{\\p0}
+`;
 // Episode 3 has an intro to skip.
 const SKIPS = { 3: [{ kind: "intro", start: 2, end: 25 }] };
 // Asking this source plays from the stub one, like a fallback after a failure.
@@ -107,6 +123,11 @@ export async function handleWatch(req, res, { url, send, error, body, authed }) 
     res.end(VTT);
     return true;
   }
+  if (path === "/watch/subtitles.ass") {
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end(ASS);
+    return true;
+  }
   if (path === "/watch/video") {
     // The playback token stands in for the session, like the real API.
     if (!url.searchParams.get("token")?.startsWith("ep-")) return reply(401, error("invalid_token"));
@@ -173,8 +194,11 @@ export async function handleWatch(req, res, { url, send, error, body, authed }) 
     if (!m[3]) return reply(200, { source: SOURCE, source_title: "Moon Test", episodes: EPISODES[lang], thumbnails: {} });
     const episode = Number(m[3]);
     if (!EPISODES[lang].includes(episode)) return reply(404, error("not_available"));
+    const animeId = Number(m[2]);
     const subtitles =
-      episode === SUBTITLE_EPISODE
+      animeId === STYLED_ANIME
+        ? [{ lang: "pt-BR", label: "EmmidSubs", url: "/watch/subtitles?l=pt-BR", ass_url: "/watch/subtitles.ass" }]
+        : episode === SUBTITLE_EPISODE
         ? [
             { lang: "en", label: "English", url: "/watch/subtitles?l=en" },
             { lang: "pt-BR", label: "Portuguese", url: "/watch/subtitles?l=pt-BR" },

@@ -1,5 +1,7 @@
 import logging
+from pathlib import Path
 
+from app.config import get_settings
 from app.sources.base import VideoSource
 
 log = logging.getLogger(__name__)
@@ -23,6 +25,13 @@ def load_sources(names: list[str]) -> dict[str, VideoSource]:
             from app.sources.animesdigital import AnimesDigitalSource
 
             sources[name] = AnimesDigitalSource()
+        elif name == "local":
+            from app.sources.local import LocalSource
+
+            root = get_settings().local_library_dir
+            if not root:
+                raise ValueError("The local video source needs LOCAL_LIBRARY_DIR")
+            sources[name] = LocalSource(Path(root))
         else:
             raise ValueError(f"Unknown video source: {name}")
     return sources

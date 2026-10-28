@@ -1,8 +1,8 @@
 """The plug-in boundary for where video comes from.
 
 The rest of the app (player, progress, UI) only talks to a VideoSource. The private
-implementations are the ZokoAnime and AnimesDigital scrapers; a licensed catalog would be
-another one.
+implementations are the ZokoAnime and AnimesDigital scrapers and the user's own converted
+files; a licensed catalog would be another one.
 """
 
 from dataclasses import dataclass, field
@@ -25,6 +25,8 @@ class Subtitle:
     lang: str
     label: str
     url: str
+    # The same track as styled ASS, for players that render it; `url` stays the WebVTT copy.
+    ass_url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -47,6 +49,8 @@ class Stream:
     skips: tuple[Skip, ...] = ()
     # Name or language of the audio track to start with, when the stream has several.
     default_audio: str | None = None
+    # Font name (lower case) -> file, for the ASS subtitles. Fetched only when a script uses it.
+    fonts: dict[str, str] = field(default_factory=dict)
 
 
 class VideoSource(Protocol):

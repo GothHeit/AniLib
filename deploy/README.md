@@ -93,6 +93,60 @@ Keep a copy off the PC too (cloud drive, another disk). Also back up `deploy/.en
 empty for anything public or any store build. `PT_SYNOPSIS_SCRAPE` is the same kind of switch: it
 fetches Portuguese synopses from an unlicensed site, so keep it `false` outside this deployment.
 
+## Local library
+
+The `local` video source plays your own episode files, converted ahead of time so watching
+costs the PC almost nothing. Each episode keeps its original video (repackaged, not re-encoded)
+for devices that can play it, plus an H.264 copy for the rest. Subtitles stay styled, with the
+fonts from the files, and a plain copy for iPhone full screen. It is private like the other
+sources: never enable it on anything public.
+
+The originals are only read. The converted copies go in `D:\moonroom-library`
+(`/mnt/d/moonroom-library` in WSL): the original video again plus the H.264 copy, which is
+bigger, so expect a few times the size of the originals. Nothing is written to C:. Conversion runs on the PC itself with the ffmpeg already installed in WSL, so the
+Docker images don't grow.
+
+1. Check the episode numbering. The number is taken from the last number in each file name
+   outside brackets; this only prints the mapping:
+
+   ```sh
+   cd ~/projetos/AniLib/apps/api
+   uv run python -m app.library ingest /mnt/d/hate/art/anime/Clannad --mal-id 2167 --dry-run
+   ```
+
+   When a folder needs more than flags, put a `moonroom.toml` next to the episodes:
+
+   ```toml
+   mal_id = 2167
+   title = "Clannad"
+   default_subtitle = "Emmid"        # subtitle track shown first, by part of its title
+   # episode_pattern = '- (\d+)'     # regex whose first group is the episode number
+   # episode_offset = 0
+   # audio_language = "jpn"          # audio track to keep (default jpn, por for a dub)
+   # lang = "dub"                    # for a dubbed release (default "sub")
+   # [episodes]                      # explicit names win over the pattern
+   # "Clannad - Another World.mkv" = 25
+   ```
+
+2. Convert. The H.264 copy is the slow part; repackaging the original takes seconds. Episodes
+   already converted are skipped, so it can be stopped and run again:
+
+   ```sh
+   uv run python -m app.library ingest /mnt/d/hate/art/anime/Clannad --mal-id 2167 \
+     --default-subtitle Emmid --out /mnt/d/moonroom-library
+   ```
+
+   `--episodes 1,2` converts only some, `--force` converts again, `--preset` and `--crf` tune
+   the H.264 copy (defaults `medium` and 19).
+
+3. Serve it: in `deploy/.env` set `COMPOSE_FILE=compose.yaml:compose.library.yaml`, add
+   `local` to `VIDEO_SOURCES` (e.g. `zoko,animesdigital,local`), then `docker compose up -d`.
+   The title then lists "Local library" in the player's source menu. New conversions show up
+   without a restart.
+
+For development, set `LOCAL_LIBRARY_DIR=/mnt/d/moonroom-library` and add `local` to
+`VIDEO_SOURCES` in `apps/api/.env`.
+
 ## Moving to a VPS later
 
 Copy the repo and `.env`, restore a backup, then:

@@ -50,6 +50,10 @@
       "animesdigital": {
         "sub": "Animes Digital · Legendado em português",
         "dub": "Animes Digital · Dublado em português"
+      },
+      "local": {
+        "sub": "Biblioteca local · Legendado",
+        "dub": "Biblioteca local · Dublado"
       }
     },
     "streamFallback": "{source} · {lang}",

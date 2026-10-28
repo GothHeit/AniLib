@@ -4,6 +4,9 @@ Source hosts want a Referer a browser can't send, and spread segments over other
 every playlist is rewritten to point back at /watch/hls. Each rewritten URL is signed, so
 the proxy only fetches URLs that came out of a playlist it already served (no open relay).
 Signatures are bound to the viewer, so a copied link is useless to anyone else.
+
+The local library uses the same links with file: URLs, which are only ever served from inside
+the library folder.
 """
 
 import asyncio
@@ -13,7 +16,8 @@ import ipaddress
 import re
 import socket
 import time
-from urllib.parse import quote, urljoin, urlsplit
+from pathlib import Path
+from urllib.parse import quote, unquote, urljoin, urlsplit
 
 from cachetools import TTLCache
 
@@ -28,8 +32,9 @@ MAX_PLAYLIST_BYTES = 2 * 1024 * 1024
 MAX_REDIRECTS = 3
 INTERNAL_SUFFIXES = (".localhost", ".local", ".internal", ".lan", ".home", ".corp")
 # What a signed link points at, when the proxy can't tell from the upstream answer:
-# "" a playlist or segment, "sub" WebVTT subtitles, "img" a still image.
-KINDS = ("", "sub", "img")
+# "" a playlist or segment, "sub" WebVTT subtitles, "img" a still image, "ass" styled
+# subtitles and "font" a font for them (both local library only).
+KINDS = ("", "sub", "img", "ass", "font")
 SAFE_IMAGES = ("image/jpeg", "image/png", "image/webp", "image/gif", "image/avif")
 
 _public_hosts: TTLCache[str, bool] = TTLCache(maxsize=1024, ttl=DNS_TTL)
@@ -134,14 +139,49 @@ def media_type(url: str, kind: str, upstream_type: str) -> str:
     return "video/mp2t"
 
 
+LOCAL_TYPES = {
+    ".m4s": "video/mp4",
+    ".mp4": "video/mp4",
+    ".ts": "video/mp2t",
+    ".vtt": "text/vtt",
+    ".ass": "text/plain; charset=utf-8",
+    ".jpg": "image/jpeg",
+    ".ttf": "font/ttf",
+    ".otf": "font/otf",
+    ".ttc": "font/collection",
+    ".woff": "font/woff",
+    ".woff2": "font/woff2",
+}
+
+
+def local_path(url: str) -> Path | None:
+    """The library file a file: URL names; None for anything else, or anything that leads
+    outside the library folder (dot segments, symlinks)."""
+    root = get_settings().local_library_dir
+    if not root or not url.startswith("file:"):
+        return None
+    path = Path(unquote(urlsplit(url).path)).resolve()
+    if not path.is_relative_to(Path(root).resolve()) or not path.is_file():
+        return None
+    return path
+
+
+def local_media_type(path: Path) -> str:
+    return LOCAL_TYPES.get(path.suffix.lower(), "application/octet-stream")
+
+
 def rewrite_playlist(text: str, base_url: str, referer: str, viewer: str) -> str:
+    local = base_url.startswith("file:")
+
     def link(target: str) -> str:
         # Inline data (keys, init sections) needs no fetching and must reach the player as is.
         if target.startswith("data:"):
             return target
         absolute = urljoin(base_url, target)
-        # Refused URLs are blanked, so the player just fails to load that part.
-        return signed_link(absolute, referer, viewer) if looks_public(absolute) else ""
+        # A library playlist may only point inside the library, a remote one only at the
+        # internet. Refused URLs are blanked, so the player just fails to load that part.
+        allowed = local_path(absolute) is not None if local else looks_public(absolute)
+        return signed_link(absolute, referer, viewer) if allowed else ""
 
     lines = []
     for line in text.splitlines():

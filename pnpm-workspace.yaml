@@ -1,3 +1,6 @@
 packages:
   - apps/web
   - packages/*
+
+patchedDependencies:
+  jassub@2.5.23: patches/jassub@2.5.23.patch

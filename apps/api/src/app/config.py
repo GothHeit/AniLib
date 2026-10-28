@@ -54,6 +54,9 @@ class Settings(BaseSettings):
 
     # Video sources to enable, by name. Empty in a public deployment.
     video_sources: str = ""
+    # Converted copies of the owner's own files, for the `local` source. Made by
+    # `python -m app.library ingest`; the API only reads it.
+    local_library_dir: str = ""
 
     @property
     def cors_origin_list(self) -> list[str]:
