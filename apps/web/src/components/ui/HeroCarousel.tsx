@@ -11,6 +11,8 @@ export type HeroSlide = {
   href: string;
   meta?: string;
   synopsis?: string;
+  /** Set when the synopsis is not in the reader's language. */
+  synopsisNote?: string;
   image?: string | null;
 };
 
@@ -92,6 +94,7 @@ export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string
               )}
               {slide.meta && <p className="mt-2 text-sm font-medium text-success">{slide.meta}</p>}
               {slide.synopsis && <p className="mt-3 line-clamp-3 text-muted sm:text-lg">{slide.synopsis}</p>}
+              {slide.synopsis && slide.synopsisNote && <p className="mt-1 text-xs text-muted">{slide.synopsisNote}</p>}
               <div className="mt-6 flex flex-wrap gap-3">
                 <ButtonLink href={slide.href}>{cta}</ButtonLink>
               </div>

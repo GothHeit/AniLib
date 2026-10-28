@@ -2,8 +2,9 @@ import asyncio
 import logging
 from collections.abc import Awaitable
 from datetime import date
+from typing import TYPE_CHECKING, Annotated, Literal
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from sqlalchemy import func, select
 
 from app.deps import CurrentUser, Session
@@ -14,6 +15,9 @@ from app.models import MalLink, WatchProgress
 from app.routers.friends import sharing_friend_ids
 from app.routers.progress import latest_per_anime, to_out
 from app.schemas import AnimeCard, GenreOut, HomeHero, HomeItem, HomeOut, HomeRow
+
+if TYPE_CHECKING:
+    from app.synopsis import PtSynopses
 
 router = APIRouter(tags=["home"])
 log = logging.getLogger(__name__)
@@ -123,7 +127,9 @@ async def _friends_popular_row(
     return items[:ROW_SIZE] if len(items) >= MIN_ROW else []
 
 
-async def _heroes(mal: MalClient, seasonal: list[dict]) -> list[HomeHero]:
+async def _heroes(
+    mal: MalClient, seasonal: list[dict], synopses: "PtSynopses | None" = None
+) -> list[HomeHero]:
     """The best-scored titles of the season that have a large picture."""
     candidates = [n for n in seasonal if (n.get("main_picture") or {}).get("large")]
     picks = sorted(candidates, key=lambda n: n.get("mean") or 0, reverse=True)[:HERO_COUNT]
@@ -131,9 +137,15 @@ async def _heroes(mal: MalClient, seasonal: list[dict]) -> list[HomeHero]:
     async def one(pick: dict) -> HomeHero:
         details = await _soft(mal.details(pick["id"]), "hero details")
         pictures = [p.get("large") for p in (details or {}).get("pictures") or [] if p.get("large")]
+        synopsis, synopsis_lang = (details or {}).get("synopsis"), None
+        if synopsis:
+            synopsis_lang = "en"
+        if details and synopses and (pt := await synopses.get(details)):
+            synopsis, synopsis_lang = pt, "pt"
         return HomeHero(
             anime=AnimeCard.from_node(pick),
-            synopsis=(details or {}).get("synopsis"),
+            synopsis=synopsis,
+            synopsis_lang=synopsis_lang,
             backdrop=pictures[0] if pictures else pick["main_picture"]["large"],
         )
 
@@ -145,6 +157,7 @@ async def home(
     request: Request,
     user: CurrentUser,
     session: Session,
+    lang: Annotated[Literal["en", "pt"], Query()] = "en",
 ):
     mal: MalClient = request.app.state.mal
     # The session isn't safe to share between tasks: read what the database holds first.
@@ -171,4 +184,9 @@ async def home(
         HomeRow(id="top", items=_items(top_nodes)),
         *(genre_rows or []),
     ]
-    return HomeOut(heroes=await _heroes(mal, seasonal_nodes), rows=[r for r in rows if r.items])
+    return HomeOut(
+        heroes=await _heroes(
+            mal, seasonal_nodes, request.app.state.pt_synopses if lang == "pt" else None
+        ),
+        rows=[r for r in rows if r.items],
+    )

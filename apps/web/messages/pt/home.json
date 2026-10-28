@@ -15,6 +15,7 @@
     "empty": "Nada para mostrar ainda. Tente de novo em instantes.",
     "featured": "Destaques",
     "slide": "Destaque {n} de {total}",
-    "goToSlide": "Mostrar destaque {n}"
+    "goToSlide": "Mostrar destaque {n}",
+    "synopsisEnglish": "Sinopse em inglês"
   }
 }

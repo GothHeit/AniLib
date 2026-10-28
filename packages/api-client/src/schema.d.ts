@@ -1148,6 +1148,8 @@ export interface components {
             studios?: components["schemas"]["Studio"][];
             /** Synopsis */
             synopsis?: string | null;
+            /** Synopsis Lang */
+            synopsis_lang?: ("en" | "pt") | null;
             /** Title */
             title: string;
         };
@@ -1267,6 +1269,8 @@ export interface components {
             backdrop?: string | null;
             /** Synopsis */
             synopsis?: string | null;
+            /** Synopsis Lang */
+            synopsis_lang?: ("en" | "pt") | null;
         };
         /** HomeItem */
         HomeItem: {
@@ -2045,7 +2049,9 @@ export interface operations {
     };
     details_anime__anime_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                lang?: "en" | "pt";
+            };
             header?: never;
             path: {
                 anime_id: number;
@@ -2450,7 +2456,9 @@ export interface operations {
     };
     home_home_get: {
         parameters: {
-            query?: never;
+            query?: {
+                lang?: "en" | "pt";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2464,6 +2472,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HomeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

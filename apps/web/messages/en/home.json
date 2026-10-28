@@ -15,6 +15,7 @@
     "empty": "Nothing to show yet. Try again in a moment.",
     "featured": "Featured",
     "slide": "Slide {n} of {total}",
-    "goToSlide": "Show featured title {n}"
+    "goToSlide": "Show featured title {n}",
+    "synopsisEnglish": "Synopsis in English"
   }
 }

@@ -34,6 +34,7 @@ services:
       MAL_CLIENT_SECRET: ${MAL_CLIENT_SECRET:-}
       MAL_REDIRECT_URI: ${PUBLIC_URL}/mal/callback
       VIDEO_SOURCES: ${VIDEO_SOURCES:-}
+      PT_SYNOPSIS_SCRAPE: ${PT_SYNOPSIS_SCRAPE:-false}
       # Only Caddy can reach the API, and it writes the real client address.
       TRUST_PROXY_HEADERS: "true"
     volumes: [avatars:/data/avatars]

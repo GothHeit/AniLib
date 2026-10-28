@@ -1,5 +1,5 @@
 import type { components } from "@app/api-client";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { gradientFor } from "@/components/ui/PosterCard";
@@ -21,6 +21,7 @@ type Props = {
 
 export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
   const t = await getTranslations("titlePage");
+  const locale = await getLocale();
   const tGenres = await getTranslations("genres");
   const label = (group: string, key: string | null | undefined, values?: Record<string, string | number>) =>
     key && t.has(`${group}.${key}`) ? t(`${group}.${key}`, values) : key;
@@ -76,6 +77,7 @@ export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
 
           <h2 className="sr-only">{t("synopsis")}</h2>
           <p className="mt-6 whitespace-pre-line text-muted">{cleanSynopsis(anime.synopsis) || t("noSynopsis")}</p>
+          {locale === "pt" && anime.synopsis_lang === "en" && <p className="mt-1 text-xs text-muted">{t("synopsisEnglish")}</p>}
           <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
             {!!anime.studios?.length && (
               <>

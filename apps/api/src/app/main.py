@@ -62,6 +62,11 @@ async def lifespan(app: FastAPI):
         app.state.http = http
         app.state.mal = MalClient(settings.mal_client_id, http)
         app.state.mal_accounts = MalAccounts(settings, http)
+        app.state.pt_synopses = None
+        if settings.pt_synopsis_scrape:
+            from app.synopsis import PtSynopses
+
+            app.state.pt_synopses = PtSynopses(http)
         app.state.auth_limits = AuthLimits(settings)
         app.state.rooms = Rooms(settings.max_rooms_per_host)
         app.state.source_hints = anime.new_source_hints()

@@ -108,9 +108,18 @@ async def browse(
 
 
 @router.get("/{anime_id}", response_model=AnimeDetailsOut)
-async def details(request: Request, anime_id: int, user: CurrentUser):
+async def details(
+    request: Request,
+    anime_id: int,
+    user: CurrentUser,
+    lang: Annotated[Literal["en", "pt"], Query()] = "en",
+):
     mal = _mal(request)
     raw = await mal.visible_details(anime_id, user.show_nsfw)
+    synopsis, synopsis_lang = raw.get("synopsis"), "en" if raw.get("synopsis") else None
+    synopses = request.app.state.pt_synopses
+    if lang == "pt" and synopses is not None and (pt := await synopses.get(raw)):
+        synopsis, synopsis_lang = pt, "pt"
     related = raw.get("related_anime") or []
     recommended = raw.get("recommendations") or []
     if not user.show_nsfw:
@@ -118,6 +127,8 @@ async def details(request: Request, anime_id: int, user: CurrentUser):
     return AnimeDetailsOut.model_validate(
         {
             **raw,
+            "synopsis": synopsis,
+            "synopsis_lang": synopsis_lang,
             "related_anime": [{**r, "anime": r["node"]} for r in related],
             "recommendations": [{**r, "anime": r["node"]} for r in recommended],
         }

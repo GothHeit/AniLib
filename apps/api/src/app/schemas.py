@@ -94,6 +94,8 @@ class Broadcast(BaseModel):
 
 class AnimeDetailsOut(AnimeCard):
     synopsis: str | None = None
+    # Language of `synopsis`: "pt" when a Portuguese text was found, else the catalog's English.
+    synopsis_lang: Literal["en", "pt"] | None = None
     background: str | None = None
     start_date: str | None = None
     end_date: str | None = None
@@ -150,6 +152,7 @@ class HomeRow(BaseModel):
 class HomeHero(BaseModel):
     anime: AnimeCard
     synopsis: str | None = None
+    synopsis_lang: Literal["en", "pt"] | None = None
     backdrop: str | None = None
 
 

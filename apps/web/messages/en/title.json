@@ -69,6 +69,7 @@
         "mal_update_failed": "MyAnimeList didn't save the change. Try again."
       },
       "unavailable": "Status unavailable"
-    }
+    },
+    "synopsisEnglish": "Synopsis in English"
   }
 }

@@ -27,13 +27,15 @@ function parseId(raw: string) {
 }
 
 // The metadata and the page share one details call per request.
-const details = cache(async (id: number) =>
-  (await serverApi()).GET("/anime/{anime_id}", { params: { path: { anime_id: id } } }),
+const details = cache(async (id: number, locale: string) =>
+  (await serverApi()).GET("/anime/{anime_id}", {
+    params: { path: { anime_id: id }, query: { lang: locale === "pt" ? "pt" : "en" } },
+  }),
 );
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/anime/[id]">): Promise<Metadata> {
-  const { id } = await params;
-  const { data } = await details(parseId(id));
+  const { locale, id } = await params;
+  const { data } = await details(parseId(id), locale);
   return { title: data ? `${data.title} · ${APP_NAME}` : APP_NAME };
 }
 
@@ -72,7 +74,7 @@ export default async function TitlePage({ params }: PageProps<"/[locale]/anime/[
   const id = parseId(rawId);
   const t = await getTranslations("titlePage");
 
-  const [anime, list] = await Promise.all([unwrap(details(id), locale), listState(id)]);
+  const [anime, list] = await Promise.all([unwrap(details(id, locale), locale), listState(id)]);
 
   // The sources come from scrapers that can be slow or down: the page renders without them and
   // the parts that need them stream in.

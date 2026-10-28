@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # Read the client address from X-Forwarded-For. Only enable behind a trusted reverse proxy.
     trust_proxy_headers: bool = False
 
+    # Private deployments only: Portuguese synopses from an unlicensed site. Off in public builds.
+    pt_synopsis_scrape: bool = False
+
     # Comma-separated list of browser origins allowed to call the API.
     cors_origins: str = "http://localhost:3000"
     web_url: str = "http://localhost:3000"

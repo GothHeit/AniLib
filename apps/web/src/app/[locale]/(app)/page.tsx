@@ -13,16 +13,17 @@ async function HomeContent({ locale }: { locale: string }) {
   const t = await getTranslations("home");
   const api = await serverApi();
   const [home, activity] = await Promise.all([
-    unwrap(api.GET("/home"), locale),
+    unwrap(api.GET("/home", { params: { query: { lang: locale === "pt" ? "pt" : "en" } } }), locale),
     // The feed is a bonus: the home page works without it.
     api.GET("/friends/activity", { params: { query: { limit: 20 } } }).then((r) => r.data ?? [], () => []),
   ]);
-  const slides = home.heroes.map(({ anime, synopsis, backdrop }) => ({
+  const slides = home.heroes.map(({ anime, synopsis, synopsis_lang, backdrop }) => ({
     id: anime.id,
     title: anime.title,
     href: animeHref(anime.id),
     meta: anime.mean ? t("score", { score: anime.mean.toFixed(1) }) : undefined,
     synopsis: cleanSynopsis(synopsis) || undefined,
+    synopsisNote: locale === "pt" && synopsis_lang === "en" ? t("synopsisEnglish") : undefined,
     image: backdrop,
   }));
 

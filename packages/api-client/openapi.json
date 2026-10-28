@@ -410,6 +410,21 @@
             ],
             "title": "Synopsis"
           },
+          "synopsis_lang": {
+            "anyOf": [
+              {
+                "enum": [
+                  "en",
+                  "pt"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synopsis Lang"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -737,6 +752,21 @@
               }
             ],
             "title": "Synopsis"
+          },
+          "synopsis_lang": {
+            "anyOf": [
+              {
+                "enum": [
+                  "en",
+                  "pt"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Synopsis Lang"
           }
         },
         "required": [
@@ -2833,6 +2863,20 @@
               "title": "Anime Id",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "default": "en",
+              "enum": [
+                "en",
+                "pt"
+              ],
+              "title": "Lang",
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -3382,6 +3426,22 @@
     "/home": {
       "get": {
         "operationId": "home_home_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "default": "en",
+              "enum": [
+                "en",
+                "pt"
+              ],
+              "title": "Lang",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3392,6 +3452,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "security": [
