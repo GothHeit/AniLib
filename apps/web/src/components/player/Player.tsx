@@ -17,7 +17,7 @@ import type { WebkitVideo } from "./SubtitleOverlay";
 import { PlayerIcon } from "./icons";
 import { languageName, trackNames } from "./languages";
 import { formatTime } from "./progress";
-import { qualityList } from "./qualities";
+import { levelsToDrop, qualityList } from "./qualities";
 import { SettingsMenu, type AudioTrack, type Quality } from "./SettingsMenu";
 import { sameStream, streamLabel, type StreamNames } from "./streams";
 import { activeSkip, type Skip } from "./skips";
@@ -84,6 +84,8 @@ export function Player(props: Props) {
   const video = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<import("hls.js").default | null>(null);
   const started = useRef(false);
+  const hevcUsed = useRef(false);
+  const hevcFailed = useRef(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const [attempt, setAttempt] = useState(0);
@@ -228,7 +230,13 @@ export function Player(props: Props) {
         hls = new Hls();
         hlsRef.current = hls;
         hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
-          setQualities(qualityList(data.levels));
+          // Play the original HEVC when this device decodes it; if it then fails, retry with H.264.
+          if (!hevcFailed.current) {
+            const drop = levelsToDrop(data.levels);
+            hevcUsed.current = drop.length > 0;
+            for (const i of drop.reverse()) hls?.removeLevel(i);
+          }
+          setQualities(qualityList(hls?.levels ?? data.levels));
         });
         hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_event, data) => {
           const found = data.audioTracks.map((a) => ({ id: a.id, name: a.name, lang: a.lang }));
@@ -239,7 +247,11 @@ export function Player(props: Props) {
         });
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (!data.fatal) return;
-          if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recovered) {
+          if (hevcUsed.current) {
+            hevcUsed.current = false;
+            hevcFailed.current = true;
+            retry();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR && !recovered) {
             recovered = true;
             hls?.recoverMediaError();
           } else setError("playback_failed");
