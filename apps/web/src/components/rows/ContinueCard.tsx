@@ -45,9 +45,9 @@ export function ContinueCard({ animeId, ...card }: Props) {
         type="button"
         onClick={remove}
         aria-label={t("remove", { title: card.title })}
-        className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity hover:bg-black focus-visible:opacity-100 group-hover/card:opacity-100 max-md:opacity-100 pointer-coarse:opacity-100"
+        className="press absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-full text-white opacity-0 focus-visible:opacity-100 group-hover/card:opacity-100 max-md:opacity-100 pointer-coarse:opacity-100"
       >
-        <span aria-hidden="true">✕</span>
+        <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-sm">✕</span>
       </button>
     </div>
   );

@@ -9,7 +9,7 @@ export function Logo({ size = "md" }: { size?: "md" | "lg" }) {
     <span className="inline-flex items-center gap-2">
       <Image src="/logo-mark.svg" alt="" width={px} height={px} unoptimized priority />
       <span
-        className={`font-display font-bold tracking-tight text-accent ${size === "lg" ? "text-3xl" : "text-xl"}`}
+        className={`font-display text-fg ${size === "lg" ? "text-4xl" : "text-[1.75rem] leading-none"}`}
       >
         {APP_NAME}
       </span>

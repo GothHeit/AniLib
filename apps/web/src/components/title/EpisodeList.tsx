@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { gradientFor } from "@/components/ui/PosterCard";
+import { placeholderFor } from "@/components/ui/PosterCard";
 import { Link } from "@/i18n/navigation";
 import { watchHref, type Lang } from "@/lib/watch-target";
 
@@ -40,7 +40,7 @@ export function EpisodeList({ source, lang = "sub", animeId, episodes, progress,
   return (
     <section aria-labelledby="episodes-heading" className="px-4 sm:px-8">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 id="episodes-heading" className="text-lg font-bold">
+        <h2 id="episodes-heading" className="text-2xl">
           {t("episodeList")}
         </h2>
         {pages > 1 && (
@@ -49,7 +49,7 @@ export function EpisodeList({ source, lang = "sub", animeId, episodes, progress,
             <select
               value={page}
               onChange={(e) => setPage(Number(e.target.value))}
-              className="rounded-ui border border-line bg-surface px-3 py-1.5 text-fg"
+              className="h-11 rounded-full border border-line-strong bg-bg px-4 text-fg"
             >
               {Array.from({ length: pages }, (_, i) => {
                 const slice = episodes.slice(i * PAGE_SIZE, (i + 1) * PAGE_SIZE);
@@ -74,7 +74,7 @@ export function EpisodeList({ source, lang = "sub", animeId, episodes, progress,
             <li key={ep}>
               <Link href={watchHref(source, animeId, ep, lang)} className="group block">
                 <div
-                  className={`relative flex aspect-video items-center justify-center overflow-hidden rounded-ui border border-line transition-transform group-hover:scale-[1.03] group-focus-visible:scale-[1.03] ${gradientFor(animeId + ep)}`}
+                  className={`relative flex aspect-video items-center justify-center overflow-hidden rounded-ui transition-transform duration-200 ease-out group-hover:scale-[1.03] group-focus-visible:scale-[1.03] group-active:scale-[0.98] ${placeholderFor(animeId + ep)}`}
                 >
                   {image && (
                     // eslint-disable-next-line @next/next/no-img-element -- stills come from the source or the catalog
@@ -86,7 +86,7 @@ export function EpisodeList({ source, lang = "sub", animeId, episodes, progress,
                       className={`absolute inset-0 h-full w-full object-cover ${still ? "" : "scale-110 opacity-40 blur-[2px]"}`}
                     />
                   )}
-                  <span aria-hidden="true" className="relative font-display text-xl font-bold text-fg/90 drop-shadow">
+                  <span aria-hidden="true" className="relative font-display text-3xl text-fg/90">
                     {t("episodeShort", { episode: ep })}
                   </span>
                   {pct !== undefined && (
@@ -102,7 +102,7 @@ export function EpisodeList({ source, lang = "sub", animeId, episodes, progress,
                     </div>
                   )}
                 </div>
-                <p className="mt-2 text-sm font-medium">
+                <p className="mt-2.5 text-sm font-bold">
                   {t("episode", { episode: ep })}
                   {p?.completed && <span className="ml-2 text-xs text-success">{t("watched")}</span>}
                 </p>

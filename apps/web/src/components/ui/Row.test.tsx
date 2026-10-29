@@ -20,18 +20,30 @@ function setup() {
   );
 }
 
+// Hidden arrows have no accessible name, so find them by their label attribute.
+const arrow = (label: string) => document.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
+
 describe("Row", () => {
   it("renders every item in the list", () => {
     setup();
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });
 
+  it("takes an arrow out of the tab order while it is hidden at an end of the row", () => {
+    setup();
+    // jsdom has no layout, so the row sits at both ends at once.
+    const left = arrow("Scroll left");
+    expect(left).toHaveAttribute("aria-hidden", "true");
+    expect(left).toHaveAttribute("tabindex", "-1");
+  });
+
   it("scrolls with the arrow buttons", () => {
     setup();
-    fireEvent.click(screen.getByRole("button", { name: "Scroll right" }));
+    // Hidden from the accessibility tree at the ends (jsdom has no layout), but still clickable.
+    fireEvent.click(arrow("Scroll right"));
     expect(scrollBy).toHaveBeenLastCalledWith(expect.objectContaining({ left: expect.any(Number) }));
     expect(scrollBy.mock.calls[0][0].left).toBeGreaterThanOrEqual(0);
-    fireEvent.click(screen.getByRole("button", { name: "Scroll left" }));
+    fireEvent.click(arrow("Scroll left"));
     expect(scrollBy.mock.calls[1][0].left).toBeLessThanOrEqual(0);
   });
 

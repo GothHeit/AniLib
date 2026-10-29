@@ -47,7 +47,7 @@ export function RoomClient({ initial, meId, episodes, subtitleLang, subtitleStyl
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black p-6 text-fg">
         <div role="alert" className="max-w-md text-center">
           <p className="text-lg font-medium">{t(`closed.${status.closed}`)}</p>
-          <Link href="/room" className="mt-6 inline-block rounded-ui bg-accent px-4 py-2 text-sm font-bold text-on-accent">
+          <Link href="/room" className="mt-6 press inline-flex min-h-11 items-center justify-center rounded-full bg-accent px-5 py-2 text-sm font-bold text-on-accent">
             {t("back")}
           </Link>
         </div>

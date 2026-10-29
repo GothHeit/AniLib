@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 
@@ -6,7 +7,14 @@ import { ButtonLink } from "@/components/ui/Button";
 import { PosterCard } from "@/components/ui/PosterCard";
 import { Row } from "@/components/ui/Row";
 import { animeHref, posterOf } from "@/lib/catalog";
+import { titled } from "@/lib/page-title";
 import { serverApi, unwrap } from "@/lib/server-api";
+
+export async function generateMetadata({ params }: PageProps<"/[locale]/u/[id]">): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "profile" });
+  return titled(t("title"));
+}
 
 export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[id]">) {
   const { locale, id } = await params;
@@ -21,7 +29,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[id
   if (result.response.status === 403) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col items-start gap-4 px-4 pb-8 pt-24 sm:px-8">
-        <h1 className="text-3xl font-bold">{t("locked")}</h1>
+        <h1 className="text-4xl sm:text-5xl">{t("locked")}</h1>
         <p className="text-muted">{t("lockedHint")}</p>
         <ButtonLink href="/friends">{t("toFriends")}</ButtonLink>
       </div>
@@ -37,7 +45,7 @@ export default async function ProfilePage({ params }: PageProps<"/[locale]/u/[id
       <header className="flex flex-wrap items-center gap-5">
         <Avatar userId={user.id} username={user.username} avatar={user.avatar} size={96} />
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-3xl font-bold">{user.username}</h1>
+          <h1 className="truncate text-4xl sm:text-5xl">{user.username}</h1>
           <p className="text-sm text-muted">
             {t("joined", { date: date(profile.joined_at) })}
             {profile.friends_since && ` · ${t("friendsSince", { date: date(profile.friends_since) })}`}

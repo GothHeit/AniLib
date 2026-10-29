@@ -34,6 +34,7 @@
     "yourName": "Friends find you by your username: <b>{name}</b>"
   },
   "profile": {
+    "title": "Profile",
     "joined": "Joined {date}",
     "friendsSince": "Friends since {date}",
     "stats": {

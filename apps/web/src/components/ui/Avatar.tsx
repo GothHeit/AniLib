@@ -15,13 +15,13 @@ export function Avatar({ userId, username, avatar, size = 32, className = "" }: 
   const style = { width: size, height: size };
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element -- tiny user-provided image, already sized
-    return <img src={src} alt="" width={size} height={size} style={style} className={`shrink-0 rounded-ui object-cover ${className}`} referrerPolicy="no-referrer" />;
+    return <img src={src} alt="" width={size} height={size} style={style} className={`shrink-0 rounded-full object-cover ${className}`} referrerPolicy="no-referrer" />;
   }
   return (
     <span
       aria-hidden="true"
       style={{ ...style, backgroundColor: `hsl(${initialHue(username)} 45% 32%)`, fontSize: size * 0.45 }}
-      className={`flex shrink-0 items-center justify-center rounded-ui font-bold uppercase ${className}`}
+      className={`flex shrink-0 items-center justify-center rounded-full font-bold uppercase ${className}`}
     >
       {username.charAt(0)}
     </span>

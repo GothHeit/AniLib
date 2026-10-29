@@ -482,7 +482,7 @@ export function Player(props: Props) {
   const others = streams.filter((s) => !sameStream(s, { source, lang }));
   const shown = active || !playing || ended || settingsOpen || error !== null;
   const errorText = error && t(`errors.${ERRORS.includes(error) ? error : "unknown"}`);
-  const iconButton = "flex h-10 w-10 items-center justify-center rounded-ui text-fg hover:bg-white/10";
+  const iconButton = "press flex h-11 w-11 items-center justify-center rounded-full text-fg hover:bg-white/10 active:bg-white/10";
 
   return (
     <div
@@ -571,11 +571,11 @@ export function Player(props: Props) {
             <p className="text-lg font-medium">{errorText}</p>
             <div className="mt-6 flex justify-center gap-3">
               {error !== "source_not_found" && error !== "not_available" && (
-                <button type="button" onClick={retry} className="rounded-ui bg-accent px-4 py-2 text-sm font-bold text-on-accent">
+                <button type="button" onClick={retry} className="press inline-flex min-h-11 items-center justify-center rounded-full bg-accent px-5 py-2 text-sm font-bold text-on-accent">
                   {t("retry")}
                 </button>
               )}
-              <Link href={backHref} className="rounded-ui border border-line bg-surface px-4 py-2 text-sm font-bold">
+              <Link href={backHref} className="press inline-flex min-h-11 items-center justify-center rounded-full border border-line-strong px-5 py-2 text-sm font-bold">
                 {t("back")}
               </Link>
             </div>
@@ -588,7 +588,7 @@ export function Player(props: Props) {
                       key={`${s.source}-${s.lang}`}
                       type="button"
                       onClick={() => switchStream(s)}
-                      className="rounded-ui border border-line bg-surface px-4 py-2 text-sm font-bold"
+                      className="press inline-flex min-h-11 items-center justify-center rounded-full border border-line-strong px-5 py-2 text-sm font-bold"
                     >
                       {streamLabel(names, s)}
                     </button>
@@ -608,7 +608,7 @@ export function Player(props: Props) {
             <PlayerIcon name="back" />
           </Link>
           <div className="min-w-0">
-            <p className="truncate font-display font-bold">{title}</p>
+            <p className="truncate font-display text-xl leading-tight">{title}</p>
             <p className="text-sm text-muted">
               {t("episode", { episode })}
               {answered !== source && (
@@ -623,7 +623,7 @@ export function Player(props: Props) {
               type="button"
               onClick={() => void startRoom()}
               aria-label={t("watchTogether")}
-              className="ml-auto flex h-10 items-center gap-2 rounded-ui px-3 text-fg hover:bg-white/10"
+              className="press ml-auto flex h-11 items-center gap-2 rounded-full border border-white/25 px-4 text-fg hover:bg-white/10"
             >
               <PlayerIcon name="people" />
               <span className="text-sm font-bold">{t("watchTogether")}</span>
@@ -700,7 +700,7 @@ export function Player(props: Props) {
                   type="button"
                   onClick={goNext}
                   aria-label={t("next")}
-                  className="flex h-10 items-center gap-2 rounded-ui px-2 text-fg hover:bg-white/10 sm:px-3"
+                  className="press flex h-11 items-center gap-2 rounded-full px-3 text-fg hover:bg-white/10 sm:px-4"
                 >
                   <PlayerIcon name="next" />
                   <span className="hidden text-sm font-bold sm:inline">{t("nextShort")}</span>
@@ -761,28 +761,28 @@ export function Player(props: Props) {
         <button
           type="button"
           onClick={skipNow}
-          className="absolute bottom-28 right-4 rounded-ui border border-white/40 bg-black/70 px-5 py-2.5 text-sm font-bold text-fg hover:bg-black/90 sm:right-8"
+          className="press absolute bottom-28 right-4 min-h-11 rounded-full border border-white/40 bg-black/70 px-5 py-2.5 text-sm font-bold text-fg hover:bg-black/90 sm:right-8"
         >
           {t(skip.kind === "intro" ? "skipIntro" : skip.kind === "recap" ? "skipRecap" : "skipOutro")}
         </button>
       )}
 
       {ended && !error && (
-        <div className="absolute bottom-28 right-4 w-[min(22rem,calc(100%-2rem))] rounded-ui border border-line bg-surface p-4 shadow-lg sm:right-8">
+        <div className="pop-in absolute bottom-28 right-4 w-[min(22rem,calc(100%-2rem))] origin-bottom-right rounded-ui border border-line bg-surface p-4 shadow-lg sm:right-8">
           {next !== undefined ? (
             <>
               <p className="font-medium" aria-live="polite">
                 {countdown !== null ? t("nextIn", { episode: next, seconds: countdown }) : t("nextReady", { episode: next })}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <button type="button" onClick={goNext} className="rounded-ui bg-accent px-4 py-2 text-sm font-bold text-on-accent">
+                <button type="button" onClick={goNext} className="press inline-flex min-h-11 items-center justify-center rounded-full bg-accent px-5 py-2 text-sm font-bold text-on-accent">
                   {t("playNow")}
                 </button>
                 {countdown !== null && (
                   <button
                     type="button"
                     onClick={() => setCountdown(null)}
-                    className="rounded-ui border border-line px-4 py-2 text-sm font-bold"
+                    className="press inline-flex min-h-11 items-center justify-center rounded-full border border-line-strong px-5 py-2 text-sm font-bold"
                   >
                     {t("cancel")}
                   </button>
@@ -804,7 +804,7 @@ export function Player(props: Props) {
           ) : (
             <>
               <p className="font-medium">{t("finished")}</p>
-              <Link href={backHref} className="mt-4 inline-block rounded-ui bg-accent px-4 py-2 text-sm font-bold text-on-accent">
+              <Link href={backHref} className="mt-4 press inline-flex min-h-11 items-center justify-center rounded-full bg-accent px-5 py-2 text-sm font-bold text-on-accent">
                 {t("back")}
               </Link>
             </>

@@ -39,7 +39,7 @@ export function JoinRoomForm() {
           maxLength={12}
           aria-invalid={invalid}
           aria-describedby={invalid ? "code-error" : undefined}
-          className="rounded-ui border border-line bg-surface px-3 py-2 font-display text-xl uppercase tracking-widest"
+          className="h-12 rounded-ui border border-line-strong bg-bg px-4 text-xl font-bold uppercase tracking-widest focus:border-accent"
         />
       </label>
       {invalid && (
@@ -47,7 +47,7 @@ export function JoinRoomForm() {
           {t("invalidCode")}
         </p>
       )}
-      <button type="submit" className="rounded-ui bg-accent px-4 py-2 font-bold text-on-accent">
+      <button type="submit" className="press inline-flex min-h-11 items-center justify-center rounded-full bg-accent px-5 py-2 font-bold text-on-accent">
         {t("join")}
       </button>
     </form>

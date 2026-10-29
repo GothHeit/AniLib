@@ -38,7 +38,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((i) => (
           <div
             key={i.id}
-            className={`pointer-events-auto rounded-ui border bg-surface px-4 py-3 text-sm shadow-lg ${kindClass[i.kind]}`}
+            className={`pop-in pointer-events-auto origin-bottom rounded-full border bg-surface px-5 py-3 text-sm shadow-lg shadow-black/40 ${kindClass[i.kind]}`}
           >
             {i.message}
           </div>

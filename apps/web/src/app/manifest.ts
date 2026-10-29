@@ -12,8 +12,8 @@ export default function manifest(): MetadataRoute.Manifest {
     orientation: "any",
     categories: ["entertainment"],
     display: "standalone",
-    background_color: "#0b0a12",
-    theme_color: "#0b0a12",
+    background_color: "#150d26",
+    theme_color: "#150d26",
     // The crescent sits inside the central 80% of both icons, so they also work as maskable.
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

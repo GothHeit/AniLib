@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Link } from "@/i18n/navigation";
 import { api } from "@/lib/api";
 import { profileHref } from "@/lib/friends";
+import { usePresence } from "@/lib/use-presence";
 import type { components } from "@app/api-client";
 
 import { Icon } from "./Icon";
@@ -39,6 +40,7 @@ export function NotificationBell() {
   // Bumped on every local change, so a poll that started earlier can't undo it.
   const changes = useRef(0);
   const [open, setOpen] = useState(false);
+  const presence = usePresence(open);
   const [items, setItems] = useState<Item[]>([]);
   const [unread, setUnread] = useState(0);
   const [failed, setFailed] = useState(false);
@@ -134,7 +136,7 @@ export function NotificationBell() {
           if (!open) void load();
           setOpen((v) => !v);
         }}
-        className="relative flex h-11 w-11 items-center justify-center rounded-ui text-muted hover:text-fg"
+        className="press relative flex h-11 w-11 items-center justify-center rounded-full text-muted hover:text-fg"
       >
         <Icon name="bell" />
         {unread > 0 && (
@@ -146,18 +148,20 @@ export function NotificationBell() {
           </span>
         )}
       </button>
-      {open && (
+      {presence.mounted && (
         <div
           ref={panel}
           role="dialog"
+          data-closing={presence.closing || undefined}
+          inert={presence.closing}
           tabIndex={-1}
           aria-label={t("title")}
-          className="fixed inset-x-4 top-16 z-50 flex max-h-[70dvh] flex-col rounded-ui border border-line bg-surface shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 focus:outline-none"
+          className="pop-in fixed inset-x-4 top-16 z-50 flex max-h-[70dvh] origin-top flex-col rounded-ui border border-line bg-surface shadow-xl shadow-black/40 sm:absolute sm:origin-top-right sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 focus:outline-none"
         >
           <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
-            <h2 className="font-bold">{t("title")}</h2>
+            <h2 className="font-sans text-base font-bold">{t("title")}</h2>
             {unread > 0 && (
-              <button type="button" onClick={() => void markAll()} className="text-xs text-accent hover:underline">
+              <button type="button" onClick={() => void markAll()} className="-my-2 min-h-11 text-xs text-accent hover:underline">
                 {t("markAll")}
               </button>
             )}
@@ -167,7 +171,7 @@ export function NotificationBell() {
               {t("loadFailed")}
             </p>
           )}
-          <ul className="overflow-y-auto">
+          <ul className="overflow-y-auto overscroll-contain">
             {items.length === 0 && (
               <li className="px-4 py-8 text-center text-sm text-muted">{failed ? t("loadFailed") : t("empty")}</li>
             )}
@@ -209,7 +213,7 @@ export function NotificationBell() {
                     type="button"
                     onClick={() => void dismiss(item)}
                     aria-label={t("dismissItem", { text: text(item) })}
-                    className="mr-2 mt-2 rounded-ui px-2 py-1 text-muted hover:bg-line"
+                    className="mr-1 mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted hover:bg-line active:bg-line"
                   >
                     <span aria-hidden="true">×</span>
                   </button>

@@ -15,7 +15,7 @@ import type { AvatarInfo } from "@/lib/avatar";
 
 import { UserMenu } from "./UserMenu";
 
-/** Transparent over the hero, solid once the page scrolls. */
+/** Flat bar on the page color; a hairline shows up once the page scrolls. */
 export function TopNav({ userId, username, avatar, isAdmin, pending = 0 }: { userId: string; username: string; avatar: AvatarInfo; isAdmin: boolean; pending?: number }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
@@ -31,13 +31,13 @@ export function TopNav({ userId, username, avatar, isAdmin, pending = 0 }: { use
   return (
     <header
       data-scrolled={scrolled}
-      className={`fixed inset-x-0 top-0 z-40 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] transition-colors ${scrolled ? "bg-bg shadow-lg shadow-black/40" : "bg-gradient-to-b from-bg/80 to-transparent"}`}
+      className={`fixed inset-x-0 top-0 z-40 pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] border-b bg-bg transition-colors ${scrolled ? "border-line" : "border-transparent"}`}
     >
-      <nav aria-label={t("main")} className="flex items-center gap-6 px-4 py-3 sm:px-8">
+      <nav aria-label={t("main")} className="flex h-16 items-center gap-8 px-4 sm:h-20 sm:px-8">
         <Link href="/" aria-label={APP_NAME}>
           <Logo />
         </Link>
-        <ul className="hidden items-center gap-1 md:flex">
+        <ul className="hidden items-center gap-6 md:flex">
           {NAV_ITEMS.map(({ href, key }) => {
             const active = isActive(pathname, href);
             return (
@@ -45,7 +45,7 @@ export function TopNav({ userId, username, avatar, isAdmin, pending = 0 }: { use
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`rounded-ui px-3 py-1.5 text-sm font-medium hover:text-fg ${active ? "text-accent" : "text-muted"}`}
+                  className={`border-b py-1 text-sm font-medium transition-colors hover:text-fg ${active ? "border-accent text-fg" : "border-transparent text-muted"}`}
                 >
                   {t(key)}
                 </Link>

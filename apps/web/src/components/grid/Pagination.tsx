@@ -15,7 +15,7 @@ export async function Pagination({ page, hasNext, hrefFor }: Props) {
   const t = await getTranslations("browse");
   const next = hasNext && page < MAX_PAGE;
   if (page === 1 && !next) return null;
-  const link = "rounded-ui border border-line bg-surface px-4 py-2 text-sm font-bold hover:border-accent";
+  const link = "press inline-flex min-h-11 items-center justify-center rounded-full border border-line-strong px-5 py-2 text-sm font-bold hover:border-accent";
   return (
     <nav aria-label={t("pagination")} className="mt-8 flex items-center justify-center gap-4">
       {page > 1 ? (

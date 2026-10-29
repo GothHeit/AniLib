@@ -2,7 +2,7 @@ import type { components } from "@app/api-client";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
-import { gradientFor } from "@/components/ui/PosterCard";
+import { placeholderFor } from "@/components/ui/PosterCard";
 import { genreName } from "@/lib/genres";
 
 import { AddToList, type ListState } from "./AddToList";
@@ -38,11 +38,11 @@ export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
   const poster = anime.main_picture?.large ?? anime.main_picture?.medium;
 
   return (
-    <section className="bg-backdrop px-4 pb-10 pt-24 sm:px-8 sm:pt-28">
+    <section className="px-4 pb-12 pt-20 sm:px-8 sm:pt-28">
       {/* Phones: a small poster beside the title keeps the play button on the first screen. */}
       <div className="grid grid-cols-[7.5rem_1fr] gap-x-4 gap-y-5 sm:grid-cols-[14rem_1fr] sm:gap-x-8 sm:gap-y-0">
         <div
-          className={`relative aspect-[2/3] w-full overflow-hidden rounded-ui border border-line sm:row-span-2 ${gradientFor(anime.id)}`}
+          className={`relative aspect-[2/3] w-full overflow-hidden rounded-ui sm:row-span-2 ${placeholderFor(anime.id)}`}
         >
           {poster && (
             // eslint-disable-next-line @next/next/no-img-element -- posters come from remote catalogs
@@ -58,10 +58,10 @@ export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
         </div>
         <div className="min-w-0 max-w-3xl">
           {badge}
-          <h1 className="mt-2 text-2xl font-bold sm:mt-3 sm:text-4xl">{anime.title}</h1>
-          {english && english !== anime.title && <p className="mt-1 text-muted">{english}</p>}
+          <h1 className="mt-2 break-words text-4xl leading-none sm:mt-3 sm:text-6xl">{anime.title}</h1>
+          {english && english !== anime.title && <p className="mt-2 text-muted">{english}</p>}
           {facts.length > 0 && (
-            <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium">
+            <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-soft">
               {facts.map((f) => (
                 <li key={f}>{f}</li>
               ))}
@@ -76,7 +76,7 @@ export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
           {hint}
 
           <h2 className="sr-only">{t("synopsis")}</h2>
-          <p className="mt-6 whitespace-pre-line text-muted">{cleanSynopsis(anime.synopsis) || t("noSynopsis")}</p>
+          <p className="mt-6 max-w-2xl whitespace-pre-line leading-relaxed text-soft">{cleanSynopsis(anime.synopsis) || t("noSynopsis")}</p>
           {locale === "pt" && anime.synopsis_lang === "en" && <p className="mt-1 text-xs text-muted">{t("synopsisEnglish")}</p>}
           <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
             {!!anime.studios?.length && (
@@ -90,7 +90,7 @@ export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
                 <dt className="text-muted">{t("genres")}</dt>
                 <dd className="flex flex-wrap gap-2">
                   {anime.genres?.map((g) => (
-                    <span key={g.id} className="rounded-ui border border-line px-2 py-0.5 text-xs">
+                    <span key={g.id} className="rounded-full border border-line-strong px-3 py-1 text-xs">
                       {genreName(tGenres, g)}
                     </span>
                   ))}

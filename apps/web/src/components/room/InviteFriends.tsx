@@ -49,7 +49,7 @@ export function InviteFriends({ code, memberIds }: Props) {
         type="button"
         aria-expanded={open}
         onClick={() => void toggle()}
-        className="rounded-ui border border-line px-3 py-1.5 text-xs font-bold hover:bg-line"
+        className="press rounded-full border border-line-strong px-3 py-1.5 text-xs font-bold pointer-coarse:min-h-11 hover:bg-line"
       >
         {t("button")}
       </button>
@@ -69,7 +69,7 @@ export function InviteFriends({ code, memberIds }: Props) {
                   type="button"
                   disabled={sent.has(user.id)}
                   onClick={() => void invite(user.id)}
-                  className="rounded-ui bg-accent px-3 py-1 text-xs font-bold text-on-accent disabled:opacity-60"
+                  className="press rounded-full bg-accent px-3 py-1 pointer-coarse:min-h-11 text-xs font-bold text-on-accent disabled:opacity-60"
                 >
                   {sent.has(user.id) ? t("sent") : t("send")}
                 </button>

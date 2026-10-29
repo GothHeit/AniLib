@@ -18,7 +18,7 @@ export type HeroSlide = {
 
 const INTERVAL_MS = 8000;
 
-/** Full-bleed banner that rotates through a few titles. The nav floats over its top edge.
+/** Flat banner that rotates through a few titles: kicker, big serif title and a pill, with the poster beside them.
  * Rotation pauses on hover and focus and never starts for people who prefer reduced motion. */
 export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string }) {
   const t = useTranslations("home");
@@ -44,14 +44,17 @@ export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string
     <section
       aria-roledescription="carousel"
       aria-label={t("featured")}
-      className="relative min-h-[26rem] overflow-hidden bg-hero sm:min-h-[32rem]"
+      className="relative grid bg-bg px-4 pb-14 pt-20 sm:px-8 sm:pt-28"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
+      // Moving focus between the banner's own controls should not restart the timer.
+      onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setPaused(false)}
     >
       {slides.map((slide, i) => {
         const active = i === index;
+        // Long romaji titles step down a size so they stay within three or four lines on a phone.
+        const size = slide.title.length > 28 ? "text-4xl sm:text-6xl lg:text-7xl" : "text-5xl sm:text-7xl lg:text-8xl";
         return (
           <div
             key={slide.id}
@@ -60,50 +63,41 @@ export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string
             aria-label={t("slide", { n: i + 1, total: slides.length })}
             aria-hidden={!active}
             inert={!active}
-            className={`absolute inset-0 flex items-end px-4 pb-12 pt-28 transition-opacity duration-700 motion-reduce:transition-none sm:px-8 ${active ? "opacity-100" : "opacity-0"}`}
+            // Every slide sits in the same grid cell, so the banner is as tall as the tallest one.
+            className={`col-start-1 row-start-1 flex items-center gap-6 transition-opacity duration-300 ease-out md:gap-14 ${active ? "opacity-100" : "opacity-0"}`}
           >
+            <div className="min-w-0 flex-1 md:max-w-xl">
+              <p className="kicker">{t("featured")}</p>
+              {active ? (
+                <h1 className={`mt-4 break-words leading-[0.95] tracking-[-0.02em] ${size}`}>{slide.title}</h1>
+              ) : (
+                <p className={`mt-4 break-words font-display leading-[0.95] tracking-[-0.02em] ${size}`}>{slide.title}</p>
+              )}
+              {slide.meta && <p className="mt-4 text-sm font-medium text-muted">{slide.meta}</p>}
+              {slide.synopsis && <p className="mt-3 line-clamp-3 max-w-md leading-relaxed text-soft">{slide.synopsis}</p>}
+              {slide.synopsis && slide.synopsisNote && <p className="mt-1 text-xs text-muted">{slide.synopsisNote}</p>}
+              <div className="mt-7 flex flex-wrap gap-3">
+                <ButtonLink href={slide.href} className="px-6">
+                  {cta}
+                </ButtonLink>
+              </div>
+            </div>
             {slide.image && (
-              // MAL only has portrait posters, which pixelate when stretched to a banner: blur
-              // them into a backdrop and show the sharp one beside the text.
-              // eslint-disable-next-line @next/next/no-img-element -- banners come from remote catalogs
+              // eslint-disable-next-line @next/next/no-img-element -- remote catalog poster
               <img
                 src={slide.image}
                 alt=""
                 fetchPriority={i === 0 ? "high" : "auto"}
                 loading={i === 0 ? "eager" : "lazy"}
                 decoding="async"
-                className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-2xl"
+                className="ml-auto hidden aspect-[2/3] w-56 shrink-0 rounded-ui object-cover sm:block lg:mr-[8%] lg:w-72"
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent" />
-            {slide.image && (
-              // eslint-disable-next-line @next/next/no-img-element -- remote catalog poster
-              <img
-                src={slide.image}
-                alt=""
-                loading={i === 0 ? "eager" : "lazy"}
-                decoding="async"
-                className="absolute bottom-12 right-8 hidden h-72 w-auto rounded-ui shadow-2xl md:block lg:right-16 lg:h-96"
-              />
-            )}
-            <div className="relative max-w-2xl">
-              {active ? (
-                <h1 className="text-3xl font-bold sm:text-5xl">{slide.title}</h1>
-              ) : (
-                <p className="text-3xl font-bold sm:text-5xl">{slide.title}</p>
-              )}
-              {slide.meta && <p className="mt-2 text-sm font-medium text-success">{slide.meta}</p>}
-              {slide.synopsis && <p className="mt-3 line-clamp-3 text-muted sm:text-lg">{slide.synopsis}</p>}
-              {slide.synopsis && slide.synopsisNote && <p className="mt-1 text-xs text-muted">{slide.synopsisNote}</p>}
-              <div className="mt-6 flex flex-wrap gap-3">
-                <ButtonLink href={slide.href}>{cta}</ButtonLink>
-              </div>
-            </div>
           </div>
         );
       })}
       {slides.length > 1 && (
-        <div className="absolute inset-x-0 bottom-4 z-10 flex justify-center gap-1 sm:justify-end sm:px-8">
+        <div className="absolute inset-x-0 bottom-2 flex justify-start gap-1 px-2 sm:px-6">
           {slides.map((slide, i) => (
             <button
               key={slide.id}
@@ -111,9 +105,12 @@ export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string
               aria-label={t("goToSlide", { n: i + 1 })}
               aria-current={i === index}
               onClick={() => setIndex(i)}
-              className="flex h-6 w-6 items-center justify-center pointer-coarse:h-11 pointer-coarse:w-11"
+              className="flex h-6 w-8 items-center justify-center pointer-coarse:h-11 pointer-coarse:w-11"
             >
-              <span className={`h-1.5 rounded-full transition-all ${i === index ? "w-6 bg-accent" : "w-3 bg-fg/40"}`} />
+              {/* Grows with a transform, never a width change. */}
+              <span
+                className={`h-1 w-6 origin-left rounded-full transition-[transform,background-color] duration-300 ease-out ${i === index ? "scale-x-100 bg-accent" : "scale-x-50 bg-fg/30"}`}
+              />
             </button>
           ))}
         </div>

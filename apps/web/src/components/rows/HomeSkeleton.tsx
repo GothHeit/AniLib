@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 export function HomeSkeleton() {
   return (
     <div aria-hidden="true">
-      <div className="min-h-[26rem] bg-hero sm:min-h-[32rem]" />
+      <div className="min-h-[26rem] sm:min-h-[32rem]" />
       <div className="space-y-8 py-6">
         {[0, 1].map((r) => (
           <div key={r}>

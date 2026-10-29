@@ -10,7 +10,7 @@ import type { AvatarInfo } from "@/lib/avatar";
 
 import { UserMenu } from "./UserMenu";
 
-const item = "flex flex-1 flex-col items-center gap-1 py-2 text-xs";
+const item = "press flex min-h-14 flex-1 flex-col items-center justify-center gap-1 text-xs font-medium active:opacity-70";
 
 /** Phone navigation: Home, Browse, My list, Search, You. */
 export function TabBar({ userId, username, avatar, isAdmin, pending = 0 }: { userId: string; username: string; avatar: AvatarInfo; isAdmin: boolean; pending?: number }) {

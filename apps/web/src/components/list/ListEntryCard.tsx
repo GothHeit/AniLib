@@ -7,6 +7,7 @@ import { PosterCard } from "@/components/ui/PosterCard";
 import { useToast } from "@/components/ui/Toast";
 import { useRouter } from "@/i18n/navigation";
 import { animeHref, LIST_STATUSES, posterOf, type ListEntry } from "@/lib/catalog";
+import { usePresence } from "@/lib/use-presence";
 
 import { removeEntry, setStatus } from "./listApi";
 import { useErrorMessage } from "./useErrorMessage";
@@ -19,6 +20,7 @@ export function ListEntryCard({ entry }: { entry: ListEntry }) {
   const router = useRouter();
   const root = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  const presence = usePresence(open);
   const [pending, setPending] = useState(false);
   const { node, list_status: status } = entry;
 
@@ -52,7 +54,7 @@ export function ListEntryCard({ entry }: { entry: ListEntry }) {
     ? t("progress", { watched, total: node.num_episodes })
     : t("progressUnknown", { watched });
 
-  const item = "block w-full px-3 py-2 text-left text-sm hover:bg-bg disabled:opacity-50";
+  const item = "block w-full px-3 py-2 text-left text-sm hover:bg-bg active:bg-bg disabled:opacity-50 pointer-coarse:py-3";
 
   return (
     <div ref={root} className="relative">
@@ -63,14 +65,16 @@ export function ListEntryCard({ entry }: { entry: ListEntry }) {
         aria-expanded={open}
         aria-label={t("menu", { title: node.title })}
         onClick={() => setOpen((v) => !v)}
-        className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-bg/80 text-fg hover:bg-bg"
+        className="press absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-bg/80 text-fg hover:bg-bg pointer-coarse:h-11 pointer-coarse:w-11"
       >
         ⋯
       </button>
-      {open && (
+      {presence.mounted && (
         <ul
           role="menu"
-          className="absolute right-1.5 top-11 z-20 w-52 overflow-hidden rounded-ui border border-line bg-surface shadow-lg shadow-black/50"
+          data-closing={presence.closing || undefined}
+          inert={presence.closing}
+          className="pop-in absolute right-1.5 top-11 z-20 w-52 origin-top-right overflow-hidden rounded-ui border border-line bg-surface shadow-lg shadow-black/50 pointer-coarse:top-14"
         >
           {LIST_STATUSES.filter((s) => s !== status.status).map((s) => (
             <li key={s} role="none">

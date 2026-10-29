@@ -1,7 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState, type ReactNode } from "react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
+
+import { BottomSheet } from "@/components/ui/BottomSheet";
 
 import { BACKGROUNDS, COLORS, POSITIONS, SIZES, type SubtitleStyle } from "./subtitleStyle";
 
@@ -45,7 +47,7 @@ function Row({ label, value, onClick }: { label: string; value: string; onClick:
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-12 w-full items-center justify-between gap-4 rounded-ui px-3 text-left text-sm hover:bg-white/10"
+      className="flex min-h-12 w-full items-center justify-between gap-4 rounded-ui px-3 text-left text-sm hover:bg-white/10 active:bg-white/10"
     >
       <span>{label}</span>
       <span className="flex min-w-0 items-center gap-1 text-muted">
@@ -63,7 +65,7 @@ function Option({ checked, onClick, children }: { checked: boolean; onClick: () 
       role="radio"
       aria-checked={checked}
       onClick={onClick}
-      className="flex min-h-12 w-full items-center gap-3 rounded-ui px-3 text-left text-sm hover:bg-white/10"
+      className="flex min-h-12 w-full items-center gap-3 rounded-ui px-3 text-left text-sm hover:bg-white/10 active:bg-white/10"
     >
       <span aria-hidden="true" className={`w-4 text-accent ${checked ? "" : "invisible"}`}>
         ✓
@@ -97,8 +99,8 @@ function Chips<T extends string>({
             role="radio"
             aria-checked={v === value}
             onClick={() => onPick(v)}
-            className={`min-h-11 rounded-ui border px-3 text-sm ${
-              v === value ? "border-accent bg-accent/20 text-fg" : "border-line text-muted hover:text-fg"
+            className={`press min-h-11 rounded-full border px-4 text-sm ${
+              v === value ? "border-accent bg-accent/20 text-fg" : "border-line-strong text-muted hover:text-fg"
             }`}
           >
             {name(v)}
@@ -220,35 +222,49 @@ export function SettingsMenu(props: Props) {
       );
   }
 
+  // Escape in a sub-view steps back to the main list first; only the main list lets it close the menu.
+  function onKeyDown(e: KeyboardEvent) {
+    if (e.key !== "Escape" || view === "main") return;
+    e.stopPropagation();
+    back();
+  }
+
   return (
-    <div
-      role="dialog"
-      aria-label={t("settings.title")}
-      className="fixed inset-x-0 bottom-0 z-10 max-h-[75vh] overflow-y-auto rounded-t-xl border border-line bg-surface/95 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg sm:absolute sm:inset-x-auto sm:bottom-28 sm:right-8 sm:w-80 sm:rounded-ui"
+    <BottomSheet
+      label={t("settings.title")}
+      onClose={props.onClose}
+      className="fixed inset-x-0 bottom-0 z-10 flex max-h-[75dvh] flex-col rounded-t-2xl border border-line bg-surface pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-lg shadow-black/50 sm:absolute sm:inset-x-auto sm:bottom-28 sm:right-8 sm:w-80 sm:origin-bottom-right sm:rounded-ui"
     >
-      <div className="flex items-center gap-1 pb-1">
-        {view !== "main" ? (
-          <button
-            type="button"
-            onClick={back}
-            aria-label={t("settings.back")}
-            className="flex h-11 w-11 items-center justify-center rounded-ui hover:bg-white/10"
-          >
-            <span aria-hidden="true">‹</span>
-          </button>
-        ) : null}
-        <p className="flex-1 truncate px-2 font-display font-bold">{titles[view]}</p>
-        <button
-          type="button"
-          onClick={props.onClose}
-          aria-label={t("settings.close")}
-          className="flex h-11 w-11 items-center justify-center rounded-ui hover:bg-white/10"
-        >
-          <span aria-hidden="true">✕</span>
-        </button>
-      </div>
-      {body}
-    </div>
+      {({ dismiss, handleProps }) => (
+        <div onKeyDown={onKeyDown} className="flex min-h-0 flex-col">
+          <div {...handleProps} className={`px-2 pt-2 ${handleProps.className}`}>
+            <span aria-hidden="true" className="mx-auto mb-1 block h-1 w-10 rounded-full bg-line-strong sm:hidden" />
+            <div className="flex items-center gap-1 pb-1">
+              {view !== "main" ? (
+                <button
+                  type="button"
+                  onClick={back}
+                  aria-label={t("settings.back")}
+                  className="press flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/10 active:bg-white/10"
+                >
+                  <span aria-hidden="true">‹</span>
+                </button>
+              ) : null}
+              <p className="flex-1 truncate px-2 font-bold">{titles[view]}</p>
+              <button
+                type="button"
+                onClick={dismiss}
+                aria-label={t("settings.close")}
+                className="press flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/10 active:bg-white/10"
+              >
+                <span aria-hidden="true">✕</span>
+              </button>
+            </div>
+          </div>
+          <div className="min-h-0 overflow-y-auto overscroll-contain px-2">{body}</div>
+        </div>
+      )}
+    </BottomSheet>
   );
 }
 

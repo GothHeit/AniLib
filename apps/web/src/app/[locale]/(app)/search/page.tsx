@@ -38,7 +38,7 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
 
   return (
     <section className="px-4 pb-8 pt-24 sm:px-8">
-      <h1 className="mb-6 text-3xl font-bold">{q ? t("resultsFor", { q }) : t("title")}</h1>
+      <h1 className="mb-6 text-4xl sm:text-5xl">{q ? t("resultsFor", { q }) : t("title")}</h1>
       {q ? (
         <Suspense key={q} fallback={<GridSkeleton />}>
           <Results q={q} locale={locale} />

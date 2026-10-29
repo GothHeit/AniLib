@@ -25,7 +25,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 function Group({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-heading`} className="flex scroll-mt-24 flex-col gap-4">
-      <h2 id={`${id}-heading`} className="font-display text-xl font-bold">
+      <h2 id={`${id}-heading`} className="text-2xl">
         {title}
       </h2>
       {children}
@@ -58,14 +58,14 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 pb-8 pt-24 sm:px-8">
-      <h1 className="text-3xl font-bold">{t("settings.title")}</h1>
+      <h1 className="text-4xl sm:text-5xl">{t("settings.title")}</h1>
 
       <nav aria-label={t("settings.groups.nav")} className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         {GROUPS.map((id) => (
           <a
             key={id}
             href={`#${id}`}
-            className="shrink-0 rounded-ui border border-line px-4 py-2 text-sm font-medium text-muted hover:border-accent hover:text-fg pointer-coarse:min-h-11 pointer-coarse:leading-7"
+            className="press inline-flex min-h-11 shrink-0 items-center rounded-full border border-line-strong px-4 text-sm font-medium text-muted hover:border-accent hover:text-fg"
           >
             {t(`settings.groups.${id}`)}
           </a>
@@ -73,48 +73,48 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
       </nav>
 
       <Group id="account" title={t("settings.groups.account")}>
-      <Section title={t("settings.profile")}>
-        <p className="text-sm text-muted">{t("settings.username")}</p>
-        <p className="font-medium">
-          {me.username}
-          {me.is_admin && <span className="ml-3 rounded-ui bg-accent-deep px-2 py-0.5 text-xs">{t("settings.admin")}</span>}
-        </p>
-        {me.is_admin && (
-          <ButtonLink href="/invites" variant="secondary" className="mt-4">
-            {t("invites.manage")}
-          </ButtonLink>
-        )}
-      </Section>
+        <Section title={t("settings.profile")}>
+          <p className="text-sm text-muted">{t("settings.username")}</p>
+          <p className="font-medium">
+            {me.username}
+            {me.is_admin && <span className="ml-3 rounded-full bg-accent-deep px-2.5 py-0.5 text-xs">{t("settings.admin")}</span>}
+          </p>
+          {me.is_admin && (
+            <ButtonLink href="/invites" variant="secondary" className="mt-4">
+              {t("invites.manage")}
+            </ButtonLink>
+          )}
+        </Section>
 
-      <Section title={t("avatar.title")}>
-        <AvatarForm userId={me.id} username={me.username} avatar={me.avatar} />
-      </Section>
+        <Section title={t("avatar.title")}>
+          <AvatarForm userId={me.id} username={me.username} avatar={me.avatar} />
+        </Section>
       </Group>
 
       <Group id="preferences" title={t("settings.groups.preferences")}>
-      <Section title={t("settings.preferences")}>
-        <PreferencesForm showNsfw={me.show_nsfw} shareActivity={me.share_activity} />
-      </Section>
+        <Section title={t("settings.preferences")}>
+          <PreferencesForm showNsfw={me.show_nsfw} shareActivity={me.share_activity} />
+        </Section>
 
-      <Section title={tNotifications("title")}>
-        <NotificationsForm muted={notifications.muted} />
-      </Section>
+        <Section title={tNotifications("title")}>
+          <NotificationsForm muted={notifications.muted} />
+        </Section>
       </Group>
 
       <Group id="connections" title={t("settings.groups.connections")}>
-      <Section title={t("mal.title")}>
-        <MalSection status={malStatus} returned={typeof mal === "string" ? mal : undefined} />
-      </Section>
+        <Section title={t("mal.title")}>
+          <MalSection status={malStatus} returned={typeof mal === "string" ? mal : undefined} />
+        </Section>
       </Group>
 
       <Group id="security" title={t("settings.groups.security")}>
-      <Section title={t("password.title")}>
-        <PasswordForm />
-      </Section>
+        <Section title={t("password.title")}>
+          <PasswordForm />
+        </Section>
 
-      <Section title={t("sessions.title")}>
-        <SessionsPanel sessions={sessions} />
-      </Section>
+        <Section title={t("sessions.title")}>
+          <SessionsPanel sessions={sessions} />
+        </Section>
       </Group>
     </div>
   );

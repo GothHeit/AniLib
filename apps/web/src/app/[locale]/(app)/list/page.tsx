@@ -42,7 +42,7 @@ export default async function ListPage({ params, searchParams }: PageProps<"/[lo
 
   return (
     <section className="px-4 pb-8 pt-24 sm:px-8">
-      <h1 className="mb-5 text-3xl font-bold">{t("title")}</h1>
+      <h1 className="mb-5 text-4xl sm:text-5xl">{t("title")}</h1>
       <Suspense fallback={<GridSkeleton />}>
         <Entries active={active} locale={locale} />
       </Suspense>

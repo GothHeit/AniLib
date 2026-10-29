@@ -39,7 +39,7 @@ export function ListView({ entries, initial }: { entries: ListEntry[]; initial: 
             aria-selected={s === active}
             aria-controls="list-panel"
             onClick={() => select(s)}
-            className={`shrink-0 whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium ${s === active ? "border-accent text-accent" : "border-transparent text-muted hover:text-fg"}`}
+            className={`min-h-11 shrink-0 whitespace-nowrap border-b px-4 py-2 text-sm font-medium transition-colors ${s === active ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg"}`}
           >
             {t(`status.${s}`)} <span className="text-xs">({count(s)})</span>
           </button>

@@ -9,7 +9,7 @@ import { SEASONS, type BrowseFilters } from "@/lib/browse";
 type Genre = { id: number; name: string };
 
 const select =
-  "w-full rounded-ui border border-line bg-surface px-3 py-2 text-sm focus:border-accent disabled:opacity-50";
+  "h-11 w-full rounded-full border border-line-strong bg-bg px-4 text-sm focus:border-accent disabled:opacity-50";
 
 /** Genre, year and season selects. Every change rewrites the URL, so a filtered view is a link. */
 export function FilterBar({
@@ -96,7 +96,7 @@ export function FilterBar({
         <button
           type="button"
           onClick={() => router.replace("/browse")}
-          className="rounded-ui px-3 py-2 text-sm text-muted hover:bg-surface hover:text-fg"
+          className="press min-h-11 rounded-full px-4 text-sm text-muted hover:bg-surface hover:text-fg"
         >
           {t("clear")}
         </button>

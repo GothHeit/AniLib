@@ -39,15 +39,16 @@ export function Row({ title, children, itemClassName = "w-36 sm:w-44" }: Props) 
     e.preventDefault();
   }
 
-  // Arrows fade out at the ends of the row; they stay in the tree so keyboard and screen-reader users keep them.
+  // Arrows fade out at the ends of the row. A hidden arrow leaves the tab order; the list keeps its arrow keys.
   const arrow = (hidden: boolean) =>
-    `absolute top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-bg/90 text-fg hover:border-accent md:flex ${hidden ? "pointer-events-none opacity-0" : ""}`;
+    `press absolute top-1/2 z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-line-strong bg-bg/90 text-fg hover:border-accent md:flex ${hidden ? "pointer-events-none opacity-0" : ""}`;
+  const hiddenProps = (hidden: boolean) => (hidden ? { "aria-hidden": true, tabIndex: -1 } : {});
 
   return (
     <section aria-label={title} className="group/row relative">
-      <h2 className="mb-3 px-4 text-lg font-bold sm:px-8">{title}</h2>
+      <h2 className="mb-4 px-4 text-2xl sm:px-8 sm:text-[1.75rem]">{title}</h2>
       <div className="relative">
-        <button type="button" aria-label={t("previous")} onClick={() => scroll(-1)} className={`${arrow(edge.start)} left-2`}>
+        <button type="button" aria-label={t("previous")} onClick={() => scroll(-1)} className={`${arrow(edge.start)} left-2`} {...hiddenProps(edge.start)}>
           ‹
         </button>
         <ul
@@ -56,7 +57,7 @@ export function Row({ title, children, itemClassName = "w-36 sm:w-44" }: Props) 
           aria-label={title}
           onKeyDown={onKeyDown}
           onScroll={measure}
-          className="no-scrollbar flex snap-x scroll-px-4 gap-3 overflow-x-auto scroll-smooth px-4 pb-2 sm:scroll-px-8 sm:px-8"
+          className="no-scrollbar flex snap-x scroll-px-4 gap-3 overflow-x-auto scroll-smooth px-4 pb-2 pt-1 sm:scroll-px-8 sm:gap-5 sm:px-8"
         >
           {Array.isArray(children)
             ? children.map((child, i) => (
@@ -66,7 +67,7 @@ export function Row({ title, children, itemClassName = "w-36 sm:w-44" }: Props) 
               ))
             : <li className={`shrink-0 snap-start ${itemClassName}`}>{children}</li>}
         </ul>
-        <button type="button" aria-label={t("next")} onClick={() => scroll(1)} className={`${arrow(edge.end)} right-2`}>
+        <button type="button" aria-label={t("next")} onClick={() => scroll(1)} className={`${arrow(edge.end)} right-2`} {...hiddenProps(edge.end)}>
           ›
         </button>
       </div>

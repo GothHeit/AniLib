@@ -6,21 +6,23 @@ import { ContinueCard } from "./ContinueCard";
 import { genreName } from "@/lib/genres";
 import { animeHref, captionOf, watchHref, posterOf, progressFraction, type HomeOut } from "@/lib/catalog";
 
-const WIDE = "w-64 sm:w-72";
+const WIDE = "w-64 sm:w-80";
+// The ranked row: a big serif numeral leans on each poster.
+const RANKED = "w-auto";
 
 /** The rows under the hero. The API already leaves out empty ones. */
 export async function HomeRows({ rows }: { rows: HomeOut["rows"] }) {
   const t = await getTranslations("home");
   const tGenres = await getTranslations("genres");
   return (
-    <div className="space-y-8 py-6">
+    <div className="space-y-10 py-8">
       {rows.map((row) => (
         <Row
           key={row.genre ? `genre-${row.genre.id}` : row.id}
           title={row.genre ? t("rows.genre", { genre: genreName(tGenres, row.genre) }) : t(`rows.${row.id}`)}
-          itemClassName={row.id === "continue_watching" ? WIDE : undefined}
+          itemClassName={row.id === "continue_watching" ? WIDE : row.id === "top" ? RANKED : undefined}
         >
-          {row.items.map(({ anime, progress, resume_episode }) =>
+          {row.items.map(({ anime, progress, resume_episode }, i) =>
             row.id === "continue_watching" ? (
               <ContinueCard
                 key={anime.id}
@@ -28,9 +30,19 @@ export async function HomeRows({ rows }: { rows: HomeOut["rows"] }) {
                 href={resume_episode ? watchHref(anime.id, resume_episode) : animeHref(anime.id)}
                 title={anime.title}
                 image={posterOf(anime)}
-                caption={resume_episode ? t("episode", { n: resume_episode }) : undefined}
+                caption={resume_episode ? t("episodeShort", { n: resume_episode }) : undefined}
                 progress={progress ? progressFraction(progress) : undefined}
               />
+            ) : row.id === "top" ? (
+              <div key={anime.id} className="flex items-start">
+                {/* As tall as the poster, so the numeral sits on its bottom edge whatever the caption. */}
+                <span aria-hidden="true" className="-mr-3 flex h-48 items-end font-display text-[6.5rem] leading-[0.75] tracking-[-0.04em] text-numeral select-none sm:h-60">
+                  {i + 1}
+                </span>
+                <div className="relative w-32 sm:w-40">
+                  <PosterCard href={animeHref(anime.id)} title={anime.title} image={posterOf(anime)} caption={captionOf(anime)} />
+                </div>
+              </div>
             ) : (
               <PosterCard
                 key={anime.id}

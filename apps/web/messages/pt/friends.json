@@ -34,6 +34,7 @@
     "yourName": "Seus amigos te encontram pelo nome de usuário: <b>{name}</b>"
   },
   "profile": {
+    "title": "Perfil",
     "joined": "Entrou em {date}",
     "friendsSince": "Amigos desde {date}",
     "stats": {

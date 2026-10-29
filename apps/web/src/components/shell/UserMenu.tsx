@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { postAuth } from "@/lib/bff";
 import type { AvatarInfo } from "@/lib/avatar";
 import { profileHref } from "@/lib/friends";
+import { usePresence } from "@/lib/use-presence";
 
 type Props = {
   userId: string;
@@ -28,6 +29,7 @@ export function UserMenu({ userId, username, avatar, isAdmin = false, pending = 
   const tFriends = useTranslations("friends");
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const presence = usePresence(open);
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -70,11 +72,13 @@ export function UserMenu({ userId, username, avatar, isAdmin = false, pending = 
           )}
         </span>
       </button>
-      {open && (
+      {presence.mounted && (
         <div
           role="menu"
-          className={`absolute right-0 z-50 w-56 rounded-ui border border-line bg-surface p-2 shadow-xl ${
-            variant === "tab" ? "bottom-full mb-3" : "top-full mt-2"
+          data-closing={presence.closing || undefined}
+          inert={presence.closing}
+          className={`pop-in absolute right-0 z-50 w-56 rounded-ui border border-line bg-surface p-2 shadow-xl shadow-black/40 ${
+            variant === "tab" ? "bottom-full mb-3 origin-bottom-right" : "top-full mt-2 origin-top-right"
           }`}
         >
           <p className="px-3 py-2 text-sm text-muted">{t("signedInAs", { name: username })}</p>
@@ -82,7 +86,7 @@ export function UserMenu({ userId, username, avatar, isAdmin = false, pending = 
             href={profileHref(userId)}
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line"
+            className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line active:bg-line pointer-coarse:py-3"
           >
             {t("profile")}
           </Link>
@@ -90,7 +94,7 @@ export function UserMenu({ userId, username, avatar, isAdmin = false, pending = 
             href="/friends"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="flex w-full items-center justify-between rounded-ui px-3 py-2 text-left text-sm hover:bg-line"
+            className="flex w-full items-center justify-between rounded-ui px-3 py-2 text-left text-sm hover:bg-line active:bg-line pointer-coarse:py-3"
           >
             {t("friends")}
             {pending > 0 && <span className="rounded-full bg-accent px-2 text-xs font-bold text-on-accent">{pending}</span>}
@@ -99,7 +103,7 @@ export function UserMenu({ userId, username, avatar, isAdmin = false, pending = 
             href="/room"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line"
+            className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line active:bg-line pointer-coarse:py-3"
           >
             {t("joinRoom")}
           </Link>
@@ -107,7 +111,7 @@ export function UserMenu({ userId, username, avatar, isAdmin = false, pending = 
             href="/settings"
             role="menuitem"
             onClick={() => setOpen(false)}
-            className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line"
+            className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line active:bg-line pointer-coarse:py-3"
           >
             {tAccount("menuSettings")}
           </Link>
@@ -116,7 +120,7 @@ export function UserMenu({ userId, username, avatar, isAdmin = false, pending = 
               href="/invites"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line"
+              className="block w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line active:bg-line pointer-coarse:py-3"
             >
               {tAccount("menuInvites")}
             </Link>
@@ -125,7 +129,7 @@ export function UserMenu({ userId, username, avatar, isAdmin = false, pending = 
             type="button"
             role="menuitem"
             onClick={signOut}
-            className="w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line"
+            className="w-full rounded-ui px-3 py-2 text-left text-sm hover:bg-line active:bg-line pointer-coarse:py-3"
           >
             {t("signOut")}
           </button>

@@ -20,7 +20,7 @@ export default async function AppLayout({ children, params }: LayoutProps<"/[loc
     <>
       <a
         href="#main"
-        className="sr-only z-50 rounded-ui bg-accent px-4 py-2 font-medium text-on-accent focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        className="sr-only z-50 press inline-flex min-h-11 items-center justify-center rounded-full bg-accent px-5 py-2 font-medium text-on-accent focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
       >
         {t("skip")}
       </a>

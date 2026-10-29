@@ -98,7 +98,7 @@ export function SearchBox() {
           onKeyDown={onKeyDown}
           aria-label={t("search")}
           placeholder={t("searchPlaceholder")}
-          className="w-40 rounded-ui border border-line bg-surface/80 px-3 py-1.5 text-sm placeholder:text-muted focus:w-64 focus:border-accent lg:w-56"
+          className="h-9 w-40 rounded-full border border-line bg-surface px-4 text-sm placeholder:text-muted focus:w-64 focus:border-accent lg:w-56"
         />
       </form>
       <ul
@@ -106,7 +106,7 @@ export function SearchBox() {
         role="listbox"
         aria-label={tSearch("suggestions")}
         hidden={!visible}
-        className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-ui border border-line bg-surface shadow-lg shadow-black/50"
+        className="pop-in absolute right-0 top-full z-50 mt-2 w-80 origin-top-right overflow-hidden rounded-ui border border-line bg-surface shadow-lg shadow-black/50"
       >
         {shown.length === 0 && <li className="px-3 py-3 text-sm text-muted">{tSearch("noSuggestions")}</li>}
         {shown.map((a, i) => (

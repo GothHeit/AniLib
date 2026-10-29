@@ -56,17 +56,17 @@ export function AddToList({ animeId, state }: Props) {
   const unavailable = state === "unavailable";
 
   return (
-    <label className="inline-flex items-center rounded-ui border border-line bg-surface text-sm font-bold hover:border-accent focus-within:border-accent">
+    <label className="press inline-flex min-h-11 items-center rounded-full border border-line-strong text-sm font-bold hover:border-accent focus-within:border-accent">
       <span className="sr-only">{t("label")}</span>
       <select
         value={status}
         disabled={saving || unavailable}
         onChange={(e) => e.target.value && save(e.target.value as Status)}
-        className="cursor-pointer appearance-none bg-transparent px-4 py-2 pr-8 text-fg outline-none disabled:opacity-50"
+        className="min-h-11 cursor-pointer appearance-none rounded-full bg-transparent py-2 pl-5 pr-9 text-fg outline-none disabled:opacity-50"
         style={{
           backgroundImage:
             "linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%)",
-          backgroundPosition: "calc(100% - 15px) 55%, calc(100% - 10px) 55%",
+          backgroundPosition: "calc(100% - 20px) 55%, calc(100% - 15px) 55%",
           backgroundSize: "5px 5px",
           backgroundRepeat: "no-repeat",
         }}

@@ -28,11 +28,11 @@ export function Modal({ open, onClose, title, children }: Props) {
       aria-label={title}
       onClose={onClose}
       onClick={(e) => e.target === ref.current && onClose()}
-      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-ui border border-line bg-surface p-6 text-fg backdrop:bg-black/70"
+      className="pop-in m-auto w-[min(32rem,calc(100vw-2rem))] rounded-ui border border-line bg-surface p-6 text-fg backdrop:bg-black/70"
     >
       <div className="mb-4 flex items-start justify-between gap-4">
-        <h2 className="text-xl font-bold">{title}</h2>
-        <button type="button" onClick={onClose} aria-label={t("close")} className="text-muted hover:text-fg">
+        <h2 className="text-2xl">{title}</h2>
+        <button type="button" onClick={onClose} aria-label={t("close")} className="press -mr-3 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted hover:bg-line hover:text-fg">
           ✕
         </button>
       </div>

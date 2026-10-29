@@ -1,30 +1,44 @@
 @import "tailwindcss";
 
+/* Hover only for precise pointers: a tap on a phone or a stylus must not leave a hover stuck on. */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 @theme {
-  --color-bg: #0b0a12;
-  --color-surface: #1a1726;
-  --color-line: #2c2740;
-  --color-fg: #efecf8;
-  --color-muted: #9d96b4;
-  --color-accent: #9b72f5;
+  --color-bg: #150d26;
+  --color-surface: #1f1536;
+  --color-line: #2e2150;
+  --color-line-strong: #4a3a73;
+  --color-fg: #f0e8ff;
+  --color-soft: #bcaedb;
+  --color-muted: #a496c4;
+  --color-accent: #c9b3ff;
   --color-accent-deep: #5b3fb8;
-  --color-on-accent: #0b0a12;
+  --color-on-accent: #150d26;
+  --color-numeral: #5b4a8a;
   --color-success: #58d68d;
   --color-danger: #ff8a9b;
 
-  --radius-ui: 6px;
+  /* Flat placeholders for art that has not loaded or does not exist. */
+  --color-poster-1: #2c1f66;
+  --color-poster-2: #33266e;
+  --color-poster-3: #3a2780;
+  --color-poster-4: #4a2a8a;
 
-  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  --radius-ui: 12px;
 
-  --background-image-hero: radial-gradient(120% 90% at 75% 20%, #4a2f94 0%, #1d1440 45%, #0b0a12 90%);
-  --background-image-backdrop: linear-gradient(#1d1440, #0b0a12 60%);
-  --background-image-poster-1: linear-gradient(160deg, #7c4fe0, #1d1440);
-  --background-image-poster-2: linear-gradient(160deg, #3f4fb8, #15142e);
-  --background-image-poster-3: linear-gradient(160deg, #b45bd6, #2a1244);
-  --background-image-poster-4: linear-gradient(160deg, #2e7f78, #10202a);
-  --background-image-poster-5: linear-gradient(160deg, #5b3fb8, #0e0c1e);
-  --background-image-poster-6: linear-gradient(160deg, #8a6df0, #251a4d);
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
+
+  /* One curve for the whole UI: fast start, soft landing. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 :root {
@@ -60,6 +74,17 @@ label {
   touch-action: manipulation;
 }
 
+/* A long press on a control should not select its label or open the callout; content text stays selectable. */
+button,
+summary,
+[role="button"],
+[role="menuitem"],
+[role="tab"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /* iOS zooms the page when a field under 16px gets focus. */
 @media (hover: none) and (pointer: coarse) {
   input:not([type="range"], [type="checkbox"], [type="radio"], [type="file"]),
@@ -69,10 +94,21 @@ label {
   }
 }
 
-h1,
-h2,
-h3 {
-  @apply font-display;
+/* Serif headings. Instrument Serif has one weight, so the browser must never fake a bold.
+   In the base layer so a utility (font-sans font-bold) can turn a small heading back to UI type. */
+@layer base {
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-synthesis: none;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
 }
 
 :focus-visible {
@@ -100,4 +136,62 @@ main:focus {
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Menus, popovers and toasts grow in from their anchor; set the origin with origin-*. */
+@utility pop-in {
+  transition-property: opacity, transform;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  /* Leaves along the same path it came in on, a little quicker than it arrived (see usePresence). */
+  &[data-closing] {
+    opacity: 0;
+    transform: scale(0.96);
+    pointer-events: none;
+    transition-duration: 120ms;
+  }
+}
+
+/* Presses answer right away, on touch too, where hover never fires. */
+@utility press {
+  transition-property: color, background-color, border-color, opacity, transform;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out);
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+/* Small caps line above a big title. */
+@utility kicker {
+  @apply text-xs font-bold tracking-[0.14em] text-accent uppercase;
+}
+
+/* Reduced motion means gentler, not none: panels still fade so the change stays legible, but nothing
+   scales or moves. Wins over the global cut above, which stays in charge of everything else. */
+@media (prefers-reduced-motion: reduce) {
+  .pop-in {
+    transition-property: opacity !important;
+    transition-duration: 160ms !important;
+  }
+  .pop-in[data-closing] {
+    transform: none;
+  }
+  .press:active {
+    transform: none;
+  }
+}
+
+/* More contrast: hairlines become real borders and secondary text gets brighter. */
+@media (prefers-contrast: more) {
+  :root {
+    --color-line: #4a3a73;
+    --color-line-strong: #8f7cc4;
+    --color-muted: #cbbfe6;
+    --color-soft: #e2d8f7;
+  }
 }

@@ -15,6 +15,7 @@ describe("Field", () => {
     renderIntl(<Field label="Secret" type="password" />);
     const input = screen.getByLabelText(/Secret/);
     expect(input).toHaveAttribute("type", "password");
+    expect(input).toHaveAccessibleName("Secret");
     fireEvent.click(screen.getByRole("button", { name: "Show" }));
     expect(input).toHaveAttribute("type", "text");
     fireEvent.click(screen.getByRole("button", { name: "Hide" }));

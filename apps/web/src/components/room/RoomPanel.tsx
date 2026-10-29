@@ -57,17 +57,17 @@ export function RoomPanel({ room, meId, messages, episodes, onSay, onReact, onVo
     }
   }
 
-  const button = "rounded-ui border border-line px-3 py-1.5 text-xs font-bold hover:bg-line";
+  const button = "press rounded-full border border-line-strong px-3 py-1.5 text-xs font-bold pointer-coarse:min-h-11 hover:bg-line";
 
   return (
     <aside
       aria-label={t("panel")}
-      className="flex max-h-full w-full flex-col gap-4 overflow-y-auto rounded-ui border border-line bg-surface/95 p-4 text-sm shadow-xl backdrop-blur"
+      className="flex max-h-full w-full flex-col gap-4 overflow-y-auto overscroll-contain rounded-ui border border-line bg-surface p-4 text-sm shadow-xl"
     >
       <section>
         <p className="text-xs uppercase tracking-wide text-muted">{t("code")}</p>
         <div className="mt-1 flex items-center gap-2">
-          <span className="font-display text-2xl font-bold tracking-widest" data-testid="room-code">
+          <span className="text-2xl font-bold tracking-widest tabular-nums" data-testid="room-code">
             {room.code}
           </span>
           <button type="button" onClick={() => void copy()} className={button}>
@@ -77,7 +77,7 @@ export function RoomPanel({ room, meId, messages, episodes, onSay, onReact, onVo
       </section>
 
       <section>
-        <h2 className="font-bold">{t("members", { count: room.members.length })}</h2>
+        <h2 className="font-sans font-bold">{t("members", { count: room.members.length })}</h2>
         <ul className="mt-2 flex flex-wrap gap-2">
           {room.members.map((m) => (
             <li key={m.id} className="rounded-ui bg-line px-2 py-1 text-xs">
@@ -98,7 +98,7 @@ export function RoomPanel({ room, meId, messages, episodes, onSay, onReact, onVo
       <InviteFriends code={room.code} memberIds={room.members.map((m) => m.id)} />
 
       <section>
-        <h2 className="font-bold">{t("episode", { episode: room.episode })}</h2>
+        <h2 className="font-sans font-bold">{t("episode", { episode: room.episode })}</h2>
         {episodes.length > 1 && (
           <div className="mt-2 flex items-center gap-2">
             <label className="flex-1">
@@ -119,7 +119,7 @@ export function RoomPanel({ room, meId, messages, episodes, onSay, onReact, onVo
               type="button"
               disabled={wanted === room.episode}
               onClick={() => onVote(wanted)}
-              className="rounded-ui bg-accent px-3 py-1.5 text-xs font-bold text-on-accent disabled:opacity-50"
+              className="press rounded-full bg-accent px-4 py-1.5 pointer-coarse:min-h-11 text-xs font-bold text-on-accent disabled:opacity-50"
             >
               {isHost ? t("switchNow") : t("propose")}
             </button>
@@ -143,7 +143,7 @@ export function RoomPanel({ room, meId, messages, episodes, onSay, onReact, onVo
       </section>
 
       <section className="flex min-h-0 flex-1 flex-col">
-        <h2 className="font-bold">{t("chat")}</h2>
+        <h2 className="font-sans font-bold">{t("chat")}</h2>
         <ul ref={log} className="mt-2 flex max-h-48 min-h-16 flex-col gap-1 overflow-y-auto" aria-live="polite">
           {messages.length === 0 && <li className="text-muted">{t("noMessages")}</li>}
           {messages.map((m) => (
@@ -169,7 +169,7 @@ export function RoomPanel({ room, meId, messages, episodes, onSay, onReact, onVo
             placeholder={t("message")}
             className="min-w-0 flex-1 rounded-ui border border-line bg-black/60 px-3 py-1.5"
           />
-          <button type="submit" className="rounded-ui bg-accent px-3 py-1.5 text-xs font-bold text-on-accent">
+          <button type="submit" className="press rounded-full bg-accent px-4 py-1.5 pointer-coarse:min-h-11 text-xs font-bold text-on-accent">
             {t("send")}
           </button>
         </form>

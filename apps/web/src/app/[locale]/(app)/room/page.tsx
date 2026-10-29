@@ -18,15 +18,15 @@ export default async function JoinRoomPage({ params }: PageProps<"/[locale]/room
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 pb-8 pt-24 sm:px-8">
-      <h1 className="text-3xl font-bold">{t("joinTitle")}</h1>
+      <h1 className="text-4xl sm:text-5xl">{t("joinTitle")}</h1>
       <div className="grid gap-4 sm:grid-cols-2">
         <section className="flex flex-col gap-3 rounded-ui border border-line bg-surface p-5">
-          <h2 className="text-lg font-bold">{t("haveCodeTitle")}</h2>
+          <h2 className="text-2xl">{t("haveCodeTitle")}</h2>
           <p className="text-sm text-muted">{t("haveCodeBody")}</p>
           <JoinRoomForm />
         </section>
         <section className="flex flex-col items-start gap-3 rounded-ui border border-line bg-surface p-5">
-          <h2 className="text-lg font-bold">{t("createTitle")}</h2>
+          <h2 className="text-2xl">{t("createTitle")}</h2>
           <p className="text-sm text-muted">{t("createBody")}</p>
           <ButtonLink href="/browse" variant="secondary" className="mt-auto">
             {t("createCta")}

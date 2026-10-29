@@ -12,14 +12,14 @@ export function WatchBadgeSkeleton() {
 }
 
 export function WatchPlaySkeleton() {
-  return <div aria-hidden="true" className="h-9 w-40 animate-pulse rounded-ui bg-surface" />;
+  return <div aria-hidden="true" className="h-11 w-40 animate-pulse rounded-full bg-surface" />;
 }
 
 export async function WatchBadge({ id }: { id: number }) {
   const [plan, t] = await Promise.all([watchPlan(id), getTranslations("titlePage")]);
   return (
     <p
-      className={`inline-block rounded-ui border px-2 py-0.5 text-xs font-bold ${plan ? "border-accent text-accent" : "border-line text-muted"}`}
+      className={`inline-block rounded-full border px-3 py-0.5 text-xs font-bold ${plan ? "border-accent text-accent" : "border-line-strong text-muted"}`}
     >
       {plan ? t("watchHere") : t("trackingOnly")}
     </p>

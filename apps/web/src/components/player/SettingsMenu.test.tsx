@@ -51,3 +51,17 @@ describe("SettingsMenu source", () => {
     expect(screen.queryByRole("button", { name: /Source/ })).not.toBeInTheDocument();
   });
 });
+
+describe("SettingsMenu keys", () => {
+  it("steps back to the main list on Escape in a sub-view, without letting the key through", async () => {
+    setup([]);
+    const outside = vi.fn();
+    window.addEventListener("keydown", outside);
+    await userEvent.click(screen.getByRole("button", { name: /Playback speed/ }));
+    screen.getByRole("button", { name: "Back" }).focus();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.getByRole("button", { name: /Playback speed/ })).toBeInTheDocument();
+    expect(outside).not.toHaveBeenCalled();
+    window.removeEventListener("keydown", outside);
+  });
+});

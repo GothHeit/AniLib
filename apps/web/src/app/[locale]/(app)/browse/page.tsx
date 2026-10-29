@@ -55,7 +55,7 @@ export default async function BrowsePage({ params, searchParams }: PageProps<"/[
 
   return (
     <section className="px-4 pb-8 pt-24 sm:px-8">
-      <h1 className="mb-5 text-3xl font-bold">{t("title")}</h1>
+      <h1 className="mb-5 text-4xl sm:text-5xl">{t("title")}</h1>
       <FilterBar genres={genres} filters={filters} years={yearOptions()} />
       <div className="mt-8">
         <Suspense key={JSON.stringify([filters, page])} fallback={<GridSkeleton />}>

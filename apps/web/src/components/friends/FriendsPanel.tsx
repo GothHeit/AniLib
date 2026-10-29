@@ -150,7 +150,7 @@ export function FriendsPanel({ friends, requests }: Props) {
 
       {requests.incoming.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold">{t("incoming")}</h2>
+          <h2 className="text-2xl">{t("incoming")}</h2>
           <ul className="flex flex-col gap-2">
             {requests.incoming.map(({ user }) => (
               <Person key={user.id} user={user}>
@@ -168,7 +168,7 @@ export function FriendsPanel({ friends, requests }: Props) {
 
       {requests.outgoing.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold">{t("outgoing")}</h2>
+          <h2 className="text-2xl">{t("outgoing")}</h2>
           <ul className="flex flex-col gap-2">
             {requests.outgoing.map(({ user }) => (
               <Person key={user.id} user={user}>
@@ -182,7 +182,7 @@ export function FriendsPanel({ friends, requests }: Props) {
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold">{t("list")}</h2>
+        <h2 className="text-2xl">{t("list")}</h2>
         {friends.length === 0 ? (
           <p className="text-muted">{t("emptyList")}</p>
         ) : (

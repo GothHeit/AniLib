@@ -24,7 +24,7 @@ export default async function InvitesPage({ params }: PageProps<"/[locale]/invit
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 pb-8 pt-24 sm:px-8">
-      <h1 className="text-3xl font-bold">{t("title")}</h1>
+      <h1 className="text-4xl sm:text-5xl">{t("title")}</h1>
       <p className="text-muted">{t("intro")}</p>
       <InvitesPanel invites={invites} />
     </div>

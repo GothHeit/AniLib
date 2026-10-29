@@ -36,7 +36,7 @@ export function LinkMalCard({ expired = false }: { expired?: boolean }) {
 
   return (
     <div className="mx-auto max-w-lg rounded-ui border border-line bg-surface p-6 text-center">
-      <h2 className="text-xl font-bold">{t("title")}</h2>
+      <h2 className="text-2xl">{t("title")}</h2>
       <p className="mt-2 text-muted">{expired ? tErr("mal_session_expired") : t("body")}</p>
       <Button className="mt-5" onClick={link} disabled={pending}>
         {t("action")}

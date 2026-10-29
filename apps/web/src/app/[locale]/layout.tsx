@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Sora } from "next/font/google";
+import { Instrument_Serif, Manrope } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
@@ -11,8 +11,8 @@ import { SPLASH_IMAGES } from "@/lib/splash";
 
 import "../globals.css";
 
-const sora = Sora({ subsets: ["latin"], weight: ["500", "700"], variable: "--font-sora" });
-const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-dm-sans" });
+const serif = Instrument_Serif({ subsets: ["latin"], weight: "400", variable: "--font-instrument-serif" });
+const manrope = Manrope({ subsets: ["latin"], weight: ["400", "500", "700"], variable: "--font-manrope" });
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -23,7 +23,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   // Lets the page draw under the notch and home indicator; the shell pads itself with the safe-area insets.
   viewportFit: "cover",
-  themeColor: "#0b0a12",
+  // Android: the keyboard shrinks the layout viewport, as on iOS, so bottom-pinned fields stay visible.
+  interactiveWidget: "resizes-content",
+  themeColor: "#150d26",
   colorScheme: "dark",
 };
 
@@ -48,7 +50,7 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   setRequestLocale(locale);
 
   return (
-    <html lang={locale === "pt" ? "pt-BR" : "en"} className={`${sora.variable} ${dmSans.variable}`}>
+    <html lang={locale === "pt" ? "pt-BR" : "en"} className={`${serif.variable} ${manrope.variable}`}>
       <body className="min-h-dvh">
         <NextIntlClientProvider>
           <ToastProvider>{children}</ToastProvider>
