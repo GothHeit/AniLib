@@ -2,17 +2,17 @@ import Image from "next/image";
 
 import { APP_NAME } from "@/lib/brand";
 
-/** Crescent mark followed by the product name from the brand config. */
+/** Outlined wordmark with the crescent as its full stop (the lockup is 1039x250). */
 export function Logo({ size = "md" }: { size?: "md" | "lg" }) {
-  const px = size === "lg" ? 40 : 28;
+  const height = size === "lg" ? 56 : 32;
   return (
-    <span className="inline-flex items-center gap-2">
-      <Image src="/logo-mark.svg" alt="" width={px} height={px} unoptimized priority />
-      <span
-        className={`font-display text-fg ${size === "lg" ? "text-4xl" : "text-[1.75rem] leading-none"}`}
-      >
-        {APP_NAME}
-      </span>
-    </span>
+    <Image
+      src="/logo-lockup.svg"
+      alt={APP_NAME}
+      width={Math.round((height * 1039) / 250)}
+      height={height}
+      unoptimized
+      priority
+    />
   );
 }
