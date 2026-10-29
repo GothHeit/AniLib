@@ -44,6 +44,30 @@ export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string
     return () => clearTimeout(timer);
   }, [index, slides.length, paused, reduced]);
 
+  // Every slide carries its own copy beside its pill; only the visible slide's copy can be reached.
+  const dots = slides.length > 1 && (
+    <div className="flex items-center gap-1">
+      {slides.map((slide, i) => (
+        <button
+          key={slide.id}
+          type="button"
+          aria-label={t("goToSlide", { n: i + 1 })}
+          aria-current={i === index}
+          onClick={() => setIndex(i)}
+          className="flex h-6 w-8 items-center justify-center pointer-coarse:h-11 pointer-coarse:w-11"
+        >
+          {/* Grows with a transform, never a width change. */}
+          <span
+            className={`h-1 w-6 origin-left rounded-full transition-[transform,background-color] duration-300 ease-out ${i === index ? "scale-x-100 bg-accent" : "scale-x-50 bg-fg/30"}`}
+          />
+        </button>
+      ))}
+      <span aria-hidden className="ml-2 text-xs font-medium tabular-nums text-muted lg:text-sm">
+        {index + 1} / {slides.length}
+      </span>
+    </div>
+  );
+
   return (
     <section
       aria-roledescription="carousel"
@@ -58,23 +82,33 @@ export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string
       {slides.map((slide, i) => {
         const active = i === index;
         // Long romaji titles step down a size so they stay within three or four lines on a phone.
-        // Beside the art the text column is narrow, so the sizes grow late.
-        const size = slide.title.length > 28 ? "text-4xl md:text-5xl xl:text-7xl" : "text-5xl md:text-6xl xl:text-8xl";
+        // Beside the art the text column is narrow, so the sizes grow late, and keep growing on wide screens
+        // so the column stays filled.
+        const size =
+          slide.title.length > 28
+            ? "text-4xl md:text-5xl xl:text-7xl 2xl:text-8xl min-[150rem]:text-9xl"
+            : "text-5xl md:text-6xl xl:text-8xl 2xl:text-9xl";
+        // Centered beside the art, as one block from the kicker down to the pill and the dots.
         const text = (
-          <div className="min-w-0 flex-1 md:max-w-xl">
-            <p className="kicker">{t("featured")}</p>
+          <div className="min-w-0 2xl:max-w-3xl min-[150rem]:max-w-4xl">
+            <p className="kicker 2xl:text-sm">{t("featured")}</p>
             {active ? (
               <h1 className={`mt-4 break-words leading-[0.95] tracking-[-0.02em] ${size}`}>{slide.title}</h1>
             ) : (
               <p className={`mt-4 break-words font-display leading-[0.95] tracking-[-0.02em] ${size}`}>{slide.title}</p>
             )}
-            {slide.meta && <p className="mt-4 text-sm font-medium text-muted">{slide.meta}</p>}
-            {slide.synopsis && <p className="mt-3 line-clamp-3 max-w-md leading-relaxed text-soft">{slide.synopsis}</p>}
+            {slide.meta && <p className="mt-5 text-sm font-medium text-muted lg:text-base 2xl:text-lg min-[150rem]:text-xl">{slide.meta}</p>}
+            {slide.synopsis && (
+              <p className="mt-3 line-clamp-3 max-w-lg leading-relaxed text-soft lg:text-lg 2xl:max-w-2xl 2xl:text-xl min-[150rem]:max-w-3xl min-[150rem]:text-2xl">
+                {slide.synopsis}
+              </p>
+            )}
             {slide.synopsis && slide.synopsisNote && <p className="mt-1 text-xs text-muted">{slide.synopsisNote}</p>}
-            <div className="mt-7 flex flex-wrap gap-3">
-              <ButtonLink href={slide.href} className="px-6">
+            <div className="mt-7 flex flex-wrap items-center gap-x-7 gap-y-4 2xl:mt-9">
+              <ButtonLink href={slide.href} className="px-6 lg:min-h-12 lg:px-8 lg:text-base 2xl:min-h-14 2xl:px-10 2xl:text-lg">
                 {cta}
               </ButtonLink>
+              {dots}
             </div>
           </div>
         );
@@ -95,25 +129,6 @@ export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string
           </div>
         );
       })}
-      {slides.length > 1 && (
-        <div className="absolute inset-x-0 bottom-2 flex justify-start gap-1 px-2 sm:px-6">
-          {slides.map((slide, i) => (
-            <button
-              key={slide.id}
-              type="button"
-              aria-label={t("goToSlide", { n: i + 1 })}
-              aria-current={i === index}
-              onClick={() => setIndex(i)}
-              className="flex h-6 w-8 items-center justify-center pointer-coarse:h-11 pointer-coarse:w-11"
-            >
-              {/* Grows with a transform, never a width change. */}
-              <span
-                className={`h-1 w-6 origin-left rounded-full transition-[transform,background-color] duration-300 ease-out ${i === index ? "scale-x-100 bg-accent" : "scale-x-50 bg-fg/30"}`}
-              />
-            </button>
-          ))}
-        </div>
-      )}
     </section>
   );
 }
