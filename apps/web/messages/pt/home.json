@@ -11,7 +11,7 @@
       "seasonal": "Nesta temporada",
       "top": "Mais bem avaliados",
       "friends_popular": "Popular entre amigos",
-      "genre": "Em alta em {genre}"
+      "genre": "{genre}"
     },
     "empty": "Nada para mostrar ainda. Tente de novo em instantes.",
     "featured": "Destaques",

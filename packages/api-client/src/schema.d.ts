@@ -106,6 +106,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/anime/{anime_id}/art": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Art
+         * @description Episode stills and titles plus a wide picture, from ani.zip. Separate from the details so
+         *     the page never waits on it; empty when ani.zip has nothing or is down.
+         */
+        get: operations["art_anime__anime_id__art_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/anime/{anime_id}/sources": {
         parameters: {
             query?: never;
@@ -1288,6 +1309,13 @@ export interface components {
             /** Position */
             position?: number | null;
         };
+        /** EpisodeArtOut */
+        EpisodeArtOut: {
+            /** Image */
+            image?: string | null;
+            /** Title */
+            title?: string | null;
+        };
         /** EpisodeIn */
         EpisodeIn: {
             /** Episode */
@@ -1353,6 +1381,8 @@ export interface components {
             synopsis?: string | null;
             /** Synopsis Lang */
             synopsis_lang?: ("en" | "pt") | null;
+            /** Wide Art */
+            wide_art?: string | null;
         };
         /** HomeItem */
         HomeItem: {
@@ -1912,6 +1942,18 @@ export interface components {
             /** Url */
             url: string;
         };
+        /**
+         * TitleArtOut
+         * @description Art from outside the catalog, for the title page. Every part may be missing.
+         */
+        TitleArtOut: {
+            /** Backdrop */
+            backdrop?: string | null;
+            /** Episodes */
+            episodes?: {
+                [key: string]: components["schemas"]["EpisodeArtOut"];
+            };
+        };
         /** TokensOut */
         TokensOut: {
             /** Access Token */
@@ -2182,6 +2224,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnimeDetailsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    art_anime__anime_id__art_get: {
+        parameters: {
+            query?: {
+                lang?: "en" | "pt";
+            };
+            header?: never;
+            path: {
+                anime_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TitleArtOut"];
                 };
             };
             /** @description Validation Error */

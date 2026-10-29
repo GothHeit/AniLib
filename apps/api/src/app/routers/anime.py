@@ -16,10 +16,12 @@ from app.schemas import (
     AnimeDetailsOut,
     AnimeListOut,
     BrowseOut,
+    EpisodeArtOut,
     GenreOut,
     SeasonalOut,
     SourcesOut,
     StreamOption,
+    TitleArtOut,
 )
 
 router = APIRouter(prefix="/anime", tags=["anime"])
@@ -148,6 +150,26 @@ async def sources(request: Request, anime_id: int, user: CurrentUser, session: S
     if saved is not None and saved.source in available:
         choice = StreamOption(source=saved.source, lang="dub" if saved.lang == "dub" else "sub")
     return SourcesOut(sources=available, choice=choice)
+
+
+@router.get("/{anime_id}/art", response_model=TitleArtOut)
+async def art(
+    request: Request,
+    anime_id: int,
+    user: CurrentUser,
+    lang: Annotated[Literal["en", "pt"], Query()] = "en",
+):
+    """Episode stills and titles plus a wide picture, from ani.zip. Separate from the details so
+    the page never waits on it; empty when ani.zip has nothing or is down."""
+    await _mal(request).visible_details(anime_id, user.show_nsfw)
+    found = await request.app.state.anizip.art(anime_id)
+    return TitleArtOut(
+        backdrop=found.backdrop,
+        episodes={
+            number: EpisodeArtOut(title=episode.title(lang), image=episode.image)
+            for number, episode in found.episodes.items()
+        },
+    )
 
 
 # Checks left running after the response. The loop only holds tasks weakly, so keep them here

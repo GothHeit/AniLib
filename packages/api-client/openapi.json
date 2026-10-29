@@ -596,6 +596,34 @@
         "title": "ControlIn",
         "type": "object"
       },
+      "EpisodeArtOut": {
+        "properties": {
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "EpisodeArtOut",
+        "type": "object"
+      },
       "EpisodeIn": {
         "properties": {
           "episode": {
@@ -767,6 +795,17 @@
               }
             ],
             "title": "Synopsis Lang"
+          },
+          "wide_art": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wide Art"
           }
         },
         "required": [
@@ -2404,6 +2443,31 @@
         "title": "SubtitleOut",
         "type": "object"
       },
+      "TitleArtOut": {
+        "description": "Art from outside the catalog, for the title page. Every part may be missing.",
+        "properties": {
+          "backdrop": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backdrop"
+          },
+          "episodes": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/EpisodeArtOut"
+            },
+            "title": "Episodes",
+            "type": "object"
+          }
+        },
+        "title": "TitleArtOut",
+        "type": "object"
+      },
       "TokensOut": {
         "properties": {
           "access_token": {
@@ -2986,6 +3050,68 @@
           }
         ],
         "summary": "Details",
+        "tags": [
+          "anime"
+        ]
+      }
+    },
+    "/anime/{anime_id}/art": {
+      "get": {
+        "description": "Episode stills and titles plus a wide picture, from ani.zip. Separate from the details so\nthe page never waits on it; empty when ani.zip has nothing or is down.",
+        "operationId": "art_anime__anime_id__art_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anime_id",
+            "required": true,
+            "schema": {
+              "title": "Anime Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "default": "en",
+              "enum": [
+                "en",
+                "pt"
+              ],
+              "title": "Lang",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TitleArtOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Art",
         "tags": [
           "anime"
         ]

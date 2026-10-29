@@ -6,6 +6,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import type { ListState } from "@/components/title/AddToList";
 import { EpisodeList } from "@/components/title/EpisodeList";
+import { headerArt, titleArt } from "@/components/title/titleArt";
 import { TitleHeader } from "@/components/title/TitleHeader";
 import {
   WatchBadge,
@@ -52,8 +53,8 @@ async function listState(id: number): Promise<ListState> {
   }
 }
 
-async function Episodes({ id, image }: { id: number; image?: string }) {
-  const plan = await watchPlan(id);
+async function Episodes({ id, locale }: { id: number; locale: string }) {
+  const [plan, art] = await Promise.all([watchPlan(id), titleArt(id, locale)]);
   if (!plan) return null;
   return (
     <EpisodeList
@@ -64,7 +65,7 @@ async function Episodes({ id, image }: { id: number; image?: string }) {
       progress={plan.progress}
       current={plan.next.episode}
       thumbnails={plan.thumbnails}
-      fallbackImage={image}
+      art={art.episodes}
     />
   );
 }
@@ -75,7 +76,11 @@ export default async function TitlePage({ params }: PageProps<"/[locale]/anime/[
   const id = parseId(rawId);
   const t = await getTranslations("titlePage");
 
-  const [anime, list] = await Promise.all([unwrap(details(id, locale), locale), listState(id)]);
+  const [anime, list, art] = await Promise.all([
+    unwrap(details(id, locale), locale),
+    listState(id),
+    headerArt(id, locale),
+  ]);
 
   // The sources come from scrapers that can be slow or down: the page renders without them and
   // the parts that need them stream in.
@@ -84,6 +89,7 @@ export default async function TitlePage({ params }: PageProps<"/[locale]/anime/[
       <TitleHeader
         anime={anime}
         list={list}
+        art={art}
         badge={
           <Suspense fallback={<WatchBadgeSkeleton />}>
             <WatchBadge id={id} />
@@ -102,7 +108,7 @@ export default async function TitlePage({ params }: PageProps<"/[locale]/anime/[
       />
       <div className="flex flex-col gap-10 py-6">
         <Suspense fallback={null}>
-          <Episodes id={id} image={anime.main_picture?.large ?? anime.main_picture?.medium ?? undefined} />
+          <Episodes id={id} locale={locale} />
         </Suspense>
         {!!anime.related_anime?.length && (
           <Row title={t("related")}>

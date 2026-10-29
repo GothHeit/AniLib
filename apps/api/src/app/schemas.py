@@ -120,6 +120,20 @@ class StreamOption(BaseModel):
     lang: Literal["sub", "dub"]
 
 
+class EpisodeArtOut(BaseModel):
+    title: str | None = None
+    image: str | None = None
+
+
+class TitleArtOut(BaseModel):
+    """Art from outside the catalog, for the title page. Every part may be missing."""
+
+    # A wide picture of the show, for the page's header.
+    backdrop: str | None = None
+    # Episode number -> its title (in the asked language when known) and still image.
+    episodes: dict[int, EpisodeArtOut] = Field(default_factory=dict)
+
+
 class SourcesOut(BaseModel):
     # Names of the enabled VideoSources that have this title. A hint: it can be stale.
     sources: list[str]
@@ -162,7 +176,10 @@ class HomeHero(BaseModel):
     anime: AnimeCard
     synopsis: str | None = None
     synopsis_lang: Literal["en", "pt"] | None = None
+    # A portrait picture: the catalog's.
     backdrop: str | None = None
+    # A wide picture of the show from ani.zip, when it has one.
+    wide_art: str | None = None
 
 
 class HomeOut(BaseModel):

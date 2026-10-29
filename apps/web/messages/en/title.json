@@ -14,7 +14,6 @@
     "rewatch": "Rewatch",
     "episodeList": "Episodes",
     "episode": "Episode {episode}",
-    "episodeShort": "EP {episode}",
     "watched": "Watched",
     "range": "Episodes shown",
     "related": "Related",
@@ -70,6 +69,10 @@
       },
       "unavailable": "Status unavailable"
     },
-    "synopsisEnglish": "Synopsis in English"
+    "synopsisEnglish": "Synopsis in English",
+    "minutesLeft": "{minutes} min left",
+    "upNext": "Up next",
+    "readMore": "Read more",
+    "readLess": "Show less"
   }
 }

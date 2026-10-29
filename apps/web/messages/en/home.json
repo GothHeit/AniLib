@@ -11,7 +11,7 @@
       "seasonal": "This season",
       "top": "Top rated",
       "friends_popular": "Popular with friends",
-      "genre": "Popular in {genre}"
+      "genre": "{genre}"
     },
     "empty": "Nothing to show yet. Try again in a moment.",
     "featured": "Featured",

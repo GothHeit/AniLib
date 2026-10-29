@@ -4,6 +4,7 @@ import httpx
 import respx
 from sqlalchemy import text
 
+from app.anizip import API as ANIZIP
 from app.db import utcnow
 from app.main import app as fastapi_app
 from app.mal.client import API_BASE, current_season
@@ -32,6 +33,11 @@ async def test_home_has_hero_and_rows_in_order(client, session):
     mock_ranking(node(10, "Classic"))
     mock_details(1)
     mock_details(2, synopsis="Why it is best", pictures=[{"large": "https://img/back.jpg"}])
+    respx.get(ANIZIP, params={"mal_id": "2"}).mock(
+        return_value=httpx.Response(
+            200, json={"images": [{"coverType": "Fanart", "url": "https://img/wide.jpg"}]}
+        )
+    )
     await watch(client, headers, 20, 3)
     mock_details(20, num_episodes=12)
 
@@ -40,6 +46,9 @@ async def test_home_has_hero_and_rows_in_order(client, session):
     assert [h["anime"]["title"] for h in body["heroes"]] == ["Best", "Popular"]
     assert body["heroes"][0]["synopsis"] == "Why it is best"
     assert body["heroes"][0]["backdrop"] == "https://img/back.jpg"
+    # Wide art comes from ani.zip; a title it can't answer for has none.
+    assert body["heroes"][0]["wide_art"] == "https://img/wide.jpg"
+    assert body["heroes"][1]["wide_art"] is None
     # No MAL link, so there is no "my list" row.
     assert [r["id"] for r in body["rows"]] == ["continue_watching", "seasonal", "top"]
     first = body["rows"][0]["items"][0]

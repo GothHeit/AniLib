@@ -26,11 +26,13 @@ type Props = {
   current?: number;
   /** Episode number -> still image from the source (proxied, relative to the API). */
   thumbnails?: Record<string, string>;
-  /** Title art shown on episodes the source has no image for. */
-  fallbackImage?: string;
+  /** Episode number -> title and still from outside the source (ani.zip). */
+  art?: Record<string, EpisodeArt>;
 };
 
-export function EpisodeList({ source, lang = "sub", animeId, episodes, progress, current, thumbnails, fallbackImage }: Props) {
+type EpisodeArt = { title?: string | null; image?: string | null };
+
+export function EpisodeList({ source, lang = "sub", animeId, episodes, progress, current, thumbnails, art }: Props) {
   const t = useTranslations("titlePage");
   const [page, setPage] = useState(current === undefined ? 0 : pageOf(episodes, current));
   const pages = Math.ceil(episodes.length / PAGE_SIZE);
@@ -63,32 +65,49 @@ export function EpisodeList({ source, lang = "sub", animeId, episodes, progress,
           </label>
         )}
       </div>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+      {/* Phones: a list with the still beside the text. Wider: a grid that fills the width. */}
+      <ul className="grid gap-4 sm:grid-cols-2 sm:gap-y-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 min-[1800px]:grid-cols-6">
         {shown.map((ep) => {
           const p = byEpisode.get(ep);
           const ratio = progressRatio(p);
           const pct = ratio === undefined ? undefined : Math.round(ratio * 100);
           const still = thumbnails?.[ep];
-          const image = still ? `/api/proxy${still}` : fallbackImage;
+          const extra = art?.[ep];
+          const image = still ? `/api/proxy${still}` : extra?.image;
+          const left =
+            p && !p.completed && p.duration_seconds
+              ? Math.max(1, Math.round((p.duration_seconds - p.position_seconds) / 60))
+              : undefined;
+          const status = p?.completed
+            ? { text: t("watched"), tone: "text-success" }
+            : left !== undefined
+              ? { text: t("minutesLeft", { minutes: left }), tone: "text-accent" }
+              : ep === current
+                ? { text: t("upNext"), tone: "text-accent" }
+                : undefined;
           return (
             <li key={ep}>
-              <Link href={watchHref(source, animeId, ep, lang)} className="group block">
+              <Link href={watchHref(source, animeId, ep, lang)} className="group flex items-center gap-3 sm:block">
                 <div
-                  className={`relative flex aspect-video items-center justify-center overflow-hidden rounded-ui transition-transform duration-200 ease-out group-hover:scale-[1.03] group-focus-visible:scale-[1.03] group-active:scale-[0.98] ${placeholderFor(animeId + ep)}`}
+                  className={`relative aspect-video w-36 shrink-0 overflow-hidden rounded-ui transition-transform duration-200 ease-out group-hover:scale-[1.03] group-focus-visible:scale-[1.03] group-active:scale-[0.98] sm:w-full ${placeholderFor(animeId + ep)} ${ep === current ? "outline-2 outline-offset-2 outline-accent" : ""}`}
                 >
-                  {image && (
-                    // eslint-disable-next-line @next/next/no-img-element -- stills come from the source or the catalog
+                  {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- stills come from the source or ani.zip
                     <img
                       src={image}
                       alt=""
                       loading="lazy"
                       decoding="async"
-                      className={`absolute inset-0 h-full w-full object-cover ${still ? "" : "scale-110 opacity-40 blur-[2px]"}`}
+                      className="absolute inset-0 h-full w-full object-cover"
                     />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="absolute bottom-2 left-3 font-display text-4xl leading-none text-accent sm:bottom-3 sm:left-4 sm:text-5xl"
+                    >
+                      {String(ep).padStart(2, "0")}
+                    </span>
                   )}
-                  <span aria-hidden="true" className="relative font-display text-3xl text-fg/90">
-                    {t("episodeShort", { episode: ep })}
-                  </span>
                   {pct !== undefined && (
                     <div
                       role="progressbar"
@@ -102,10 +121,13 @@ export function EpisodeList({ source, lang = "sub", animeId, episodes, progress,
                     </div>
                   )}
                 </div>
-                <p className="mt-2.5 text-sm font-bold">
-                  {t("episode", { episode: ep })}
-                  {p?.completed && <span className="ml-2 text-xs text-success">{t("watched")}</span>}
-                </p>
+                <div className="min-w-0 sm:mt-2.5">
+                  <p className="text-xs font-bold uppercase tracking-wide text-muted">
+                    {t("episode", { episode: ep })}
+                    {status && <span className={`ml-2 ${status.tone}`}>{status.text}</span>}
+                  </p>
+                  {extra?.title && <p className="mt-1 line-clamp-2 text-sm font-bold">{extra.title}</p>}
+                </div>
               </Link>
             </li>
           );

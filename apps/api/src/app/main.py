@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import db
 from app.aniskip import AniSkip
+from app.anizip import AniZip
 from app.config import get_settings
 from app.errors import install_error_handlers
 from app.mal.account import MalAccounts
@@ -64,6 +65,7 @@ async def lifespan(app: FastAPI):
         app.state.mal = MalClient(settings.mal_client_id, http)
         app.state.mal_accounts = MalAccounts(settings, http)
         app.state.aniskip = AniSkip(http)
+        app.state.anizip = AniZip(http)
         app.state.pt_synopses = None
         if settings.pt_synopsis_scrape:
             from app.synopsis import PtSynopses

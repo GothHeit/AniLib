@@ -8,7 +8,7 @@ import { watchPlan } from "./watchPlan";
 // (watchPlan), so rendering them separately costs a single round trip.
 
 export function WatchBadgeSkeleton() {
-  return <div aria-hidden="true" className="h-6 w-24 animate-pulse rounded-ui bg-surface" />;
+  return <div aria-hidden="true" className="h-6 w-24 self-start animate-pulse rounded-ui bg-surface" />;
 }
 
 export function WatchPlaySkeleton() {
@@ -19,7 +19,7 @@ export async function WatchBadge({ id }: { id: number }) {
   const [plan, t] = await Promise.all([watchPlan(id), getTranslations("titlePage")]);
   return (
     <p
-      className={`inline-block rounded-full border px-3 py-0.5 text-xs font-bold ${plan ? "border-accent text-accent" : "border-line-strong text-muted"}`}
+      className={`inline-block self-start rounded-full border px-3 py-0.5 text-xs font-bold ${plan ? "border-accent text-accent" : "border-line-strong text-muted"}`}
     >
       {plan ? t("watchHere") : t("trackingOnly")}
     </p>

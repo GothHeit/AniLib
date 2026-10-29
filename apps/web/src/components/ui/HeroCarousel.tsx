@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import { ButtonLink } from "./Button";
+import { HeroSplit } from "./HeroSplit";
 
 export type HeroSlide = {
   id: number;
@@ -13,12 +14,15 @@ export type HeroSlide = {
   synopsis?: string;
   /** Set when the synopsis is not in the reader's language. */
   synopsisNote?: string;
+  /** Portrait poster, shown in place of the wide art when there is none. */
   image?: string | null;
+  /** Wide picture of the show: fills the banner's right side. */
+  wideArt?: string | null;
 };
 
 const INTERVAL_MS = 8000;
 
-/** Flat banner that rotates through a few titles: kicker, big serif title and a pill, with the poster beside them.
+/** Flat banner that rotates through a few titles: kicker, big serif title and a pill, beside the art.
  * Rotation pauses on hover and focus and never starts for people who prefer reduced motion. */
 export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string }) {
   const t = useTranslations("home");
@@ -44,7 +48,7 @@ export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string
     <section
       aria-roledescription="carousel"
       aria-label={t("featured")}
-      className="relative grid bg-bg px-4 pb-14 pt-20 sm:px-8 sm:pt-28"
+      className="relative grid bg-bg pt-16 sm:pt-20"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -54,7 +58,26 @@ export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string
       {slides.map((slide, i) => {
         const active = i === index;
         // Long romaji titles step down a size so they stay within three or four lines on a phone.
-        const size = slide.title.length > 28 ? "text-4xl sm:text-6xl lg:text-7xl" : "text-5xl sm:text-7xl lg:text-8xl";
+        // Beside the art the text column is narrow, so the sizes grow late.
+        const size = slide.title.length > 28 ? "text-4xl md:text-5xl xl:text-7xl" : "text-5xl md:text-6xl xl:text-8xl";
+        const text = (
+          <div className="min-w-0 flex-1 md:max-w-xl">
+            <p className="kicker">{t("featured")}</p>
+            {active ? (
+              <h1 className={`mt-4 break-words leading-[0.95] tracking-[-0.02em] ${size}`}>{slide.title}</h1>
+            ) : (
+              <p className={`mt-4 break-words font-display leading-[0.95] tracking-[-0.02em] ${size}`}>{slide.title}</p>
+            )}
+            {slide.meta && <p className="mt-4 text-sm font-medium text-muted">{slide.meta}</p>}
+            {slide.synopsis && <p className="mt-3 line-clamp-3 max-w-md leading-relaxed text-soft">{slide.synopsis}</p>}
+            {slide.synopsis && slide.synopsisNote && <p className="mt-1 text-xs text-muted">{slide.synopsisNote}</p>}
+            <div className="mt-7 flex flex-wrap gap-3">
+              <ButtonLink href={slide.href} className="px-6">
+                {cta}
+              </ButtonLink>
+            </div>
+          </div>
+        );
         return (
           <div
             key={slide.id}
@@ -64,35 +87,11 @@ export function HeroCarousel({ slides, cta }: { slides: HeroSlide[]; cta: string
             aria-hidden={!active}
             inert={!active}
             // Every slide sits in the same grid cell, so the banner is as tall as the tallest one.
-            className={`col-start-1 row-start-1 flex items-center gap-6 transition-opacity duration-300 ease-out md:gap-14 ${active ? "opacity-100" : "opacity-0"}`}
+            className={`col-start-1 row-start-1 transition-opacity duration-300 ease-out ${active ? "opacity-100" : "opacity-0"}`}
           >
-            <div className="min-w-0 flex-1 md:max-w-xl">
-              <p className="kicker">{t("featured")}</p>
-              {active ? (
-                <h1 className={`mt-4 break-words leading-[0.95] tracking-[-0.02em] ${size}`}>{slide.title}</h1>
-              ) : (
-                <p className={`mt-4 break-words font-display leading-[0.95] tracking-[-0.02em] ${size}`}>{slide.title}</p>
-              )}
-              {slide.meta && <p className="mt-4 text-sm font-medium text-muted">{slide.meta}</p>}
-              {slide.synopsis && <p className="mt-3 line-clamp-3 max-w-md leading-relaxed text-soft">{slide.synopsis}</p>}
-              {slide.synopsis && slide.synopsisNote && <p className="mt-1 text-xs text-muted">{slide.synopsisNote}</p>}
-              <div className="mt-7 flex flex-wrap gap-3">
-                <ButtonLink href={slide.href} className="px-6">
-                  {cta}
-                </ButtonLink>
-              </div>
-            </div>
-            {slide.image && (
-              // eslint-disable-next-line @next/next/no-img-element -- remote catalog poster
-              <img
-                src={slide.image}
-                alt=""
-                fetchPriority={i === 0 ? "high" : "auto"}
-                loading={i === 0 ? "eager" : "lazy"}
-                decoding="async"
-                className="ml-auto hidden aspect-[2/3] w-56 shrink-0 rounded-ui object-cover sm:block lg:mr-[8%] lg:w-72"
-              />
-            )}
+            <HeroSplit art={slide.wideArt} poster={slide.image} eager={i === 0}>
+              {text}
+            </HeroSplit>
           </div>
         );
       })}

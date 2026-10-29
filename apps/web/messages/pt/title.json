@@ -14,7 +14,6 @@
     "rewatch": "Assistir de novo",
     "episodeList": "Episódios",
     "episode": "Episódio {episode}",
-    "episodeShort": "EP {episode}",
     "watched": "Assistido",
     "range": "Episódios exibidos",
     "related": "Relacionados",
@@ -70,6 +69,10 @@
       },
       "unavailable": "Status indisponível"
     },
-    "synopsisEnglish": "Sinopse em inglês"
+    "synopsisEnglish": "Sinopse em inglês",
+    "minutesLeft": "Faltam {minutes} min",
+    "upNext": "A seguir",
+    "readMore": "Ler mais",
+    "readLess": "Mostrar menos"
   }
 }

@@ -17,6 +17,7 @@ from app.routers.progress import latest_per_anime, to_out
 from app.schemas import AnimeCard, GenreOut, HomeHero, HomeItem, HomeOut, HomeRow
 
 if TYPE_CHECKING:
+    from app.anizip import AniZip
     from app.synopsis import PtSynopses
 
 router = APIRouter(tags=["home"])
@@ -24,6 +25,9 @@ log = logging.getLogger(__name__)
 
 ROW_SIZE = 20
 HERO_COUNT = 5
+# The home page waits this long for a hero's wide art. A slower lookup keeps going and fills the
+# cache for the next visit.
+WIDE_ART_BUDGET = 1.5
 # A shorter row looks broken, so genre and friends rows below this size are left out.
 MIN_ROW = 8
 GENRE_ROWS = 4
@@ -127,15 +131,30 @@ async def _friends_popular_row(
     return items[:ROW_SIZE] if len(items) >= MIN_ROW else []
 
 
+async def _wide_art(anizip: "AniZip | None", anime_id: int) -> str | None:
+    if anizip is None:
+        return None
+    try:
+        art = await asyncio.wait_for(asyncio.shield(anizip.art(anime_id)), WIDE_ART_BUDGET)
+    except TimeoutError:
+        return None
+    return art.backdrop
+
+
 async def _heroes(
-    mal: MalClient, seasonal: list[dict], synopses: "PtSynopses | None" = None
+    mal: MalClient,
+    seasonal: list[dict],
+    synopses: "PtSynopses | None" = None,
+    anizip: "AniZip | None" = None,
 ) -> list[HomeHero]:
     """The best-scored titles of the season that have a large picture."""
     candidates = [n for n in seasonal if (n.get("main_picture") or {}).get("large")]
     picks = sorted(candidates, key=lambda n: n.get("mean") or 0, reverse=True)[:HERO_COUNT]
 
     async def one(pick: dict) -> HomeHero:
-        details = await _soft(mal.details(pick["id"]), "hero details")
+        details, wide_art = await asyncio.gather(
+            _soft(mal.details(pick["id"]), "hero details"), _wide_art(anizip, pick["id"])
+        )
         pictures = [p.get("large") for p in (details or {}).get("pictures") or [] if p.get("large")]
         synopsis, synopsis_lang = (details or {}).get("synopsis"), None
         if synopsis:
@@ -147,6 +166,7 @@ async def _heroes(
             synopsis=synopsis,
             synopsis_lang=synopsis_lang,
             backdrop=pictures[0] if pictures else pick["main_picture"]["large"],
+            wide_art=wide_art,
         )
 
     return list(await asyncio.gather(*(one(p) for p in picks)))
@@ -186,7 +206,10 @@ async def home(
     ]
     return HomeOut(
         heroes=await _heroes(
-            mal, seasonal_nodes, request.app.state.pt_synopses if lang == "pt" else None
+            mal,
+            seasonal_nodes,
+            request.app.state.pt_synopses if lang == "pt" else None,
+            request.app.state.anizip,
         ),
         rows=[r for r in rows if r.items],
     )

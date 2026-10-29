@@ -2,11 +2,12 @@ import type { components } from "@app/api-client";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
-import { placeholderFor } from "@/components/ui/PosterCard";
+import { HeroSplit } from "@/components/ui/HeroSplit";
 import { genreName } from "@/lib/genres";
+import { cleanSynopsis } from "@/lib/synopsis";
 
 import { AddToList, type ListState } from "./AddToList";
-import { cleanSynopsis } from "@/lib/synopsis";
+import { Synopsis } from "./Synopsis";
 
 type Details = components["schemas"]["AnimeDetailsOut"];
 
@@ -17,9 +18,11 @@ type Props = {
   play: ReactNode;
   hint: ReactNode;
   list: ListState;
+  /** A wide picture of the show. Without one the poster stands in its place. */
+  art?: string | null;
 };
 
-export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
+export async function TitleHeader({ anime, badge, play, hint, list, art }: Props) {
   const t = await getTranslations("titlePage");
   const locale = await getLocale();
   const tGenres = await getTranslations("genres");
@@ -37,69 +40,64 @@ export async function TitleHeader({ anime, badge, play, hint, list }: Props) {
   const english = anime.alternative_titles?.en;
   const poster = anime.main_picture?.large ?? anime.main_picture?.medium;
 
-  return (
-    <section className="px-4 pb-12 pt-20 sm:px-8 sm:pt-28">
-      {/* Phones: a small poster beside the title keeps the play button on the first screen. */}
-      <div className="grid grid-cols-[7.5rem_1fr] gap-x-4 gap-y-5 sm:grid-cols-[14rem_1fr] sm:gap-x-8 sm:gap-y-0">
-        <div
-          className={`relative aspect-[2/3] w-full overflow-hidden rounded-ui sm:row-span-2 ${placeholderFor(anime.id)}`}
-        >
-          {poster && (
-            // eslint-disable-next-line @next/next/no-img-element -- posters come from remote catalogs
-            <img
-              src={poster}
-              width={224}
-              height={336}
-              decoding="async"
-              alt={t("posterAlt", { title: anime.title })}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          )}
-        </div>
-        <div className="min-w-0 max-w-3xl">
-          {badge}
-          <h1 className="mt-2 break-words text-4xl leading-none sm:mt-3 sm:text-6xl">{anime.title}</h1>
-          {english && english !== anime.title && <p className="mt-2 text-muted">{english}</p>}
-          {facts.length > 0 && (
-            <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-soft">
-              {facts.map((f) => (
-                <li key={f}>{f}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <div className="col-span-2 min-w-0 max-w-3xl sm:col-span-1">
-          <div className="flex flex-wrap gap-3 sm:mt-6">
-            {play}
-            <AddToList animeId={anime.id} state={list} />
-          </div>
-          {hint}
-
-          <h2 className="sr-only">{t("synopsis")}</h2>
-          <p className="mt-6 max-w-2xl whitespace-pre-line leading-relaxed text-soft">{cleanSynopsis(anime.synopsis) || t("noSynopsis")}</p>
-          {locale === "pt" && anime.synopsis_lang === "en" && <p className="mt-1 text-xs text-muted">{t("synopsisEnglish")}</p>}
-          <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-            {!!anime.studios?.length && (
-              <>
-                <dt className="text-muted">{t("studios")}</dt>
-                <dd>{anime.studios?.map((s) => s.name).join(", ")}</dd>
-              </>
-            )}
-            {!!anime.genres?.length && (
-              <>
-                <dt className="text-muted">{t("genres")}</dt>
-                <dd className="flex flex-wrap gap-2">
-                  {anime.genres?.map((g) => (
-                    <span key={g.id} className="rounded-full border border-line-strong px-3 py-1 text-xs">
-                      {genreName(tGenres, g)}
-                    </span>
-                  ))}
-                </dd>
-              </>
-            )}
-          </dl>
-        </div>
+  const info = (
+    <>
+      {badge}
+      <h1
+        className="mt-3 break-words text-4xl leading-[0.95] tracking-[-0.02em] md:text-5xl xl:text-6xl"
+      >
+        {anime.title}
+      </h1>
+      {english && english !== anime.title && <p className="mt-2 text-muted">{english}</p>}
+      {facts.length > 0 && (
+        <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium text-soft">
+          {facts.map((f) => (
+            <li key={f}>{f}</li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+  const more = (
+    <>
+      <div className="mt-6 flex flex-wrap gap-3">
+        {play}
+        <AddToList animeId={anime.id} state={list} />
       </div>
+      {hint}
+
+      <h2 className="sr-only">{t("synopsis")}</h2>
+      <Synopsis text={cleanSynopsis(anime.synopsis) || t("noSynopsis")} />
+      {locale === "pt" && anime.synopsis_lang === "en" && <p className="mt-1 text-xs text-muted">{t("synopsisEnglish")}</p>}
+      <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
+        {!!anime.studios?.length && (
+          <>
+            <dt className="text-muted">{t("studios")}</dt>
+            <dd>{anime.studios?.map((s) => s.name).join(", ")}</dd>
+          </>
+        )}
+        {!!anime.genres?.length && (
+          <>
+            <dt className="text-muted">{t("genres")}</dt>
+            <dd className="flex flex-wrap gap-2">
+              {anime.genres?.map((g) => (
+                <span key={g.id} className="rounded-full border border-line-strong px-3 py-1 text-xs">
+                  {genreName(tGenres, g)}
+                </span>
+              ))}
+            </dd>
+          </>
+        )}
+      </dl>
+    </>
+  );
+
+  return (
+    <section className="pt-16 sm:pt-20">
+      <HeroSplit art={art} poster={poster} posterAlt={t("posterAlt", { title: anime.title })}>
+        {info}
+        {more}
+      </HeroSplit>
     </section>
   );
 }

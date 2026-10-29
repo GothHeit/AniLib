@@ -13,7 +13,7 @@ vi.mock("@/i18n/navigation", () => ({
 
 const episodes = Array.from({ length: 250 }, (_, i) => i + 1);
 
-function renderList(current?: number) {
+function renderList(current?: number, art?: Record<string, { title?: string; image?: string }>) {
   return render(
     <NextIntlClientProvider locale="en" messages={title}>
       <EpisodeList
@@ -21,6 +21,7 @@ function renderList(current?: number) {
         animeId={7}
         episodes={episodes}
         current={current}
+        art={art}
         progress={[
           {
             anime_id: 7,
@@ -48,6 +49,12 @@ describe("EpisodeList", () => {
     expect(screen.getByRole("link", { name: /Episode 1$/ })).toHaveAttribute("href", "/watch/stub/7/1");
     expect(screen.getByRole("link", { name: /Episode 2.*Watched/ })).toBeInTheDocument();
     expect(screen.getAllByRole("link")).toHaveLength(100);
+  });
+
+  it("shows episode titles and stills from outside the source, and marks the next one", () => {
+    const { container } = renderList(3, { 3: { title: "Somewhere She’d Like to Go", image: "https://img/3.jpg" } });
+    expect(screen.getByRole("link", { name: /Episode 3.*Up next.*Somewhere She’d Like to Go/ })).toBeInTheDocument();
+    expect(container.querySelector('img[src="https://img/3.jpg"]')).not.toBeNull();
   });
 
   it("opens on the current episode's page and switches pages", async () => {
