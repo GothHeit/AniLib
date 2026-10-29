@@ -16,7 +16,7 @@ from app.errors import ApiError
 from app.models import PlayerPreferences, SourceChoice, User
 from app.schemas import StreamOption
 from app.security import create_playback_token, decode_access_token, decode_playback_token
-from app.sources.base import Lang, Stream, VideoSource
+from app.sources.base import Lang, SkipKind, Stream, VideoSource
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/watch", tags=["watch"])
@@ -25,6 +25,10 @@ _bearer = HTTPBearer(auto_error=False)
 # How long the player's source menu waits on each source before leaving it out.
 OPTION_PROBE_TIMEOUT = 8.0
 LANGS: tuple[Lang, ...] = ("sub", "dub")
+# How long playback waits on a host to say whether a stream still exists.
+PROBE_TIMEOUT = 6.0
+# Answers that mean the file is gone, not that the host is having a bad moment.
+GONE = (404, 410)
 
 
 class EpisodesOut(BaseModel):
@@ -45,7 +49,7 @@ class SubtitleOut(BaseModel):
 
 
 class SkipOut(BaseModel):
-    kind: Literal["intro", "outro"]
+    kind: SkipKind
     start: float
     end: float
 
@@ -88,11 +92,16 @@ async def _resolve_stream(
 
     A fallback only plays when its own episode list has this episode and is the same length
     as the requested source's (when that is known), so a source that matched another season
-    or numbers episodes differently never plays the wrong one."""
+    or numbers episodes differently never plays the wrong one.
+
+    A stream whose file is gone is passed over too. One whose host couldn't be checked is
+    only used when no other source has a working one."""
     requested = _source(request, source)
     names = [source] + [n for n in request.app.state.sources if n != source]
+    http: httpx.AsyncClient = request.app.state.http
     expected: int | None = None
     failed = False
+    unchecked: tuple[str, Stream] | None = None
     for name in names:
         src: VideoSource = request.app.state.sources[name]
         try:
@@ -109,11 +118,60 @@ async def _resolve_stream(
             logger.exception("Source %s failed for MAL %s ep %s", name, anime.get("id"), episode)
             failed = True
             continue
-        if stream is not None:
+        if stream is None:
+            continue
+        alive = await _stream_alive(http, stream)
+        if alive:
             return name, stream
+        if alive is None:
+            unchecked = unchecked or (name, stream)
+        else:
+            logger.warning(
+                "Source %s gave a dead stream for MAL %s ep %s", name, anime.get("id"), episode
+            )
+    if unchecked is not None:
+        return unchecked
     if failed:
         raise ApiError(502, "upstream_failed", "The video sources are failing right now")
     return None
+
+
+async def _stream_alive(http: httpx.AsyncClient, stream: Stream) -> bool | None:
+    """Whether the stream's file still exists: the first bytes of an HLS master must be a
+    playlist, and an MP4 must answer a HEAD. None when the host couldn't tell (slow or erroring)."""
+    if stream.url.startswith("file:"):
+        return True
+    try:
+        async with asyncio.timeout(PROBE_TIMEOUT):
+            if stream.kind == "mp4":
+                response = await http.head(stream.url, headers=stream.upstream_headers)
+                if response.status_code in GONE:
+                    return False
+                # Some hosts refuse HEAD; only a missing file counts as dead.
+                return True
+            referer = stream.upstream_headers.get("Referer", "")
+            upstream, _ = await _open_upstream(
+                http, stream.url, {"Referer": referer} if referer else {}
+            )
+            try:
+                if upstream.status_code in GONE:
+                    return False
+                if upstream.status_code >= 400:
+                    return None
+                head = b""
+                async for chunk in upstream.aiter_bytes():
+                    head += chunk
+                    if len(head) >= 64:
+                        break
+            finally:
+                await upstream.aclose()
+    except ApiError:
+        # A private address or a redirect loop: the proxy would refuse to play it anyway.
+        return False
+    except (httpx.HTTPError, TimeoutError):
+        return None
+    # An error page served with 200 is not a playlist.
+    return head.lstrip(b"\xef\xbb\xbf \t\r\n").startswith(b"#EXTM3U")
 
 
 async def _episode_count(source: VideoSource, anime: dict, lang: Lang) -> int:
@@ -173,6 +231,20 @@ async def options(request: Request, anime_id: int, episode: int, user: CurrentUs
         for (name, lang), hit in zip(pairs, found, strict=True)
         if hit
     ]
+
+
+@router.get("/skips/{anime_id}/{episode}", response_model=list[SkipOut])
+async def skips(
+    request: Request,
+    anime_id: Annotated[int, Path(ge=1)],
+    episode: Annotated[int, Path(ge=1)],
+    length: Annotated[float, Query(gt=0, le=86400)],
+    user: CurrentUser,
+):
+    """Opening, ending and recap times from AniSkip for a copy `length` seconds long. The
+    player asks once it knows the length, and fills in what the source didn't give."""
+    found = await request.app.state.aniskip.skips(anime_id, episode, length)
+    return [SkipOut(kind=k.kind, start=k.start, end=k.end) for k in found]
 
 
 @router.put("/choice/{anime_id}", status_code=204)

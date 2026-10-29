@@ -2240,7 +2240,8 @@
           "kind": {
             "enum": [
               "intro",
-              "outro"
+              "outro",
+              "recap"
             ],
             "title": "Kind",
             "type": "string"
@@ -5638,6 +5639,80 @@
         "summary": "Switch Stream",
         "tags": [
           "rooms"
+        ]
+      }
+    },
+    "/watch/skips/{anime_id}/{episode}": {
+      "get": {
+        "description": "Opening, ending and recap times from AniSkip for a copy `length` seconds long. The\nplayer asks once it knows the length, and fills in what the source didn't give.",
+        "operationId": "skips_watch_skips__anime_id___episode__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anime_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Anime Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "episode",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Episode",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "length",
+            "required": true,
+            "schema": {
+              "exclusiveMinimum": 0,
+              "maximum": 86400,
+              "title": "Length",
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SkipOut"
+                  },
+                  "title": "Response Skips Watch Skips  Anime Id   Episode  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Skips",
+        "tags": [
+          "watch"
         ]
       }
     },

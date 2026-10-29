@@ -1042,6 +1042,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/watch/skips/{anime_id}/{episode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Skips
+         * @description Opening, ending and recap times from AniSkip for a copy `length` seconds long. The
+         *     player asks once it knows the length, and fills in what the source didn't give.
+         */
+        get: operations["skips_watch_skips__anime_id___episode__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/watch/sources": {
         parameters: {
             query?: never;
@@ -1833,7 +1854,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "intro" | "outro";
+            kind: "intro" | "outro" | "recap";
             /** Start */
             start: number;
         };
@@ -3948,6 +3969,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    skips_watch_skips__anime_id___episode__get: {
+        parameters: {
+            query: {
+                length: number;
+            };
+            header?: never;
+            path: {
+                anime_id: number;
+                episode: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkipOut"][];
+                };
             };
             /** @description Validation Error */
             422: {

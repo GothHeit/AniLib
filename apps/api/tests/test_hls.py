@@ -142,6 +142,7 @@ async def test_hls_playback_falls_back_and_proxies_with_referer(client, session)
     _, headers = await make_user(session, "kafka")
     mock_details()
 
+    master = respx.get(MASTER).mock(return_value=httpx.Response(200, text=MEDIA))
     play = await client.post("/watch/broken/21/episodes/1/play", headers=headers)
     assert play.status_code == 200
     assert play.json()["kind"] == "hls"
@@ -157,7 +158,6 @@ async def test_hls_playback_falls_back_and_proxies_with_referer(client, session)
     assert subs.headers["content-type"].startswith("text/vtt")
     assert vtt.calls.last.request.headers["referer"] == "https://ref.example/"
 
-    master = respx.get(MASTER).mock(return_value=httpx.Response(200, text=MEDIA))
     seg = respx.get("https://seg.example/s0.ts.jpg").mock(
         return_value=httpx.Response(
             200, content=b"\x47data", headers={"content-type": "image/jpeg"}
@@ -301,3 +301,74 @@ async def test_oversized_playlists_are_cut_off(client, session):
     r = await client.get(signed("https://host.example/big.m3u8", str(user.id)), headers=headers)
     assert r.status_code == 502
     assert r.json()["error"]["code"] == "upstream_failed"
+
+
+class OtherHls(HlsSource):
+    def __init__(self, url):
+        self.url = url
+
+    async def stream(self, anime, episode, lang):
+        return Stream(self.url, "hls", None, {})
+
+
+class Mp4Source(HlsSource):
+    async def stream(self, anime, episode, lang):
+        return Stream("https://files.example/ep1.mp4", "mp4", None, {"Referer": "https://r/"})
+
+
+@respx.mock
+@pytest.mark.parametrize(
+    "answer",
+    [
+        httpx.Response(404),
+        httpx.Response(410),
+        httpx.Response(200, text="<html>File not found</html>"),
+    ],
+)
+async def test_a_dead_stream_falls_through_to_the_next_source(client, session, answer):
+    backup = "https://backup.example/master.m3u8"
+    fastapi_app.state.sources = {"ok": HlsSource(), "backup": OtherHls(backup)}
+    _, headers = await make_user(session, "kafka")
+    mock_details()
+    respx.get(MASTER).mock(return_value=answer)
+    respx.get(backup).mock(return_value=httpx.Response(200, text="\ufeff#EXTM3U\n"))
+
+    play = await client.post("/watch/ok/21/episodes/1/play", headers=headers)
+    assert play.status_code == 200
+    assert play.json()["source"] == "backup"
+
+
+@respx.mock
+async def test_a_stream_that_cant_be_checked_is_the_last_resort(client, session):
+    backup = "https://backup.example/master.m3u8"
+    fastapi_app.state.sources = {"ok": HlsSource(), "backup": OtherHls(backup)}
+    _, headers = await make_user(session, "kafka")
+    mock_details()
+    respx.get(MASTER).mock(side_effect=httpx.ConnectTimeout("slow"))
+    respx.get(backup).mock(return_value=httpx.Response(404))
+
+    play = await client.post("/watch/ok/21/episodes/1/play", headers=headers)
+    assert play.json()["source"] == "ok"
+
+    respx.get(MASTER).mock(return_value=httpx.Response(404))
+    play = await client.post("/watch/ok/21/episodes/1/play", headers=headers)
+    assert play.json()["error"]["code"] == "not_available"
+
+
+@respx.mock
+async def test_an_mp4_is_checked_with_head(client, session):
+    backup = "https://backup.example/master.m3u8"
+    fastapi_app.state.sources = {"mp4": Mp4Source(), "backup": OtherHls(backup)}
+    _, headers = await make_user(session, "kafka")
+    mock_details()
+    head = respx.head("https://files.example/ep1.mp4").mock(return_value=httpx.Response(405))
+    respx.get(backup).mock(return_value=httpx.Response(200, text="#EXTM3U\n"))
+
+    # A host that refuses HEAD may still serve the file.
+    play = await client.post("/watch/mp4/21/episodes/1/play", headers=headers)
+    assert play.json()["source"] == "mp4"
+    assert head.calls.last.request.headers["referer"] == "https://r/"
+
+    head.mock(return_value=httpx.Response(404))
+    play = await client.post("/watch/mp4/21/episodes/1/play", headers=headers)
+    assert play.json()["source"] == "backup"

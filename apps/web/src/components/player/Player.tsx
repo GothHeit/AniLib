@@ -2,7 +2,7 @@
 
 import { errorCode } from "@app/api-client";
 import { useLocale, useTranslations } from "next-intl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useToast } from "@/components/ui/Toast";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -20,7 +20,7 @@ import { formatTime } from "./progress";
 import { levelsToDrop, qualityList } from "./qualities";
 import { SettingsMenu, type AudioTrack, type Quality } from "./SettingsMenu";
 import { sameStream, streamLabel, type StreamNames } from "./streams";
-import { activeSkip, type Skip } from "./skips";
+import { activeSkip, mergeSkips, type Skip } from "./skips";
 import { AssSubtitles } from "./AssSubtitles";
 import { SubtitleOverlay } from "./SubtitleOverlay";
 import type { SubtitleStyle } from "./subtitleStyle";
@@ -98,7 +98,9 @@ export function Player(props: Props) {
   const [assFailed, setAssFailed] = useState(false);
   // The source that answered; another enabled one when the requested source failed.
   const [answered, setAnswered] = useState(source);
-  const [skips, setSkips] = useState<Skip[]>([]);
+  const [ownSkips, setOwnSkips] = useState<Skip[]>([]);
+  // From AniSkip, for what the source didn't give; asked once the episode's length is known.
+  const [extraSkips, setExtraSkips] = useState<Skip[]>([]);
   const [defaultAudio, setDefaultAudio] = useState<string | null>(null);
   const [qualities, setQualities] = useState<Quality[]>([]);
   const [quality, setQuality] = useState(-1);
@@ -158,7 +160,8 @@ export function Player(props: Props) {
         if (data) {
           setKind(data.kind);
           setAnswered(data.source);
-          setSkips(data.skips ?? []);
+          setOwnSkips(data.skips ?? []);
+          setExtraSkips([]);
           setDefaultAudio(data.default_audio ?? null);
           setTracks(data.subtitles ?? []);
           setFonts(Object.fromEntries(Object.entries(data.fonts ?? {}).map(([name, link]) => [name, `/api/proxy${link}`])));
@@ -185,6 +188,24 @@ export function Player(props: Props) {
       cancelled = true;
     };
   }, [animeId, episode]);
+
+  // Whole seconds, so the small corrections players make to the length don't ask again.
+  const length = url && Number.isFinite(duration) && duration > 0 ? Math.round(duration) : 0;
+  useEffect(() => {
+    if (!length) return;
+    let cancelled = false;
+    api
+      .GET("/watch/skips/{anime_id}/{episode}", {
+        params: { path: { anime_id: animeId, episode }, query: { length } },
+      })
+      .then(({ data }) => !cancelled && data && setExtraSkips(data))
+      // Without them only the source's own skips are offered.
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [animeId, episode, length]);
+  const skips = useMemo(() => mergeSkips(ownSkips, extraSkips), [ownSkips, extraSkips]);
 
   const [preference, setPreference] = useState(subtitleLang);
   const selected = chosen ?? pickTrack(tracks, preference);
@@ -742,7 +763,7 @@ export function Player(props: Props) {
           onClick={skipNow}
           className="absolute bottom-28 right-4 rounded-ui border border-white/40 bg-black/70 px-5 py-2.5 text-sm font-bold text-fg hover:bg-black/90 sm:right-8"
         >
-          {t(skip.kind === "intro" ? "skipIntro" : "skipOutro")}
+          {t(skip.kind === "intro" ? "skipIntro" : skip.kind === "recap" ? "skipRecap" : "skipOutro")}
         </button>
       )}
 

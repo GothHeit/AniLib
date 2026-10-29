@@ -1,13 +1,24 @@
 import httpx
+import pytest
 import respx
 
 from app import hls
 from app.main import app as fastapi_app
 from app.mal.client import API_BASE
+from app.routers import watch
 from app.sources.base import EpisodeList, Skip, Stream
 from tests.conftest import make_user
 
 VIDEO_URL = "https://video.example/ep1.mp4"
+
+
+@pytest.fixture(autouse=True)
+def streams_alive(monkeypatch):
+    # The liveness check has its own tests next to the HLS proxy.
+    async def alive(http, stream):
+        return True
+
+    monkeypatch.setattr(watch, "_stream_alive", alive)
 
 
 class FakeSource:

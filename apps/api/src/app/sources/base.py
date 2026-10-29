@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Literal, Protocol
 
 Lang = Literal["sub", "dub"]
+SkipKind = Literal["intro", "outro", "recap"]
 
 
 @dataclass(frozen=True)
@@ -33,7 +34,7 @@ class Subtitle:
 class Skip:
     """A stretch the viewer may want to jump over, in seconds from the start."""
 
-    kind: Literal["intro", "outro"]
+    kind: SkipKind
     start: float
     end: float
 
