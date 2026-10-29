@@ -1,10 +1,11 @@
+import time
 import uuid
 
 import pytest
 
 from app.errors import ApiError
 from app.main import app
-from app.rooms import MAX_MEMBERS, Room, Rooms
+from app.rooms import EMPTY_GRACE_SECONDS, MAX_MEMBERS, Room, Rooms
 from tests.conftest import make_user
 
 
@@ -146,11 +147,11 @@ async def test_the_host_passes_to_the_next_person_and_an_empty_room_is_swept():
     assert room.host_id == host  # a reload doesn't cost the host the room
     room._pass_host(host)
     assert room.host_id == guest
-    room.empty_since = 0.0
+    room.empty_since = time.monotonic() - EMPTY_GRACE_SECONDS - 1
     rooms.sweep()
     assert len(rooms) == 1  # not empty, so kept
     room.leave(guest, next(iter(room.members[guest].queues)))
-    room.empty_since = 0.0
+    room.empty_since = time.monotonic() - EMPTY_GRACE_SECONDS - 1
     rooms.sweep()
     assert len(rooms) == 0
 
@@ -400,7 +401,7 @@ async def test_abandoned_rooms_do_not_count_against_the_host():
     rooms.create(host, "zoko", 21, "One Piece", 1, "sub")
     assert len(rooms) == 4
     for room in rooms._rooms.values():
-        room.empty_since = 0.0
+        room.empty_since = time.monotonic() - EMPTY_GRACE_SECONDS - 1
     rooms.create(host, "zoko", 21, "One Piece", 1, "sub")
     assert len(rooms) == 1
 
