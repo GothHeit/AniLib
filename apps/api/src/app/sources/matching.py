@@ -9,6 +9,7 @@ nicknames like "1P" for One Piece), and penalises sequel/special markers that ar
 the MAL title so "X Specials" and recaps don't win.
 """
 
+import re
 import unicodedata
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
@@ -36,6 +37,16 @@ SEQUEL_MARKERS = (
 )
 
 
+# Titles searched per entry: the main title first, then the English one.
+MAX_QUERIES = 2
+# Sites that search whole phrases name later seasons "X 2", so a sequel is also searched by its
+# title without the season part.
+SEASON = re.compile(
+    r"\s*:?\s*(?:(\d+)(?:st|nd|rd|th)\s+season|season\s+(\d+)|part\s+(\d+))\s*$",
+    re.IGNORECASE,
+)
+
+
 @dataclass(frozen=True)
 class Candidate:
     identifier: str
@@ -54,6 +65,29 @@ def mal_titles(detail: dict) -> set[str]:
             titles.add(alt[key])
     titles |= set(alt.get("synonyms") or [])
     return {t for t in titles if t}
+
+
+def search_queries(detail: dict) -> list[str]:
+    alt = detail.get("alternative_titles") or {}
+    seen: list[str] = []
+    for title in (detail.get("title"), alt.get("en")):
+        if title and title not in seen:
+            seen.append(title)
+    queries = seen[:MAX_QUERIES] or sorted(mal_titles(detail))[:MAX_QUERIES]
+    if queries and (stem := SEASON.sub("", queries[0])) and stem not in queries:
+        queries.append(stem)
+    return queries
+
+
+def same_season(detail: dict) -> Callable[[str], bool]:
+    """Whether a site's title can be this entry's season. A sequel only matches titles carrying
+    its number, so the stem search can't pick an earlier season when the site lacks this one."""
+    season = SEASON.search(detail.get("title") or "")
+    number = next((n for n in season.groups() if n), None) if season else None
+    if number is None:
+        return lambda _name: True
+    numbered = re.compile(rf"\b{number}(?:st|nd|rd|th)?\b")
+    return lambda name: bool(numbered.search(name))
 
 
 def penalty(name: str, mal_joined: str) -> int:

@@ -1,8 +1,8 @@
 """The plug-in boundary for where video comes from.
 
 The rest of the app (player, progress, UI) only talks to a VideoSource. The private
-implementations are the ZokoAnime and AnimesDigital scrapers and the user's own converted
-files; a licensed catalog would be another one.
+implementations are the ZokoAnime, AnimesDigital and AnimesDrive scrapers and the user's own
+converted files; a licensed catalog would be another one.
 """
 
 from dataclasses import dataclass, field

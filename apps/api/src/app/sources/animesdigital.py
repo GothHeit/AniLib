@@ -19,20 +19,12 @@ import httpx
 from cachetools import TTLCache
 
 from app.sources.base import EpisodeList, Lang, Stream
-from app.sources.matching import Candidate, mal_titles, match
+from app.sources.matching import Candidate, match, same_season, search_queries
 
 BASE = "https://animesdigital.org"
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-)
-# Titles searched per entry: the main title first, then the English one.
-MAX_QUERIES = 2
-# The search wants the whole phrase, and the site names later seasons "X 2", so a sequel is
-# also searched by its title without the season part.
-SEASON = re.compile(
-    r"\s*:?\s*(?:(\d+)(?:st|nd|rd|th)\s+season|season\s+(\d+)|part\s+(\d+))\s*$",
-    re.IGNORECASE,
 )
 CACHE_TTL = 1800
 # A title or episode that is not there yet may appear soon, so misses expire sooner.
@@ -69,18 +61,6 @@ def is_dub(name: str) -> bool:
     return bool(DUB_SUFFIX.search(name))
 
 
-def search_queries(detail: dict) -> list[str]:
-    alt = detail.get("alternative_titles") or {}
-    seen: list[str] = []
-    for title in (detail.get("title"), alt.get("en")):
-        if title and title not in seen:
-            seen.append(title)
-    queries = seen[:MAX_QUERIES] or sorted(mal_titles(detail))[:MAX_QUERIES]
-    if queries and (stem := SEASON.sub("", queries[0])) and stem not in queries:
-        queries.append(stem)
-    return queries
-
-
 async def find(
     detail: dict, fetch: Callable[[str], Awaitable[str]], lang: Lang
 ) -> Candidate | None:
@@ -88,18 +68,14 @@ async def find(
     queries = search_queries(detail)
     pages = await asyncio.gather(*(fetch(f"{BASE}/pesquisa/{quote(q)}/") for q in queries))
     dub = lang == "dub"
-    # A sequel only matches titles carrying its number, so the stem search can't pick an
-    # earlier season when the site lacks this one.
-    season = SEASON.search(detail.get("title") or "")
-    number = next((n for n in season.groups() if n), None) if season else None
-    numbered = re.compile(rf"\b{number}(?:st|nd|rd|th)?\b") if number else None
+    season = same_season(detail)
     # Pooled, since the stem query is not one of the MAL titles the matcher searches with.
     # Compared without the dub suffix, so both versions score like the original title.
     candidates = [
         Candidate(c.identifier, DUB_SUFFIX.sub("", c.name))
         for page in pages
         for c in parse_results(page)
-        if is_dub(c.name) == dub and (numbered is None or numbered.search(c.name))
+        if is_dub(c.name) == dub and season(c.name)
     ]
     return match(detail, lambda _query: candidates, lambda _slug: [])
 

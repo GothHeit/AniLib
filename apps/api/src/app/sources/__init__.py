@@ -25,6 +25,10 @@ def load_sources(names: list[str]) -> dict[str, VideoSource]:
             from app.sources.animesdigital import AnimesDigitalSource
 
             sources[name] = AnimesDigitalSource()
+        elif name == "animedrive":
+            from app.sources.animedrive import AnimeDriveSource
+
+            sources[name] = AnimeDriveSource()
         elif name == "local":
             from app.sources.local import LocalSource
 

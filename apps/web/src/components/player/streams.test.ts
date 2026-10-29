@@ -17,6 +17,7 @@ describe("streamLabel", () => {
   it("says what a known source's version is", () => {
     expect(streamLabel(names, { source: "animesdigital", lang: "sub" })).toBe("Animes Digital · Portuguese subtitles");
     expect(streamLabel(names, { source: "zoko", lang: "dub" })).toBe("Zoko · English dub");
+    expect(streamLabel(names, { source: "animedrive", lang: "dub" })).toBe("AnimeDrive · Portuguese dub");
   });
 
   it("falls back to the name and sub or dub", () => {
