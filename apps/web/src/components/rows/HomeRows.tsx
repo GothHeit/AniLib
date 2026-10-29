@@ -22,7 +22,7 @@ export async function HomeRows({ rows }: { rows: HomeOut["rows"] }) {
           title={row.genre ? t("rows.genre", { genre: genreName(tGenres, row.genre) }) : t(`rows.${row.id}`)}
           itemClassName={row.id === "continue_watching" ? WIDE : row.id === "top" ? RANKED : undefined}
         >
-          {row.items.map(({ anime, progress, resume_episode }, i) =>
+          {row.items.map(({ anime, progress, resume_episode, from_mal }, i) =>
             row.id === "continue_watching" ? (
               <ContinueCard
                 key={anime.id}
@@ -30,7 +30,11 @@ export async function HomeRows({ rows }: { rows: HomeOut["rows"] }) {
                 href={resume_episode ? watchHref(anime.id, resume_episode) : animeHref(anime.id)}
                 title={anime.title}
                 image={posterOf(anime)}
-                caption={resume_episode ? t("episodeShort", { n: resume_episode }) : undefined}
+                caption={
+                  resume_episode
+                    ? [t("episodeShort", { n: resume_episode }), from_mal ? t("fromMal") : null].filter(Boolean).join(" · ")
+                    : undefined
+                }
                 progress={progress ? progressFraction(progress) : undefined}
               />
             ) : row.id === "top" ? (

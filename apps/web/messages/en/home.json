@@ -4,6 +4,7 @@
     "episode": "Episode {n}",
     "episodeShort": "Ep {n}",
     "remove": "Remove {title} from Continue watching",
+    "fromMal": "From MAL",
     "score": "Score {score}",
     "rows": {
       "continue_watching": "Continue watching",

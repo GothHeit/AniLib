@@ -205,3 +205,62 @@ async def test_popular_with_friends_needs_enough_titles_and_respects_adult_filte
     row = next(r for r in body["rows"] if r["id"] == "friends_popular")
     assert 307 not in {i["anime"]["id"] for i in row["items"]}
     assert len(row["items"]) == 8
+
+
+@respx.mock
+async def test_continue_watching_fills_up_with_the_mal_watching_list(client, session):
+    user, headers = await make_user(session, "kafka", nsfw=False)
+    session.add(
+        MalLink(
+            user_id=user.id,
+            access_token="a",
+            refresh_token="r",
+            expires_at=utcnow() + timedelta(hours=1),
+        )
+    )
+    await session.commit()
+    mock_season(node(1))
+    mock_ranking(node(10))
+    mock_details(1)
+    await watch(client, headers, 20, 3)
+    mock_details(20, num_episodes=12)
+
+    def entry(anime_id, watched, days_ago, total=12):
+        updated = (utcnow() - timedelta(days=days_ago)).isoformat()
+        status = {"num_episodes_watched": watched, "updated_at": updated}
+        return {"node": node(anime_id, num_episodes=total), "list_status": status}
+
+    adult = entry(43, 1, 1)
+    adult["node"]["rating"] = "rx"
+
+    def answer(request):
+        if request.url.params["status"] != "watching":
+            return httpx.Response(200, json={"data": []})
+        data = [
+            entry(20, 5, 1),  # already has MoonRoom progress
+            entry(40, 4, 2),
+            entry(41, 0, 90),  # untouched for too long
+            entry(42, 12, 1),  # all episodes watched
+            adult,
+        ]
+        return httpx.Response(200, json={"data": data})
+
+    respx.get(f"{API_BASE}/users/@me/animelist").mock(side_effect=answer)
+    body = (await client.get("/home", headers=headers)).json()
+    items = body["rows"][0]["items"]
+    assert [(i["anime"]["id"], i["resume_episode"], i["from_mal"]) for i in items] == [
+        (20, 3, False),
+        (40, 5, True),
+    ]
+    assert items[1]["progress"] is None
+
+    # With the adult switch on, the +18 entry shows up too.
+    await client.patch("/me", json={"show_nsfw": True}, headers=headers)
+    body = (await client.get("/home", headers=headers)).json()
+    assert 43 in [i["anime"]["id"] for i in body["rows"][0]["items"]]
+    await client.patch("/me", json={"show_nsfw": False}, headers=headers)
+
+    # Removing the MAL card hides it until MAL changes.
+    await client.delete("/me/progress/40/continue", headers=headers)
+    body = (await client.get("/home", headers=headers)).json()
+    assert [i["anime"]["id"] for i in body["rows"][0]["items"]] == [20]

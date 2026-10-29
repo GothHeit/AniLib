@@ -1387,6 +1387,11 @@ export interface components {
         /** HomeItem */
         HomeItem: {
             anime: components["schemas"]["AnimeCard"];
+            /**
+             * From Mal
+             * @default false
+             */
+            from_mal: boolean;
             progress?: components["schemas"]["ProgressOut"] | null;
             /** Resume Episode */
             resume_episode?: number | null;

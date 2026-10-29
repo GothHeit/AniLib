@@ -819,6 +819,11 @@
           "anime": {
             "$ref": "#/components/schemas/AnimeCard"
           },
+          "from_mal": {
+            "default": false,
+            "title": "From Mal",
+            "type": "boolean"
+          },
           "progress": {
             "anyOf": [
               {

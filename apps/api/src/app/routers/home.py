@@ -1,17 +1,18 @@
 import asyncio
 import logging
 from collections.abc import Awaitable
-from datetime import date
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Annotated, Literal
 
 from fastapi import APIRouter, Query, Request
 from sqlalchemy import func, select
 
+from app.db import utcnow
 from app.deps import CurrentUser, Session
 from app.errors import ApiError
 from app.mal.client import MalClient, is_safe
 from app.mal.genres import GENRE_IDS
-from app.models import MalLink, WatchProgress
+from app.models import ContinueHidden, MalLink, WatchProgress
 from app.routers.friends import sharing_friend_ids
 from app.routers.progress import latest_per_anime, to_out
 from app.schemas import AnimeCard, GenreOut, HomeHero, HomeItem, HomeOut, HomeRow
@@ -33,6 +34,8 @@ MIN_ROW = 8
 GENRE_ROWS = 4
 # Broad, family-safe genres, rotated by day so the home page isn't the same every visit.
 GENRE_POOL = (1, 2, 4, 8, 10, 22, 24, 36, 30, 37, 7, 41)
+# A MAL "Watching" entry untouched for this long is probably abandoned.
+MAL_STALE_AFTER = timedelta(days=60)
 
 
 async def _soft[T](work: Awaitable[T], what: str) -> T | None:
@@ -70,15 +73,58 @@ async def _continue_row(
     return [i for i in items if i is not None]
 
 
-async def _my_list_row(request: Request, user: CurrentUser, session: Session) -> list[HomeItem]:
+def _mal_updated(entry: dict) -> datetime | None:
+    raw = (entry.get("list_status") or {}).get("updated_at")
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")) if raw else None
+    except ValueError:
+        return None
+
+
+def _mal_continue(
+    watching: list[dict], skip: set[int], hidden: dict[int, datetime], allow_nsfw: bool
+) -> list[HomeItem]:
+    """MAL Watching titles, resumed at the next episode (MAL keeps no minutes)."""
+    cutoff = utcnow() - MAL_STALE_AFTER
+    items: list[HomeItem] = []
+    for entry in watching:
+        node = entry["node"]
+        status = entry.get("list_status") or {}
+        updated = _mal_updated(entry)
+        if (
+            (not allow_nsfw and not is_safe(node))
+            or node["id"] in skip
+            or (updated is not None and updated < cutoff)
+        ):
+            continue
+        removed = hidden.get(node["id"])
+        if removed is not None and (updated is None or updated <= removed):
+            continue
+        watched = status.get("num_episodes_watched") or 0
+        total = node.get("num_episodes") or 0
+        if total and watched >= total:
+            continue
+        items.append(
+            HomeItem(anime=AnimeCard.from_node(node), resume_episode=watched + 1, from_mal=True)
+        )
+    return items
+
+
+async def _mal_rows(
+    request: Request,
+    user: CurrentUser,
+    session: Session,
+    skip: set[int],
+    hidden: dict[int, datetime],
+) -> tuple[list[HomeItem], list[HomeItem]]:
+    """The "my list" row, and the MAL titles that fill Continue watching."""
     if await session.get(MalLink, user.id) is None:
-        return []
+        return [], []
     accounts = request.app.state.mal_accounts
-    nodes: list[dict] = []
-    for status in ("watching", "plan_to_watch"):
-        result = await accounts.animelist(session, user, status)
-        nodes.extend(i["node"] for i in result["data"])
-    return _items(nodes)
+    watching = (await accounts.animelist(session, user, "watching"))["data"]
+    planned = (await accounts.animelist(session, user, "plan_to_watch"))["data"]
+    nodes = [i["node"] for i in (*watching, *planned)]
+    return _items(nodes), _mal_continue(watching, skip, hidden, user.show_nsfw)
 
 
 def todays_genres(today: date, count: int = GENRE_ROWS) -> list[int]:
@@ -182,15 +228,24 @@ async def home(
     mal: MalClient = request.app.state.mal
     # The session isn't safe to share between tasks: read what the database holds first.
     progress = await latest_per_anime(session, user.id, ROW_SIZE)
+    hidden_rows = await session.scalars(
+        select(ContinueHidden).where(ContinueHidden.user_id == user.id)
+    )
+    hidden = {h.anime_id: h.hidden_at for h in hidden_rows}
 
     friends_popular = await _friends_popular_row(mal, session, user)
-    seasonal, top, continuing, my_list, genre_rows = await asyncio.gather(
+    seasonal, top, continuing, mal_rows, genre_rows = await asyncio.gather(
         _soft(mal.seasonal(1, user.show_nsfw), "seasonal"),
         _soft(mal.top(user.show_nsfw), "top"),
         _continue_row(mal, progress, user.show_nsfw),
-        _soft(_my_list_row(request, user, session), "my list"),
+        _soft(
+            _mal_rows(request, user, session, {p.anime_id for p in progress}, hidden), "MAL lists"
+        ),
         _soft(_genre_rows(mal, user.show_nsfw), "genre rows"),
     )
+    my_list, from_mal = mal_rows or ([], [])
+    # What was watched here comes first; MAL's Watching list fills the rest.
+    continuing = [*continuing, *from_mal][:ROW_SIZE]
     if seasonal is None and top is None:
         raise ApiError(502, "mal_unavailable", "MyAnimeList is unavailable")
 
@@ -198,7 +253,7 @@ async def home(
     top_nodes = [i["node"] for i in (top or {}).get("data", [])]
     rows = [
         HomeRow(id="continue_watching", items=continuing),
-        HomeRow(id="my_list", items=(my_list or [])),
+        HomeRow(id="my_list", items=my_list),
         HomeRow(id="seasonal", items=_items(seasonal_nodes)),
         HomeRow(id="friends_popular", items=friends_popular),
         HomeRow(id="top", items=_items(top_nodes)),

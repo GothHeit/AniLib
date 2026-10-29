@@ -163,6 +163,8 @@ class HomeItem(BaseModel):
     progress: ProgressOut | None = None
     # Episode to open from this card: the saved one, or the next after a finished one.
     resume_episode: int | None = None
+    # True when the card comes from the user's MAL Watching list, not from MoonRoom progress.
+    from_mal: bool = False
 
 
 class HomeRow(BaseModel):
