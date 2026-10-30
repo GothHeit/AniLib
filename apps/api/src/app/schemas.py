@@ -134,11 +134,23 @@ class TitleArtOut(BaseModel):
     episodes: dict[int, EpisodeArtOut] = Field(default_factory=dict)
 
 
+class EpisodesOut(BaseModel):
+    source: str
+    source_title: str
+    episodes: list[int]
+    # Episode number -> still image link, signed like the HLS parts.
+    thumbnails: dict[int, str] = {}
+
+
 class SourcesOut(BaseModel):
     # Names of the enabled VideoSources that have this title. A hint: it can be stale.
     sources: list[str]
     # What the user last picked in the player for this title, when that source still has it.
     choice: StreamOption | None = None
+    # Where the title page plays from: `choice`, else the first source, subbed (the first of
+    # these that lists episodes), with its episodes so the page needs no second request.
+    stream: StreamOption | None = None
+    listing: EpisodesOut | None = None
 
 
 class ProgressIn(BaseModel):

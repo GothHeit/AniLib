@@ -11,12 +11,14 @@ from app.errors import ApiError
 from app.mal.client import MalClient, is_safe
 from app.mal.genres import GENRE_IDS, GENRES
 from app.models import SourceChoice
+from app.routers.watch import episodes_out
 from app.schemas import (
     AnimeCard,
     AnimeDetailsOut,
     AnimeListOut,
     BrowseOut,
     EpisodeArtOut,
+    EpisodesOut,
     GenreOut,
     SeasonalOut,
     SourcesOut,
@@ -149,7 +151,8 @@ async def sources(request: Request, anime_id: int, user: CurrentUser, session: S
     choice = None
     if saved is not None and saved.source in available:
         choice = StreamOption(source=saved.source, lang="dub" if saved.lang == "dub" else "sub")
-    return SourcesOut(sources=available, choice=choice)
+    stream, listing = await _first_listing(request, raw, available, choice, str(user.id))
+    return SourcesOut(sources=available, choice=choice, stream=stream, listing=listing)
 
 
 @router.get("/{anime_id}/art", response_model=TitleArtOut)
@@ -229,6 +232,33 @@ async def _has_episodes(request: Request, name: str, anime: dict) -> bool:
         ttl = SOURCE_FAILURE_TTL
     hints[key] = (found, ttl)
     return found
+
+
+async def _first_listing(
+    request: Request,
+    anime: dict,
+    available: list[str],
+    choice: StreamOption | None,
+    viewer: str,
+) -> tuple[StreamOption | None, EpisodesOut | None]:
+    """The episodes of the stream the title page plays from: the saved pick, else the first
+    source, subbed. A pick that lists nothing falls through to the default."""
+    candidates = [choice] if choice else []
+    if available:
+        default = StreamOption(source=available[0], lang="sub")
+        if default not in candidates:
+            candidates.append(default)
+    for option in candidates:
+        try:
+            listed = await asyncio.wait_for(
+                request.app.state.sources[option.source].episodes(anime, option.lang),
+                SOURCE_PROBE_TIMEOUT,
+            )
+        except Exception:  # the page falls back to asking for the episodes itself
+            continue
+        if listed and listed.episodes:
+            return option, episodes_out(option.source, listed, viewer)
+    return None, None
 
 
 async def _available_sources(request: Request, anime: dict) -> list[str]:

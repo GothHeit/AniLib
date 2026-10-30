@@ -166,6 +166,17 @@ main:focus {
   }
 }
 
+/* The wide art arrives after the poster is already there: fade it in instead of swapping. */
+@utility art-fade-in {
+  animation: art-fade-in 400ms ease-out;
+}
+
+@keyframes art-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
 /* Small caps line above a big title. */
 @utility kicker {
   @apply text-xs font-bold tracking-[0.14em] text-accent uppercase;

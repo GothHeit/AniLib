@@ -29,7 +29,7 @@ export async function WideArt({ id, locale }: { id: number; locale: string }) {
       alt=""
       fetchPriority="high"
       decoding="async"
-      className="absolute inset-0 h-full w-full object-cover md:rounded-bl-ui"
+      className="art-fade-in absolute inset-0 h-full w-full object-cover md:rounded-bl-ui"
     />
   );
 }

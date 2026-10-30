@@ -1896,8 +1896,10 @@ export interface components {
         /** SourcesOut */
         SourcesOut: {
             choice?: components["schemas"]["StreamOption"] | null;
+            listing?: components["schemas"]["EpisodesOut"] | null;
             /** Sources */
             sources: string[];
+            stream?: components["schemas"]["StreamOption"] | null;
         };
         /** StartSeason */
         StartSeason: {

@@ -297,7 +297,10 @@ async def test_a_picked_source_is_remembered_per_user_and_title(client, session)
     mock_details()
 
     first = await client.get("/anime/21/sources", headers=headers)
-    assert first.json() == {"sources": ["fake", "dubs"], "choice": None}
+    assert first.json()["sources"] == ["fake", "dubs"]
+    assert first.json()["choice"] is None
+    assert first.json()["stream"] == {"source": "fake", "lang": "sub"}
+    assert first.json()["listing"]["episodes"] == [1, 2, 3]
 
     for lang in ("sub", "dub"):
         r = await client.put(
@@ -306,6 +309,8 @@ async def test_a_picked_source_is_remembered_per_user_and_title(client, session)
         assert r.status_code == 204
     picked = await client.get("/anime/21/sources", headers=headers)
     assert picked.json()["choice"] == {"source": "dubs", "lang": "dub"}
+    assert picked.json()["stream"] == {"source": "dubs", "lang": "dub"}
+    assert picked.json()["listing"]["source"] == "dubs"
     assert (await client.get("/anime/21/sources", headers=other)).json()["choice"] is None
 
     unknown = await client.put(

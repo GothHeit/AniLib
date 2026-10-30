@@ -14,9 +14,9 @@ from app import hls
 from app.deps import CurrentUser, Session
 from app.errors import ApiError
 from app.models import PlayerPreferences, SourceChoice, User
-from app.schemas import StreamOption
+from app.schemas import EpisodesOut, StreamOption
 from app.security import create_playback_token, decode_access_token, decode_playback_token
-from app.sources.base import Lang, SkipKind, Stream, VideoSource
+from app.sources.base import EpisodeList, Lang, SkipKind, Stream, VideoSource
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/watch", tags=["watch"])
@@ -29,14 +29,6 @@ LANGS: tuple[Lang, ...] = ("sub", "dub")
 PROBE_TIMEOUT = 6.0
 # Answers that mean the file is gone, not that the host is having a bad moment.
 GONE = (404, 410)
-
-
-class EpisodesOut(BaseModel):
-    source: str
-    source_title: str
-    episodes: list[int]
-    # Episode number -> still image link, signed like the HLS parts.
-    thumbnails: dict[int, str] = {}
 
 
 class SubtitleOut(BaseModel):
@@ -188,16 +180,7 @@ async def sources(request: Request, user: CurrentUser):
     return list(request.app.state.sources)
 
 
-@router.get("/{source}/{anime_id}/episodes", response_model=EpisodesOut)
-async def episodes(
-    request: Request, source: str, anime_id: int, user: CurrentUser, lang: Lang = "sub"
-):
-    src = _source(request, source)
-    anime = await request.app.state.mal.visible_details(anime_id, user.show_nsfw)
-    result = await src.episodes(anime, lang)
-    if result is None:
-        raise ApiError(404, "not_available", "This anime isn't available from this source")
-    viewer = str(user.id)
+def episodes_out(source: str, result: EpisodeList, viewer: str) -> EpisodesOut:
     return EpisodesOut(
         source=source,
         source_title=result.source_title,
@@ -207,6 +190,18 @@ async def episodes(
             for episode, url in result.thumbnails.items()
         },
     )
+
+
+@router.get("/{source}/{anime_id}/episodes", response_model=EpisodesOut)
+async def episodes(
+    request: Request, source: str, anime_id: int, user: CurrentUser, lang: Lang = "sub"
+):
+    src = _source(request, source)
+    anime = await request.app.state.mal.visible_details(anime_id, user.show_nsfw)
+    result = await src.episodes(anime, lang)
+    if result is None:
+        raise ApiError(404, "not_available", "This anime isn't available from this source")
+    return episodes_out(source, result, str(user.id))
 
 
 @router.get("/options/{anime_id}/{episode}", response_model=list[StreamOption])

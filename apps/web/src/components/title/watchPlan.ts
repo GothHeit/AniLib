@@ -30,14 +30,21 @@ export const watchPlan = cache(async (id: number): Promise<WatchPlan | null> => 
     await api.GET("/anime/{anime_id}/sources", { params: { path: { anime_id: id } } }).catch(() => undefined)
   )?.data;
 
+  // The API lists the episodes of the stream it picked along with the sources. Only when that
+  // came back empty (a failing source, an older API) ask for them one by one.
+  const inline =
+    found?.stream && found.listing && found.listing.episodes.length > 0
+      ? { choice: found.stream, listed: found.listing }
+      : null;
   const [picked, progressResult] = await Promise.all([
-    pickStream(found, async ({ source, lang }) =>
-      (
-        await api.GET("/watch/{source}/{anime_id}/episodes", {
-          params: { path: { source, anime_id: id }, query: { lang } },
-        })
-      ).data,
-    ),
+    inline ??
+      pickStream(found, async ({ source, lang }) =>
+        (
+          await api.GET("/watch/{source}/{anime_id}/episodes", {
+            params: { path: { source, anime_id: id }, query: { lang } },
+          })
+        ).data,
+      ),
     api.GET("/me/progress/{anime_id}", { params: { path: { anime_id: id } } }).catch(() => undefined),
   ]);
   if (!picked) return null;

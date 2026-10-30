@@ -150,9 +150,7 @@ async def _genre_rows(mal: MalClient, allow_nsfw: bool) -> list[HomeRow]:
     return rows
 
 
-async def _friends_popular_row(
-    mal: MalClient, session: Session, user: CurrentUser
-) -> list[HomeItem]:
+async def _friends_popular_ids(session: Session, user: CurrentUser) -> list[int]:
     """Titles that friends who share their activity are watching, most friends first."""
     friends = await sharing_friend_ids(session, user.id)
     if not friends:
@@ -165,12 +163,13 @@ async def _friends_popular_row(
         .order_by(watchers.desc(), func.max(WatchProgress.updated_at).desc())
         .limit(ROW_SIZE * 2)
     )
-    ids = [r[0] for r in rows]
-    await session.commit()  # don't hold a connection while MAL answers
+    return [r[0] for r in rows]
 
+
+async def _friends_popular_row(mal: MalClient, ids: list[int], show_nsfw: bool) -> list[HomeItem]:
     async def card(anime_id: int) -> HomeItem | None:
         node = await _soft(mal.details(anime_id), f"details {anime_id}")
-        if node is None or (not user.show_nsfw and not is_safe(node)):
+        if node is None or (not show_nsfw and not is_safe(node)):
             return None
         return HomeItem(anime=AnimeCard.from_node(node))
 
@@ -235,9 +234,26 @@ async def home(
     hidden = {h.anime_id: h.hidden_at for h in hidden_rows}
     await session.commit()  # the MAL calls below can be slow: give the connection back
 
-    friends_popular = await _friends_popular_row(mal, session, user)
-    seasonal, top, continuing, mal_rows, genre_rows = await asyncio.gather(
-        _soft(mal.seasonal(1, user.show_nsfw), "seasonal"),
+    friend_ids = await _friends_popular_ids(session, user)
+    await session.commit()
+    pt_synopses = request.app.state.pt_synopses if lang == "pt" else None
+    anizip = request.app.state.anizip
+
+    async def seasonal_with_heroes():
+        seasonal = await _soft(mal.seasonal(1, user.show_nsfw), "seasonal")
+        nodes = [i["node"] for i in (seasonal or {}).get("data", [])]
+        return seasonal, await _heroes(mal, nodes, pt_synopses, anizip)
+
+    (
+        seasonal_and_heroes,
+        friends_popular,
+        top,
+        continuing,
+        mal_rows,
+        genre_rows,
+    ) = await asyncio.gather(
+        seasonal_with_heroes(),
+        _friends_popular_row(mal, friend_ids, user.show_nsfw),
         _soft(mal.top(user.show_nsfw), "top"),
         _continue_row(mal, progress, user.show_nsfw),
         _soft(
@@ -245,6 +261,7 @@ async def home(
         ),
         _soft(_genre_rows(mal, user.show_nsfw), "genre rows"),
     )
+    seasonal, heroes = seasonal_and_heroes
     my_list, from_mal = mal_rows or ([], [])
     # What was watched here comes first; MAL's Watching list fills the rest.
     continuing = [*continuing, *from_mal][:ROW_SIZE]
@@ -262,11 +279,6 @@ async def home(
         *(genre_rows or []),
     ]
     return HomeOut(
-        heroes=await _heroes(
-            mal,
-            seasonal_nodes,
-            request.app.state.pt_synopses if lang == "pt" else None,
-            request.app.state.anizip,
-        ),
+        heroes=heroes,
         rows=[r for r in rows if r.items],
     )

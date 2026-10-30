@@ -2315,12 +2315,32 @@
               }
             ]
           },
+          "listing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EpisodesOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "sources": {
             "items": {
               "type": "string"
             },
             "title": "Sources",
             "type": "array"
+          },
+          "stream": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StreamOption"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
