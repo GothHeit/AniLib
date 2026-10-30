@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import secrets
 import uuid
@@ -18,6 +19,11 @@ def hash_password(password: str) -> str:
     return _hasher.hash(password)
 
 
+async def hash_password_async(password: str) -> str:
+    """argon2 takes tens of milliseconds and 64 MB: keep it off the event loop."""
+    return await asyncio.to_thread(hash_password, password)
+
+
 # Checked when a username doesn't exist, so an unknown user costs as much as a wrong password.
 DUMMY_PASSWORD_HASH = _hasher.hash("not-a-real-password")
 
@@ -27,6 +33,10 @@ def verify_password(password: str, password_hash: str) -> bool:
         return _hasher.verify(password_hash, password)
     except VerificationError:
         return False
+
+
+async def verify_password_async(password: str, password_hash: str) -> bool:
+    return await asyncio.to_thread(verify_password, password, password_hash)
 
 
 def _encode(claims: dict, lifetime: timedelta) -> str:

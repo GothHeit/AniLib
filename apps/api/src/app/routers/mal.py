@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 
 from app.config import get_settings
-from app.deps import CurrentUser, Session
+from app.deps import CurrentUser, Session, browser_user_id
 from app.errors import ApiError
 from app.mal.account import MalAccounts
 from app.schemas import AnimeCard
@@ -93,7 +93,8 @@ async def callback(
     if error or not code or not state:
         return RedirectResponse(f"{target}?mal=denied")
     try:
-        await _accounts(request).complete(session, code, state)
+        browser_user = await browser_user_id(request, session)
+        await _accounts(request).complete(session, code, state, browser_user)
     except ApiError:
         return RedirectResponse(f"{target}?mal=failed")
     return RedirectResponse(f"{target}?mal=linked")

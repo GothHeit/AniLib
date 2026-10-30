@@ -74,13 +74,23 @@ async def test_registration_attempts_are_throttled_per_ip(client):
     assert r.status_code == 429
 
 
-async def test_concurrent_refreshes_with_one_token_cannot_both_succeed(client, session):
+async def test_concurrent_refreshes_with_one_token_leave_one_live_token(client, session):
+    from sqlalchemy import func, select
+
+    from app.models import RefreshToken
+
     await make_user(session, "kafka")
     refresh_token = (await login(client, "kafka", "password123")).json()["refresh_token"]
     results = await asyncio.gather(
         *(client.post("/auth/refresh", json={"refresh_token": refresh_token}) for _ in range(8))
     )
-    assert sorted(r.status_code for r in results) == [200] + [401] * 7
+    # The row lock serialises them; the repeats count as retries of a lost answer, and each
+    # one retires the previous answer, so the session ends with a single usable token.
+    assert {r.status_code for r in results} == {200}
+    live = await session.scalar(
+        select(func.count()).select_from(RefreshToken).where(RefreshToken.revoked_at.is_(None))
+    )
+    assert live == 1
 
 
 async def test_a_burst_of_concurrent_wrong_guesses_is_counted(client, session):

@@ -1,6 +1,10 @@
-from sqlalchemy import select
+from datetime import timedelta
 
-from app.models import User
+from sqlalchemy import select, update
+
+from app.db import utcnow
+from app.models import RefreshToken, User
+from app.security import sha256
 from tests.conftest import make_user
 
 
@@ -72,11 +76,37 @@ async def test_refresh_rotates_and_detects_reuse(client, session):
     assert rotated.status_code == 200
     second = rotated.json()
 
-    # Reusing the old token is treated as theft and kills the newer one too.
+    # Once the grace window has passed, the old token coming back is treated as theft and
+    # kills the newer one too.
+    await session.execute(
+        update(RefreshToken)
+        .where(RefreshToken.token_hash == sha256(first["refresh_token"]))
+        .values(revoked_at=utcnow() - timedelta(minutes=5))
+    )
+    await session.commit()
     reused = await client.post("/auth/refresh", json={"refresh_token": first["refresh_token"]})
     assert reused.status_code == 401
     after = await client.post("/auth/refresh", json={"refresh_token": second["refresh_token"]})
     assert after.status_code == 401
+
+
+async def test_a_lost_refresh_response_can_be_retried(client, session):
+    _, _ = await make_user(session, "kafka")
+    first = (
+        await client.post("/auth/login", json={"username": "kafka", "password": "password123"})
+    ).json()
+    # The device never saw this answer.
+    await client.post("/auth/refresh", json={"refresh_token": first["refresh_token"]})
+
+    retry = await client.post("/auth/refresh", json={"refresh_token": first["refresh_token"]})
+    assert retry.status_code == 200
+    headers = {"Authorization": f"Bearer {retry.json()['access_token']}"}
+    # Still one session, and the new token keeps working.
+    assert len((await client.get("/me/sessions", headers=headers)).json()) == 1
+    again = await client.post(
+        "/auth/refresh", json={"refresh_token": retry.json()["refresh_token"]}
+    )
+    assert again.status_code == 200
 
 
 async def test_logout_revokes_refresh_token(client, session):
@@ -131,13 +161,13 @@ async def test_unknown_user_still_runs_a_password_check(client, session, monkeyp
     from app.routers import auth
 
     calls = []
-    real_verify = auth.verify_password
+    real_verify = auth.verify_password_async
 
-    def spy(password, password_hash):
+    async def spy(password, password_hash):
         calls.append(password_hash)
-        return real_verify(password, password_hash)
+        return await real_verify(password, password_hash)
 
-    monkeypatch.setattr(auth, "verify_password", spy)
+    monkeypatch.setattr(auth, "verify_password_async", spy)
     r = await client.post("/auth/login", json={"username": "nobody", "password": "password123"})
     assert r.status_code == 401
     assert r.json()["error"]["code"] == "invalid_credentials"
@@ -164,3 +194,51 @@ async def test_subtitle_preference_is_saved_and_validated(client, session):
     ).status_code == 200
     bad = await client.patch("/me", json={"subtitle_lang": "../x"}, headers=headers)
     assert bad.status_code == 422
+
+
+async def _rotated(client):
+    first = (
+        await client.post("/auth/login", json={"username": "kafka", "password": "password123"})
+    ).json()
+    second = (
+        await client.post("/auth/refresh", json={"refresh_token": first["refresh_token"]})
+    ).json()
+    return first, second
+
+
+async def test_an_ended_session_cannot_be_revived_through_the_grace_window(client, session):
+    await make_user(session, "kafka")
+    first, second = await _rotated(client)
+    await client.post("/auth/logout", json={"refresh_token": second["refresh_token"]})
+    revived = await client.post("/auth/refresh", json={"refresh_token": first["refresh_token"]})
+    assert revived.status_code == 401
+
+
+async def test_revoking_a_session_blocks_its_just_rotated_token(client, session):
+    await make_user(session, "kafka")
+    first, second = await _rotated(client)
+    headers = {"Authorization": f"Bearer {second['access_token']}"}
+    assert (await client.delete("/me/sessions", headers=headers)).status_code == 204
+    revived = await client.post("/auth/refresh", json={"refresh_token": first["refresh_token"]})
+    assert revived.status_code == 401
+    # A plain 401: it must not have been read as theft of anything else.
+
+
+async def test_changing_the_password_blocks_other_devices_just_rotated_token(client, session):
+    await make_user(session, "kafka")
+    first, _ = await _rotated(client)
+    other = (
+        await client.post("/auth/login", json={"username": "kafka", "password": "password123"})
+    ).json()
+    headers = {"Authorization": f"Bearer {other['access_token']}"}
+    changed = await client.post(
+        "/me/password",
+        json={"current_password": "password123", "new_password": "newpassword456"},
+        headers=headers,
+    )
+    assert changed.status_code == 204
+    revived = await client.post("/auth/refresh", json={"refresh_token": first["refresh_token"]})
+    assert revived.status_code == 401
+    # The device that changed it keeps its session.
+    kept = await client.post("/auth/refresh", json={"refresh_token": other["refresh_token"]})
+    assert kept.status_code == 200

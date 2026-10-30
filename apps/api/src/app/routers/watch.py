@@ -336,6 +336,7 @@ async def video(request: Request, session: Session, token: Annotated[str, Query(
     claims = decode_playback_token(token)
     if claims is None or await session.get(User, uuid.UUID(claims["sub"])) is None:
         raise ApiError(401, "invalid_token", "Invalid or expired playback token")
+    await session.commit()  # the stream below can run for hours: don't hold a connection
 
     src = _source(request, claims["src"])
     anime = await request.app.state.mal.details(claims["aid"])
@@ -468,6 +469,7 @@ async def hls_proxy(
         claims = decode_playback_token(token) if token else None
         if claims is None or await session.get(User, uuid.UUID(claims["sub"])) is None:
             raise ApiError(401, "invalid_token", "Invalid or expired playback token")
+        await session.commit()  # the scraper call below can be slow
         src = _source(request, claims["src"])
         anime = await request.app.state.mal.details(claims["aid"])
         stream = await src.stream(anime, claims["ep"], claims["lang"])

@@ -29,6 +29,7 @@ DETAIL_FIELDS = (
 )
 
 LIST_TTL = 600  # seconds
+MAX_CONCURRENT_CALLS = 8  # in-flight calls to MAL across all requests
 POOL_SIZE = 500  # the most MAL returns for one season or ranking request
 
 _NSFW_RATINGS = {"r+", "rx"}
@@ -82,6 +83,9 @@ class MalClient:
     def __init__(self, client_id: str, http: httpx.AsyncClient):
         self._headers = {"X-MAL-CLIENT-ID": client_id}
         self._http = http
+        # Cold-cache bursts (home, profiles) would otherwise fire dozens of calls at once and
+        # get answered with 429/403.
+        self._slots = asyncio.Semaphore(MAX_CONCURRENT_CALLS)
         self._details: TTLCache[int, dict] = TTLCache(maxsize=2048, ttl=1800)
         # Listing pages (seasonal, top, search, browse pools) change slowly: a short TTL keeps
         # the home page from hitting MAL on every load.
@@ -120,9 +124,10 @@ class MalClient:
 
     async def _fetch(self, path: str, params: dict[str, Any]) -> dict:
         try:
-            response = await self._http.get(
-                f"{API_BASE}{path}", headers=self._headers, params=params, timeout=15
-            )
+            async with self._slots:
+                response = await self._http.get(
+                    f"{API_BASE}{path}", headers=self._headers, params=params, timeout=15
+                )
         except httpx.HTTPError as exc:
             raise ApiError(502, "mal_unavailable", f"MyAnimeList request failed: {exc}") from exc
         if response.status_code == 404:

@@ -11,12 +11,20 @@ class Settings(BaseSettings):
     app_name: str = "MoonRoom"
 
     database_url: str = "postgresql+asyncpg://app:app@localhost:5432/app"
+    db_pool_size: int = 10
+    db_max_overflow: int = 20
+    db_pool_timeout_seconds: int = 10
+    # Recycle connections before an idle-timeout on the way to Postgres can cut them.
+    db_pool_recycle_seconds: int = 1800
 
     # Required: the app refuses to start without it, instead of failing at first login.
     jwt_secret: str = Field(min_length=32)
     access_token_minutes: int = 15
     refresh_token_days: int = 30
     playback_token_minutes: int = 360
+    # A refresh token that was just rotated is still accepted for this long, so a device whose
+    # answer got lost can retry without it reading as a stolen token.
+    refresh_grace_seconds: int = 60
 
     # Fernet key that encrypts MAL tokens at rest. Generate one with
     # `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`.

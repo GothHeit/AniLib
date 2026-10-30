@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from app.config import get_settings
+
 
 def utcnow() -> datetime:
     return datetime.now(UTC)
@@ -29,7 +31,15 @@ _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
 def init_engine(url: str) -> AsyncEngine:
     global _engine, _sessionmaker
-    _engine = create_async_engine(url, pool_pre_ping=True)
+    settings = get_settings()
+    _engine = create_async_engine(
+        url,
+        pool_pre_ping=True,
+        pool_size=settings.db_pool_size,
+        max_overflow=settings.db_max_overflow,
+        pool_timeout=settings.db_pool_timeout_seconds,
+        pool_recycle=settings.db_pool_recycle_seconds,
+    )
     _sessionmaker = async_sessionmaker(_engine, expire_on_commit=False)
     return _engine
 

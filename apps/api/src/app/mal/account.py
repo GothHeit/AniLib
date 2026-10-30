@@ -59,11 +59,18 @@ class MalAccounts:
         pending = await session.get(MalOAuthState, state)
         return pending.locale if pending else None
 
-    async def complete(self, session: AsyncSession, code: str, state: str) -> None:
+    async def complete(
+        self, session: AsyncSession, code: str, state: str, browser_user: uuid.UUID | None
+    ) -> None:
+        """`browser_user` is who the approving browser is signed in as. A link someone else
+        started and passed along must not attach this browser's MAL account to them."""
         pending = await session.get(MalOAuthState, state)
         if pending is None or pending.created_at < utcnow() - STATE_LIFETIME:
             raise ApiError(400, "invalid_oauth_state", "Unknown or expired OAuth state")
-        await session.delete(pending)
+        await session.delete(pending)  # single use, even when refused below
+        if browser_user != pending.user_id:
+            await session.commit()
+            raise ApiError(400, "invalid_oauth_state", "Link started by a different session")
 
         tokens = await self._token_request(
             {

@@ -3,17 +3,22 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
-from app.db import get_session
+from app.db import get_session, utcnow
 from app.errors import ApiError
-from app.models import User
-from app.security import decode_access_token
+from app.models import RefreshToken, User
+from app.security import decode_access_token, sha256
 
 Session = Annotated[AsyncSession, Depends(get_session)]
 
 _bearer = HTTPBearer(auto_error=False)
+
+# The web app's httpOnly session cookies (apps/web/src/lib/cookies.ts).
+ACCESS_COOKIE = "mr_access"
+REFRESH_COOKIE = "mr_refresh"
 
 
 async def current_user(
@@ -28,6 +33,10 @@ async def current_user(
     user = await session.get(User, decoded[0])
     if user is None:
         raise ApiError(401, "invalid_token", "User no longer exists")
+    # End the read transaction now: it would otherwise hold a pooled connection until the
+    # response is sent, through any scraper or MAL call the endpoint waits on. The user stays
+    # usable (expire_on_commit is off) and later queries check a connection out again.
+    await session.commit()
     return user
 
 
@@ -53,6 +62,26 @@ async def current_admin(user: CurrentUser) -> User:
 
 
 CurrentAdmin = Annotated[User, Depends(current_admin)]
+
+
+async def browser_user_id(request: Request, session: AsyncSession) -> uuid.UUID | None:
+    """Who the web app's session cookies say a browser is, for the few endpoints the browser
+    reaches directly (the MAL callback) instead of through the web server's proxy."""
+    access = request.cookies.get(ACCESS_COOKIE)
+    decoded = decode_access_token(access) if access else None
+    if decoded is not None:
+        return decoded[0]
+    refresh = request.cookies.get(REFRESH_COOKIE)
+    if not refresh:
+        return None
+    # The access cookie lapses every 15 minutes; the refresh cookie still names the session.
+    return await session.scalar(
+        select(RefreshToken.user_id).where(
+            RefreshToken.token_hash == sha256(refresh),
+            RefreshToken.revoked_at.is_(None),
+            RefreshToken.expires_at > utcnow(),
+        )
+    )
 
 
 def client_ip(request: Request) -> str:

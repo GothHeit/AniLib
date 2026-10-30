@@ -1,12 +1,24 @@
 import time
 import uuid
 
+import httpx
 import pytest
+import respx
 
 from app.errors import ApiError
 from app.main import app
+from app.mal.client import API_BASE
 from app.rooms import EMPTY_GRACE_SECONDS, MAX_MEMBERS, Room, Rooms
 from tests.conftest import make_user
+from tests.mal_fixtures import node
+
+
+@pytest.fixture(autouse=True)
+def known_title(request):
+    """Creating a room looks the title up; seed the cache so no test calls MAL."""
+    if "client" in request.fixturenames:
+        request.getfixturevalue("client")
+        app.state.mal._details[21] = node(21, rating="pg_13")
 
 
 def drain(queue):
@@ -456,3 +468,17 @@ async def test_two_stalled_viewers_share_one_hold_and_the_room_waits_for_both():
     assert room.playing is False
     room.set_buffering(b, False)
     assert room.playing is True
+
+
+@respx.mock
+async def test_a_room_cannot_be_made_for_a_title_hidden_by_the_adult_switch(client, session):
+    _, headers = await make_user(session, "kafka", nsfw=False)
+    app.state.sources = {"zoko": object()}
+    respx.get(f"{API_BASE}/anime/9").mock(
+        return_value=httpx.Response(200, json=node(9, rating="rx"))
+    )
+    body = {"source": "zoko", "anime_id": 9, "title": "Hidden", "episode": 1}
+    hidden = await client.post("/watch/rooms", json=body, headers=headers)
+    assert hidden.status_code == 404
+    _, adult = await make_user(session, "adult", nsfw=True)
+    assert (await client.post("/watch/rooms", json=body, headers=adult)).status_code == 201

@@ -16,10 +16,10 @@ from app.models import Invite, MalLink, RefreshToken, User
 from app.security import (
     DUMMY_PASSWORD_HASH,
     create_access_token,
-    hash_password,
+    hash_password_async,
     new_opaque_token,
     sha256,
-    verify_password,
+    verify_password_async,
 )
 
 router = APIRouter(tags=["auth"])
@@ -148,7 +148,11 @@ async def register(body: RegisterIn, session: Session, request: Request, ip: Cli
     if await session.scalar(select(User.id).where(User.username == username)):
         raise ApiError(409, "username_taken", "Username already taken")
 
-    user = User(username=username, password_hash=hash_password(body.password), locale=body.locale)
+    user = User(
+        username=username,
+        password_hash=await hash_password_async(body.password),
+        locale=body.locale,
+    )
     session.add(user)
     try:
         await session.flush()
@@ -176,7 +180,7 @@ async def login(body: LoginIn, session: Session, request: Request, ip: ClientIp)
     limits.login_user.record(attempt)
     user = await session.scalar(select(User).where(User.username == body.username.lower()))
     password_hash = user.password_hash if user else DUMMY_PASSWORD_HASH
-    if not verify_password(body.password, password_hash) or user is None:
+    if not await verify_password_async(body.password, password_hash) or user is None:
         raise ApiError(401, "invalid_credentials", "Wrong username or password")
     limits.login_ip.forgive(ip)
     limits.login_user.reset(attempt)
@@ -194,12 +198,45 @@ async def refresh(body: RefreshIn, session: Session, request: Request, ip: Clien
     if token is None or token.expires_at < utcnow():
         raise ApiError(401, "invalid_refresh_token", "Refresh token is invalid or expired")
 
+    if token.revoked_at is not None and token.revoked_at > utcnow() - timedelta(
+        seconds=get_settings().refresh_grace_seconds
+    ):
+        # Just rotated: the answer probably never reached the device (it slept, the connection
+        # dropped). Hand it a fresh token of the same session, and retire the one it never got.
+        # Only while the session lives: a logout or revoke expires the family's live token.
+        alive = await session.scalar(
+            select(RefreshToken.id)
+            .where(
+                RefreshToken.family_id == token.family_id,
+                RefreshToken.revoked_at.is_(None),
+                RefreshToken.expires_at > utcnow(),
+            )
+            .limit(1)
+        )
+        if alive is None:
+            raise ApiError(401, "invalid_refresh_token", "Refresh token is invalid or expired")
+        await session.execute(
+            update(RefreshToken)
+            .where(
+                RefreshToken.family_id == token.family_id,
+                RefreshToken.revoked_at.is_(None),
+            )
+            .values(revoked_at=utcnow())
+        )
+        user = await session.get(User, token.user_id)
+        if user is None:
+            raise ApiError(401, "invalid_refresh_token", "User no longer exists")
+        return await _issue_tokens(
+            session, user, _device(request, ip), (token.family_id, token.started_at)
+        )
+
     if token.revoked_at is not None:
-        # A revoked token being reused means it leaked: end every session for this user.
+        # A revoked token being reused long after its rotation means it leaked: end every
+        # session for this user.
         await session.execute(
             update(RefreshToken)
             .where(RefreshToken.user_id == token.user_id, RefreshToken.revoked_at.is_(None))
-            .values(revoked_at=utcnow())
+            .values(revoked_at=utcnow(), expires_at=utcnow())
         )
         await session.commit()
         raise ApiError(401, "invalid_refresh_token", "Refresh token was already used")
@@ -303,10 +340,10 @@ async def change_password(
     key = str(user.id)
     limiter.check(key)
     limiter.record(key)
-    if not verify_password(body.current_password, user.password_hash):
+    if not await verify_password_async(body.current_password, user.password_hash):
         raise ApiError(403, "wrong_password", "Current password is wrong")
     limiter.reset(key)
-    user.password_hash = hash_password(body.new_password)
+    user.password_hash = await hash_password_async(body.new_password)
     # Every other device must sign in again; this one keeps its session.
     await session.execute(_revoke(user, keep=current))
     await session.commit()

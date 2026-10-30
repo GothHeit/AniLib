@@ -166,6 +166,7 @@ async def _friends_popular_row(
         .limit(ROW_SIZE * 2)
     )
     ids = [r[0] for r in rows]
+    await session.commit()  # don't hold a connection while MAL answers
 
     async def card(anime_id: int) -> HomeItem | None:
         node = await _soft(mal.details(anime_id), f"details {anime_id}")
@@ -232,6 +233,7 @@ async def home(
         select(ContinueHidden).where(ContinueHidden.user_id == user.id)
     )
     hidden = {h.anime_id: h.hidden_at for h in hidden_rows}
+    await session.commit()  # the MAL calls below can be slow: give the connection back
 
     friends_popular = await _friends_popular_row(mal, session, user)
     seasonal, top, continuing, mal_rows, genre_rows = await asyncio.gather(

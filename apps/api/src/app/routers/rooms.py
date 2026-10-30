@@ -102,6 +102,8 @@ def _room(request: Request, code: str) -> Room:
 async def create_room(body: RoomCreate, request: Request, user: CurrentUser):
     if body.source not in request.app.state.sources:
         raise ApiError(404, "source_not_found", f"Video source '{body.source}' is not enabled")
+    # Same visibility rule as playback: a title hidden by the user's +18 switch can't be hosted.
+    await request.app.state.mal.visible_details(body.anime_id, user.show_nsfw)
     rooms: Rooms = request.app.state.rooms
     room = rooms.create(user.id, body.source, body.anime_id, body.title, body.episode, body.lang)
     return room.snapshot()

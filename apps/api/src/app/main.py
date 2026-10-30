@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app import db
 from app.aniskip import AniSkip
 from app.anizip import AniZip
+from app.cleanup import prune
 from app.config import get_settings
 from app.errors import install_error_handlers
 from app.mal.account import MalAccounts
@@ -35,6 +36,7 @@ log = logging.getLogger(__name__)
 
 SWEEP_INTERVAL_SECONDS = 300
 EPISODE_CHECK_FIRST_RUN_SECONDS = 120
+PRUNE_INTERVAL_SECONDS = 6 * 3600
 
 
 async def _sweep(limits: AuthLimits, rooms: Rooms) -> None:
@@ -43,6 +45,16 @@ async def _sweep(limits: AuthLimits, rooms: Rooms) -> None:
         await asyncio.sleep(SWEEP_INTERVAL_SECONDS)
         limits.sweep()
         rooms.sweep()
+
+
+async def _prune() -> None:
+    while True:
+        try:
+            tokens, states = await prune()
+            log.info("pruned %d refresh tokens and %d OAuth states", tokens, states)
+        except Exception:
+            log.exception("database cleanup failed")
+        await asyncio.sleep(PRUNE_INTERVAL_SECONDS)
 
 
 async def _episode_checks(app: FastAPI, hours: int) -> None:
@@ -76,6 +88,7 @@ async def lifespan(app: FastAPI):
         app.state.source_hints = anime.new_source_hints()
         app.state.sources = load_sources(settings.video_source_names)
         sweeper = asyncio.create_task(_sweep(app.state.auth_limits, app.state.rooms))
+        pruner = asyncio.create_task(_prune())
         checker = (
             asyncio.create_task(_episode_checks(app, settings.episode_check_hours))
             if settings.episode_check_hours > 0
@@ -85,6 +98,7 @@ async def lifespan(app: FastAPI):
             yield
         finally:
             sweeper.cancel()
+            pruner.cancel()
             if checker is not None:
                 checker.cancel()
     await db.dispose_engine()
