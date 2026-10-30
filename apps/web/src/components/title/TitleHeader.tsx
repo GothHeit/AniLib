@@ -18,8 +18,8 @@ type Props = {
   play: ReactNode;
   hint: ReactNode;
   list: ListState;
-  /** A wide picture of the show. Without one the poster stands in its place. */
-  art?: string | null;
+  /** Painted over the poster once the wide picture of the show is known (streamed in). */
+  art?: ReactNode;
 };
 
 export async function TitleHeader({ anime, badge, play, hint, list, art }: Props) {
@@ -94,7 +94,7 @@ export async function TitleHeader({ anime, badge, play, hint, list, art }: Props
 
   return (
     <section className="pt-16 sm:pt-20">
-      <HeroSplit art={art} poster={poster} posterAlt={t("posterAlt", { title: anime.title })}>
+      <HeroSplit overlay={art} poster={poster} posterAlt={t("posterAlt", { title: anime.title })}>
         {info}
         {more}
       </HeroSplit>

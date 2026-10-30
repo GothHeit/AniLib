@@ -1,7 +1,9 @@
 import { getTranslations } from "next-intl/server";
 
 import { ButtonLink } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 
+import { titleArt } from "./titleArt";
 import { watchPlan } from "./watchPlan";
 
 // The three parts of the title header that depend on the sources. They share one cached lookup
@@ -11,8 +13,25 @@ export function WatchBadgeSkeleton() {
   return <div aria-hidden="true" className="h-6 w-24 self-start animate-pulse rounded-ui bg-surface" />;
 }
 
+// As wide as the real button ("Continue episode 12") so "Add to list" stays on the same line.
 export function WatchPlaySkeleton() {
-  return <div aria-hidden="true" className="h-11 w-40 animate-pulse rounded-full bg-surface" />;
+  return <Skeleton className="h-11 w-48 rounded-full" />;
+}
+
+/** The show's wide picture over the poster. Nothing when it isn't known, so the poster stays. */
+export async function WideArt({ id, locale }: { id: number; locale: string }) {
+  const art = await titleArt(id, locale);
+  if (!art.backdrop) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- remote catalog art
+    <img
+      src={art.backdrop}
+      alt=""
+      fetchPriority="high"
+      decoding="async"
+      className="absolute inset-0 h-full w-full object-cover md:rounded-bl-ui"
+    />
+  );
 }
 
 export async function WatchBadge({ id }: { id: number }) {

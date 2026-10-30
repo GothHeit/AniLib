@@ -7,6 +7,8 @@ type Props = {
   poster?: string | null;
   posterAlt?: string;
   eager?: boolean;
+  /** Painted over the picture inside the art side, e.g. wide art that streams in after the poster. */
+  overlay?: ReactNode;
   children: ReactNode;
 };
 
@@ -14,7 +16,7 @@ type Props = {
  * Hero with the show's art on the right side up to the window's edge and the text on the flat
  * background beside it. On phones the art sits on top, full width, and the text below.
  */
-export function HeroSplit({ art, poster, posterAlt = "", eager = true, children }: Props) {
+export function HeroSplit({ art, poster, posterAlt = "", eager = true, overlay, children }: Props) {
   const image = art ?? poster;
   const loading = { fetchPriority: eager ? "high" : "auto", loading: eager ? "eager" : "lazy" } as const;
   return (
@@ -43,6 +45,7 @@ export function HeroSplit({ art, poster, posterAlt = "", eager = true, children 
               className="absolute inset-y-4 left-1/2 h-[calc(100%-2rem)] w-auto -translate-x-1/2 rounded-ui object-contain md:inset-y-10 md:h-[calc(100%-5rem)]"
             />
           ))}
+        {overlay}
       </div>
     </div>
   );
