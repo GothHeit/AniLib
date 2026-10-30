@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import en from "../../../messages/en/player.json";
+import { mergeMessages } from "@/i18n/messages";
+
+import player from "../../../messages/en/player.json";
+import sources from "../../../messages/en/sources.json";
 
 import { sameStream, streamLabel, type StreamNames } from "./streams";
 
 function lookup(key: string): unknown {
-  return key.split(".").reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], en.player);
+  return key.split(".").reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], (mergeMessages([player, sources]).player));
 }
 
 const names: StreamNames = {

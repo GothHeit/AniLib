@@ -53,6 +53,8 @@ services:
     restart: unless-stopped
     environment:
       API_URL: http://api:8000
+      # Only the names of these sources reach the browser.
+      VIDEO_SOURCES: ${VIDEO_SOURCES:-}
       # Behind the tunnel the browser speaks https even though Caddy speaks http.
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
     depends_on:

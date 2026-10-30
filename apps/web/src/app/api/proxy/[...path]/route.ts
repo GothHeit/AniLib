@@ -10,6 +10,7 @@ import {
   sessionCookies,
   type CookieSpec,
 } from "@/lib/cookies";
+import { readLimitedBody } from "@/lib/body-limit";
 import { FORBIDDEN_ORIGIN, isSameOrigin } from "@/lib/origin";
 import { isAuthFailure, isProxyPathAllowed } from "@/lib/proxy-paths";
 import { deviceHeaders, refreshSession } from "@/lib/session";
@@ -28,7 +29,18 @@ const FORWARD_RESPONSE = [
 
 async function forward(request: NextRequest, path: string[]) {
   const url = `${API_URL}/${path.map(encodeURIComponent).join("/")}${request.nextUrl.search}`;
-  const body = ["GET", "HEAD"].includes(request.method) ? undefined : await request.arrayBuffer();
+  let body: ArrayBuffer | undefined;
+  if (!["GET", "HEAD"].includes(request.method)) {
+    // Only a signed-in browser gets its body read, and only up to the cap.
+    if (!request.cookies.get(ACCESS_COOKIE) && !request.cookies.get(REFRESH_COOKIE)) {
+      return NextResponse.json({ error: { code: "not_authenticated", message: "Not signed in" } }, { status: 401 });
+    }
+    const read = await readLimitedBody(request);
+    if (!read) {
+      return NextResponse.json({ error: { code: "too_large", message: "Request body too large" } }, { status: 413 });
+    }
+    body = read;
+  }
 
   const send = (token: string | undefined) => {
     const headers = new Headers();

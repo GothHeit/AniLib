@@ -43,24 +43,6 @@
     "skipRecap": "Pular recapitulação",
     "fallbackSource": "tocando de {source}",
     "source": "Fonte",
-    "streams": {
-      "zoko": {
-        "sub": "Zoko · Legendado",
-        "dub": "Zoko · Dublado em inglês"
-      },
-      "animesdigital": {
-        "sub": "Animes Digital · Legendado em português",
-        "dub": "Animes Digital · Dublado em português"
-      },
-      "animedrive": {
-        "sub": "AnimeDrive · Legendado em português",
-        "dub": "AnimeDrive · Dublado em português"
-      },
-      "local": {
-        "sub": "Biblioteca local · Legendado",
-        "dub": "Biblioteca local · Dublado"
-      }
-    },
     "streamFallback": "{source} · {lang}",
     "tryAnotherSource": "Ou tente outra fonte:",
     "settings": {
