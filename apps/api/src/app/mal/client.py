@@ -32,6 +32,8 @@ LIST_TTL = 600  # seconds
 MAX_CONCURRENT_CALLS = 8  # in-flight calls to MAL across all requests
 POOL_SIZE = 500  # the most MAL returns for one season or ranking request
 
+DEEP_POOL_PAGES = 6  # ranking pages scanned when browsing a genre without a year
+
 _NSFW_RATINGS = {"r+", "rx"}
 _NSFW_GENRES = {"ecchi", "erotica", "hentai"}
 _SEASONS = ("winter", "spring", "summer", "fall")
@@ -188,17 +190,38 @@ class MalClient:
         )
         return [i["node"] for i in filter_nsfw(data.get("data", []), allow_nsfw)]
 
-    async def ranking_pool(self, allow_nsfw: bool, ranking_type: str = "all") -> list[dict]:
-        data = await self._get(
-            "/anime/ranking",
-            {
-                "ranking_type": ranking_type,
-                "limit": POOL_SIZE,
-                "fields": LIST_FIELDS,
-                "nsfw": str(allow_nsfw).lower(),
-            },
-        )
+    async def ranking_pool(
+        self, allow_nsfw: bool, ranking_type: str = "all", offset: int = 0
+    ) -> list[dict]:
+        params: dict[str, Any] = {
+            "ranking_type": ranking_type,
+            "limit": POOL_SIZE,
+            "fields": LIST_FIELDS,
+            "nsfw": str(allow_nsfw).lower(),
+        }
+        if offset:
+            params["offset"] = offset
+        data = await self._get("/anime/ranking", params)
         return [i["node"] for i in filter_nsfw(data.get("data", []), allow_nsfw)]
+
+    async def deep_ranking_pool(self, allow_nsfw: bool) -> list[dict]:
+        """Several ranking pages by popularity. Niche genres rarely reach the top 500, so a
+        genre filter needs a deeper pool to find anything. A failed page is skipped; only when
+        every page fails does the error surface."""
+        pages = await asyncio.gather(
+            *(
+                self.ranking_pool(allow_nsfw, "bypopularity", i * POOL_SIZE)
+                for i in range(DEEP_POOL_PAGES)
+            ),
+            return_exceptions=True,
+        )
+        ok = [p for p in pages if not isinstance(p, BaseException)]
+        if not ok:
+            first = pages[0]
+            assert isinstance(first, BaseException)
+            raise first
+        merged = {n["id"]: n for p in ok for n in p}
+        return list(merged.values())
 
     async def browse(
         self,
@@ -212,7 +235,10 @@ class MalClient:
         """Filter by genre, year and season. MAL's API can't filter by genre, so the pool for
         the chosen season (or ranking) is fetched once, cached, and filtered here."""
         if year is None:
-            pool = await self.ranking_pool(allow_nsfw)
+            if genre is None:
+                pool = await self.ranking_pool(allow_nsfw)
+            else:
+                pool = await self.deep_ranking_pool(allow_nsfw)
         else:
             seasons = [season] if season else list(_SEASONS)
             pools = await asyncio.gather(*(self.season_pool(year, s, allow_nsfw) for s in seasons))
