@@ -205,15 +205,22 @@ class MalClient:
         return [i["node"] for i in filter_nsfw(data.get("data", []), allow_nsfw)]
 
     async def deep_ranking_pool(self, allow_nsfw: bool) -> list[dict]:
-        """Several ranking pages by popularity. Niche genres (Hentai, Erotica) rarely reach the
-        top 500, so a genre filter needs a deeper pool to find anything."""
+        """Several ranking pages by popularity. Niche genres rarely reach the top 500, so a
+        genre filter needs a deeper pool to find anything. A failed page is skipped; only when
+        every page fails does the error surface."""
         pages = await asyncio.gather(
             *(
                 self.ranking_pool(allow_nsfw, "bypopularity", i * POOL_SIZE)
                 for i in range(DEEP_POOL_PAGES)
-            )
+            ),
+            return_exceptions=True,
         )
-        merged = {n["id"]: n for p in pages for n in p}
+        ok = [p for p in pages if not isinstance(p, BaseException)]
+        if not ok:
+            first = pages[0]
+            assert isinstance(first, BaseException)
+            raise first
+        merged = {n["id"]: n for p in ok for n in p}
         return list(merged.values())
 
     async def browse(

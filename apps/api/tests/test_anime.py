@@ -74,6 +74,42 @@ async def test_browse_adult_genre_without_a_year_scans_deeper_than_the_top(clien
 
 
 @respx.mock
+async def test_browse_deep_scan_survives_a_failed_page(client, session):
+    _, headers = await make_user(session, "friend", nsfw=True)
+    respx.get(f"{API_BASE}/anime/ranking").mock(
+        side_effect=lambda req: (
+            httpx.Response(200, json=listing(node(2, genres=[12])))
+            if req.url.params.get("offset") is None
+            else httpx.Response(500)
+        )
+    )
+    r = await client.get("/anime/browse", params={"genre": 12}, headers=headers)
+    assert [a["id"] for a in r.json()["data"]] == [2]
+
+
+@respx.mock
+async def test_browse_deep_scan_fails_when_every_page_fails(client, session):
+    _, headers = await make_user(session, "friend", nsfw=True)
+    respx.get(f"{API_BASE}/anime/ranking").mock(return_value=httpx.Response(500))
+    r = await client.get("/anime/browse", params={"genre": 12}, headers=headers)
+    assert r.status_code == 502
+
+
+@respx.mock
+async def test_browse_deep_scan_keeps_adult_titles_hidden_when_the_switch_is_off(client, session):
+    _, headers = await make_user(session, "kafka")
+    respx.get(f"{API_BASE}/anime/ranking").mock(
+        return_value=httpx.Response(
+            200, json=listing(node(2, genres=[12], rating="rx"), node(3, genres=[1]))
+        )
+    )
+    r = await client.get("/anime/browse", params={"genre": 1}, headers=headers)
+    assert [a["id"] for a in r.json()["data"]] == [3]
+    r = await client.get("/anime/browse", params={"genre": 12}, headers=headers)
+    assert r.status_code == 422
+
+
+@respx.mock
 async def test_browse_pages_results(client, session):
     _, headers = await make_user(session, "kafka")
     mock_ranking(*(node(i) for i in range(1, 31)))
